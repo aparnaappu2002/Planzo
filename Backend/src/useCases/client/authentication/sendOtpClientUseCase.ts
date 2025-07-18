@@ -2,6 +2,7 @@ import { IemailService } from "../../../domain/interfaces/serviceInterface/Iemai
 import { IotpService } from "../../../domain/interfaces/serviceInterface/IotpInterface";
 import { IuserExistenceService } from "../../../domain/interfaces/serviceInterface/IuserExistenceService";
 import { IsendOtpClientInterface } from "../../../domain/interfaces/useCaseInterfaces/client/authentication/sendOtpClientInterface";
+import { EmailComposer } from "../../../framework/services/emailComposer";
 
 export class sendOtpClientUseCase implements IsendOtpClientInterface{
     private otpService: IotpService
@@ -18,7 +19,8 @@ export class sendOtpClientUseCase implements IsendOtpClientInterface{
         if(existingUser) throw new Error("This email is already exists")
         const otp=this.otpService.generateOtp()
         await this.otpService.storeOtp(email,otp)
-        await this.emailService.sendEmailOtp(email,otp)
+        const {subject,html}=EmailComposer.getOtpEmail(otp)
+        await this.emailService.sendEmail(email,subject,html)
     }
     async verifyOtp(email: string, enteredOtp: string): Promise<boolean> {
         const verify=await this.otpService.verifyOtp(email,enteredOtp)
@@ -27,6 +29,7 @@ export class sendOtpClientUseCase implements IsendOtpClientInterface{
     async resendOtp(email: string): Promise<void> {
         const otp=this.otpService.generateOtp()
         await this.otpService.storeOtp(email,otp)
-        await this.emailService.sendEmailOtp(email,otp)
+        const {subject,html}=EmailComposer.getOtpEmail(otp)
+        await this.emailService.sendEmail(email,subject,html)
     }
 }

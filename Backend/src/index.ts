@@ -37,6 +37,3 @@ export class App{
         this.app.listen(port,()=>console.log(`server running on ${port}`))
     }
 }
-
-const app=new App()
-app.listen()

@@ -2,6 +2,7 @@ import { IClientDatabaseRepository } from "../../../domain/interfaces/repository
 import { IemailService } from "../../../domain/interfaces/serviceInterface/IemailService";
 import { IjwtInterface } from "../../../domain/interfaces/serviceInterface/IjwtService";
 import { IsendMailForgetPasswordClient } from "../../../domain/interfaces/useCaseInterfaces/client/authentication/IsendMailForgetPassword";
+import { EmailComposer } from "../../../framework/services/emailComposer";
 
 export class sendMailForgetPasswordClient implements IsendMailForgetPasswordClient{
     private resetMailService:IemailService
@@ -20,6 +21,7 @@ export class sendMailForgetPasswordClient implements IsendMailForgetPasswordClie
         const resetToken = this.jwtService.generateResetToken(process.env.RESET_SECRET_KEY!,client.clientId,email)
         
         const resetUrl=`${process.env.ORGIN}/resetPassword?token=${resetToken}`
-        await this.resetMailService.sendPasswordResetEmail(email,resetToken,resetUrl)
+        const {subject,html}=EmailComposer.getResetPassword(resetToken,resetUrl)
+        await this.resetMailService.sendEmail(email,resetToken,resetUrl)
     }
 }
