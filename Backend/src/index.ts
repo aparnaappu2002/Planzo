@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
 import { connectMongo } from './framework/database/databaseConnection/dbConnection'
 import { clientRoute } from './framework/routes/client/clientRoute'
+import { VendorRoute } from './framework/routes/vendor/vendorRoute'
 
 
 export class App{
@@ -17,6 +18,7 @@ export class App{
         this.database.connectDb()
         this.setMiddlewares()
         this.setClientRoute()
+        this.setVendorRoute()
     }
     private setMiddlewares(){
         this.app.use(cors({
@@ -30,6 +32,9 @@ export class App{
     }
     private setClientRoute(){
         this.app.use('/user',new clientRoute().clientRoute)
+    }
+    private setVendorRoute(){
+        this.app.use('/vendor',new VendorRoute().vendorRoute)
     }
     public listen()
     {
