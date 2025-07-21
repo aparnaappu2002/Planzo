@@ -13,10 +13,14 @@ import { sendMailForgetPasswordClient } from "../../useCases/client/authenticati
 import { sendResetEmailToClient } from "../../adapters/controllers/client/authentication/sendResetEmailClient";
 import { ResetForgtoPasswordClient } from "../../adapters/controllers/client/authentication/resetForgotPassword";
 import { ResetPasswordClientUseCase } from "../../useCases/client/authentication/forgotPasswordUseCase";
+import { VendorDatabase } from "../../adapters/repository/vendor/vendorDatabase";
+
 const otpService=new OtpService()
 const EmailService=new emailService()
 const ClientRepository=new clientRepository()
-const UserExistence=new userExistence(ClientRepository)
+const VendorRepository=new VendorDatabase()
+
+const UserExistence=new userExistence(ClientRepository,VendorRepository)
 const SendOtpClientUseCase=new sendOtpClientUseCase(otpService,EmailService,UserExistence)
 const createClientUseCase= new CreateClientUseCase(ClientRepository)
 export const clientAuthenticationController=new ClientAuthenticationController(createClientUseCase,SendOtpClientUseCase)
