@@ -22,6 +22,6 @@ export class sendMailForgetPasswordClient implements IsendMailForgetPasswordClie
         
         const resetUrl=`${process.env.ORGIN}/resetPassword?token=${resetToken}`
         const {subject,html}=EmailComposer.getResetPassword(resetToken,resetUrl)
-        await this.resetMailService.sendEmail(email,resetToken,resetUrl)
+        await this.resetMailService.sendEmail(email,subject,html)
     }
 }
