@@ -11,5 +11,5 @@ export interface User{
     createdAt?:Date,
     lastLogin?:Date,
     onlineStatus?:'online'|'offline',
-    isAdmin:boolean
+    isAdmin?:boolean
 }
