@@ -25,10 +25,10 @@ export class clientRoute{
         this.clientRoute.post('/login',(req:Request,res:Response)=>{
             injectedClientLoginController.handleLogin(req,res)
         })
-        this.clientRoute.post('/sendEmailForgotPassword',(req:Request,res:Response)=>{
+        this.clientRoute.post('/sendForgotPassword',(req:Request,res:Response)=>{
             injectedSendMailForgetPasswordController.handleSendResetEmail(req,res)
         })
-        this.clientRoute.post('/resetForgotPassword',(req:Request,res:Response)=>{
+        this.clientRoute.post('/forgotPassword',(req:Request,res:Response)=>{
             injectedForgotPasswordClientController.handleResetPassword(req,res)
         })
     }
