@@ -168,7 +168,7 @@ const Login = () => {
                   <span className="text-muted-foreground">Remember me</span>
                 </label>
                 <a
-                  href="#"
+                  href="/forgotpassword"
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
                 >
                   Forgot password?

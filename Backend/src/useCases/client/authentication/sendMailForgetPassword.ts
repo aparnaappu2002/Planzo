@@ -20,7 +20,7 @@ export class sendMailForgetPasswordClient implements IsendMailForgetPasswordClie
         
         const resetToken = this.jwtService.generateResetToken(process.env.RESET_SECRET_KEY!,client.clientId,email)
         
-        const resetUrl=`${process.env.ORGIN}/resetPassword?token=${resetToken}`
+        const resetUrl=`${process.env.ORGIN}/resetPassword?token=${resetToken}&email=${email}`
         const {subject,html}=EmailComposer.getResetPassword(resetToken,resetUrl)
         await this.resetMailService.sendEmail(email,subject,html)
     }

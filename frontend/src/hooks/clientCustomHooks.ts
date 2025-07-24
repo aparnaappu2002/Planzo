@@ -1,8 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   clientSignup,
-  clientCreateAccount,clientResendOtp,clientLogin
+  clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,
+  clientForgetPassword
 } from "../services/ApiServiceClient";
+import { email } from "zod";
 
 type LoginProps = {
   email: string;
@@ -46,5 +48,20 @@ export const useClientLoginMutation=()=>{
   return useMutation({
     mutationFn:({ email,password}:LoginProps)=>
       clientLogin({email,password})
+  })
+}
+
+export const useClientSendForgotPassword=()=>{
+  return useMutation({
+    mutationFn:(email:string)=>clientForgetPasswordEmail(email)
+  })
+}
+
+export const useClientForgotPassword=()=>{
+  return useMutation({
+    mutationFn:({
+      email,newPassword,token 
+    } :{ email:string,newPassword:string,token:string
+    })=>clientForgetPassword({email,newPassword,token})
   })
 }

@@ -60,21 +60,18 @@ export const Navbar: React.FC = () => {
     try {
       setIsLoggingOut(true)
       
-      // Show loading toast
+      
       const toastId = toast.loading("Logging out...")
       
-      // Optional: Make API call to logout endpoint if you have one
-      // await axios.post('/api/client/logout')
       
-      // Clear Redux state
       dispatch(removeClient())
       dispatch(removeToken())
       
-      // Clear any localStorage items if you have them
+      
       localStorage.removeItem('clientToken')
       localStorage.removeItem('clientData')
       
-      // Update toast to success
+      
       toast.update(toastId, {
         render: "Logged out successfully!",
         type: "success",
@@ -84,9 +81,9 @@ export const Navbar: React.FC = () => {
       })
       
       setIsLogoutDialogOpen(false)
-      setIsMenuOpen(false) // Close mobile menu if open
+      setIsMenuOpen(false) 
       
-      // Navigate to login page after a short delay
+      
       setTimeout(() => {
         navigate('/login')
       }, 1000)
@@ -94,7 +91,7 @@ export const Navbar: React.FC = () => {
     } catch (error) {
       console.error('Logout failed:', error)
       
-      // Show error toast
+      
       let errorMessage = "Logout failed. Please try again."
       
       if (error instanceof Error) {

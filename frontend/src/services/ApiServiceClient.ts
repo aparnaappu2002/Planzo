@@ -1,6 +1,7 @@
 import { isAxiosError } from "axios";
 import axios from "../axios/clientAxios";
 import clodAxios from 'axios'
+import { email, string } from "zod";
 
 interface Login{
     email:string,
@@ -65,5 +66,33 @@ export const clientLogin = async({email,password}:Login)=>{
             throw new Error(error.response?.data?.error)
         }
         throw new Error("Error while login client")
+    }
+}
+
+export const clientForgetPasswordEmail=async(email:string)=>{
+    try{
+        const response = await axios.post('/sendForgotpassword',{email})
+        return response.data
+    }catch(error){
+        console.log("Error while sending mail for forget password",error)
+        if(isAxiosError(error)){
+            throw new Error(error.response?.data?.error)
+        }
+        throw new Error("error while sending mail for forget password")
+    }
+}
+
+export const clientForgetPassword = async (
+    {email,newPassword,token } : {email:string,newPassword:string,token:string}
+) => {
+    try{
+        const response=await axios.post('/forgotPassword',{email,newPassword,token})
+        return response.data
+    }catch(error){
+        console.log("Error while resetting the password",error)
+        if(isAxiosError(error)){
+            throw new Error(error?.response?.data.error)
+        }
+        throw new Error("Error while resetting the password")
     }
 }
