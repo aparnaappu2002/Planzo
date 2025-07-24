@@ -1,7 +1,16 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "compilerOptions": {
+    "jsx": "react-jsx",          // ✅ Required for React + JSX in .tsx files
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler", // or "node" if not using Vite
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
 }

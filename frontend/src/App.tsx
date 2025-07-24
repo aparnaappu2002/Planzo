@@ -1,8 +1,21 @@
+import { BrowserRouter,Routes,Route } from "react-router-dom";
+import UserRoute from "./routes/UserRoute";
+
+
+
+
 function App() {
   return (
-    <div className="text-4xl text-purple-600 font-bold text-center mt-10">
-      Tailwind v3.3.5 is working!
-    </div>
+   <>
+   <BrowserRouter>
+   <Routes>
+    <Route path="/*" element={<UserRoute/>}></Route>
+   </Routes>
+   
+   </BrowserRouter>
+   
+   
+   </>
   );
 }
 
