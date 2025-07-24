@@ -53,3 +53,17 @@ export const clientResendOtp = async (email:string)=>{
         throw new Error("Erro while client resend otp")
     }
 }
+
+export const clientLogin = async({email,password}:Login)=>{
+    try{
+        const response= await axios.post('/login',{email,password})
+        return response?.data
+
+    }catch(error){
+        console.log("Error while login client",error)
+        if(isAxiosError(error)){
+            throw new Error(error.response?.data?.error)
+        }
+        throw new Error("Error while login client")
+    }
+}

@@ -77,7 +77,7 @@ const formatTime=(seconds:number):string=>{
     console.log(response)
       
      
-      toast.success("Email verified successfully")
+      
         onVerifySuccess();
         onClose();
       
