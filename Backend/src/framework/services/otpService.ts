@@ -6,7 +6,7 @@ export class OtpService implements IotpService{
         this.cache= new nodecache({stdTTL:300})
     }
     generateOtp(): string {
-        return Math.floor(10000 + Math.random() * 900000).toString()
+        return Math.floor(100000 + Math.random() * 900000).toString()
     }
     async storeOtp(email: string, otp: string): Promise<void> {
         this.cache.set(email,otp,300)

@@ -1,5 +1,6 @@
 import { BrowserRouter,Routes,Route } from "react-router-dom";
 import UserRoute from "./routes/UserRoute";
+import VendorRoute from "./routes/VendorRoute";
 
 
 
@@ -10,6 +11,7 @@ function App() {
    <BrowserRouter>
    <Routes>
     <Route path="/*" element={<UserRoute/>}></Route>
+    <Route path="/vendor/*" element={<VendorRoute/>}></Route>
    </Routes>
    
    </BrowserRouter>
