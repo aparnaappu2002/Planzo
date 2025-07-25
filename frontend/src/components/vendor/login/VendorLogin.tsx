@@ -11,6 +11,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useVendorLoginMutation } from "@/hooks/vendorCustomHooks";
+import { addVendor } from "@/redux/slices/vendor/vendorSlice";
+import { addVendorToken } from "@/redux/slices/vendor/vendorTokenSlice";
+import { useDispatch } from "react-redux";
 
 const formSchema = z.object({
   email: z
@@ -29,6 +32,7 @@ export default function VendorLogin() {
   const [showPassword, setShowPassword] = React.useState(false);
   const navigate=useNavigate()
   const vendorLoginMutation=useVendorLoginMutation()
+  const dispatch=useDispatch()
   
 
   const form = useForm<FormValues>({
@@ -43,6 +47,9 @@ export default function VendorLogin() {
    try{
     const response= await vendorLoginMutation.mutateAsync(data)
     console.log(response)
+    localStorage.setItem('vendorId',response.vendor._id)
+    dispatch(addVendorToken(response.accessToken))
+    dispatch(addVendor(response.vendor))
     toast.success("Login Successfull")
     navigate('/vendor/home')
    }catch(error){
@@ -53,7 +60,7 @@ export default function VendorLogin() {
    }
   };
   const handleNavigate=()=>{
-    navigate('/forgotPassword')
+    navigate('/vendor/forgotPassword')
   }
 
   return (

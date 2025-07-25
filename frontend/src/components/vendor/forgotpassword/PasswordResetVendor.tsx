@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-toastify";
 import { Eye, EyeOff, Lock } from "lucide-react";
-import { useClientForgotPassword } from "@/hooks/clientCustomHooks";
 import { useNavigate } from "react-router-dom";
 import { useVendorForgotPassword } from "@/hooks/vendorCustomHooks";
 
@@ -26,14 +25,14 @@ const passwordResetSchema = z.object({
 type PasswordResetForm = z.infer<typeof passwordResetSchema>;
 
 
-export default function PasswordReset() {
+export default function PasswordResetVendor() {
   const [isLoading, setIsLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
    const [token, setToken] = useState<string>("")
   const [email, setEmail] = useState<string>("")
   const navigate=useNavigate()
-  const forgotpassword=useClientForgotPassword() || useVendorForgotPassword()
+  const forgotpassword= useVendorForgotPassword()
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
@@ -66,7 +65,7 @@ export default function PasswordReset() {
      })
       
       toast.success("Password reset successfully")
-      navigate('/login')
+      navigate('/vendor/login')
       
       reset();
     } catch (error) {

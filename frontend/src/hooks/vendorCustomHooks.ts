@@ -1,5 +1,5 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
-    uploadImageCloudinary
+    uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail
  } from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
@@ -53,6 +53,19 @@ export const useVendorLoginMutation =()=>{
         mutationFn:({email,password} : {email:string,password:string}) => {
             return vendorLogin(email,password)
         }
+    })
+}
+
+export const useVendorRequestForgotPassword =()=>{
+    return useMutation({
+        mutationFn:(email:string)=>vendorForgotPasswordEmail(email)
+    })
+}
+
+export const useVendorForgotPassword =()=>{
+    return useMutation({
+        mutationFn:({email,newPassword,token} : {email:string,newPassword:string,token:string})=>
+            vendorForgotPassword({email,newPassword,token})
     })
 }
 

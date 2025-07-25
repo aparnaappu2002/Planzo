@@ -19,7 +19,7 @@ export class sendEmailForgetPasswordVendor implements IsendEmailForgetPasswordVe
         const vendor=await this.vendorDatabase.findByEmaill(email)
         if(!vendor) throw new Error("No vendor Found with this email")
         const resetToken=this.jwtService.generateResetToken(process.env.RESET_SECRET_KEY!,vendor.vendorId,email)
-        const resetUrl=`${process.env.ORGIN}/resetPassword?token=${resetToken}`
+        const resetUrl=`${process.env.ORGIN}/vendor/resetPassword?token=${resetToken}&email=${email}`
         const {subject,html}=EmailComposer.getResetPassword(resetToken,resetUrl)
         await this.emailService.sendEmail(email,subject,html)
     }

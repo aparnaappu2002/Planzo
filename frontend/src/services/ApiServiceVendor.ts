@@ -82,3 +82,30 @@ export const vendorLogin = async(email:string,password:string)=>{
         throw new Error ("Error while login vendor")
     }
 }
+
+export const vendorForgotPasswordEmail=async (email:string)=>{
+    try{
+        const response = await axios.post('/sendMail',{email})
+        return response.data
+    }catch(error){
+        console.log("Error file sending email for forgot password")
+        if(isAxiosError(error)){
+            throw new Error(error.response?.data?.error)
+        }
+        throw new Error("Error while sending email for forgot password")
+    }
+}
+
+export const vendorForgotPassword = async(
+    {email,newPassword,token }:{email:string,newPassword:string,token:string})=>{
+        try{
+            const response = await axios.post('/forgotPassword',{email,newPassword,token})
+            return response.data
+        }catch(error){
+            console.log('Error while resetting password',error)
+            if(isAxiosError(error)){
+                throw new Error(error?.response?.data.error)
+            }
+            throw new Error("Error while resetting password")
+        }
+    }

@@ -25,7 +25,7 @@ export class VendorRoute{
         this.vendorRoute.post('/resendOtp',(req:Request,res:Response)=>{
             injectedResendOtpVendorController.handleResendOtp(req,res)
         })
-        this.vendorRoute.post('/sendForgotPassword',(req:Request,res:Response)=>{
+        this.vendorRoute.post('/sendMail',(req:Request,res:Response)=>{
             injectedSendEmailForgetPasswordVendorController.handleSendEmailForgetPasswordVendor(req,res)
         })
         this.vendorRoute.post('/forgotPassword',(req:Request,res:Response)=>{
