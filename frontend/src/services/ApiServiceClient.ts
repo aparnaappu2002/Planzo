@@ -15,6 +15,12 @@ interface FormValues{
     password:string,
     confirmPassword:string
 }
+type Client={
+    email:string,
+    googleVerified:boolean,
+    name:string,
+    profileImage:string
+}
 
 export const clientSignup = async (values:FormValues)=>{
     try{
@@ -94,5 +100,18 @@ export const clientForgetPassword = async (
             throw new Error(error?.response?.data.error)
         }
         throw new Error("Error while resetting the password")
+    }
+}
+
+export const clientGoogleLogin = async(client:Client)=>{
+    try{
+        const response = await axios.post('/googleLogin',{client})
+        return response.data
+    }catch(error){
+        console.log('Error while client google login',error)
+        if(isAxiosError(error)){
+            throw new Error(error.response?.data?.error)
+        }
+        throw new Error("Error while client google login")
     }
 }

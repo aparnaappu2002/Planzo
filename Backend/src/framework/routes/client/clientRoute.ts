@@ -1,7 +1,7 @@
 import { Request,Response,Router } from "express";
 import { ClientAuthenticationController } from "../../../adapters/controllers/client/authentication/clientAuthenticationController";
 import { clientAuthenticationController,injectedClientLoginController,injectedSendMailForgetPasswordController,
-    injectedForgotPasswordClientController
+    injectedForgotPasswordClientController,injectedGoogleLoginController
  } from "../../inject/clientInject";
 
 export class clientRoute{
@@ -30,6 +30,9 @@ export class clientRoute{
         })
         this.clientRoute.post('/forgotPassword',(req:Request,res:Response)=>{
             injectedForgotPasswordClientController.handleResetPassword(req,res)
+        })
+        this.clientRoute.post('/googleLogin',(req:Request,res:Response)=>{
+            injectedGoogleLoginController.handleGoogleLogin(req,res)
         })
     }
 }

@@ -10,11 +10,20 @@ import { useNavigate } from "react-router-dom";
 import { addToken } from "@/redux/slices/user/userToken";
 import { addClient } from "@/redux/slices/user/userSlice";
 import { useDispatch } from "react-redux";
+import {jwtDecode} from 'jwt-decode'
+import { CredentialResponse,GoogleLogin } from "@react-oauth/google";
+import { useClientGoogleLoginMutation } from "@/hooks/clientCustomHooks";
 
 interface FormErrors{
     email?:string
     password?:string
   }
+  type Client = {
+  email: string;
+  googleVerified: boolean;
+  name: string;
+  profileImage: string
+}
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +31,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors,setErrors]=useState<FormErrors>({})
   const loginMutation = useClientLoginMutation()
+  const googleLoginMutation= useClientGoogleLoginMutation()
   const navigate=useNavigate()
   const dispatch=useDispatch()
 
@@ -89,6 +99,37 @@ const Login = () => {
     }
     
   };
+
+  const handleGoogleLogin = async (credentialResponse:CredentialResponse)=>{
+    
+    try{
+      if(credentialResponse.credential){
+        const credential:Client = jwtDecode(credentialResponse.credential)
+        console.log(credential)
+        const client:Client = {
+          email:credential.email,
+          name:credential.name,
+          googleVerified:true,
+          profileImage:credential.profileImage
+        }
+        const response = await googleLoginMutation.mutateAsync(client)
+        console.log(response)
+        localStorage.setItem('clientId',response.selectedFields._id)
+        dispatch(addClient(response?.client))
+        dispatch(addToken(response?.accessToken))
+        toast.success("Google login successfull")
+        navigate('/')
+      }
+    }catch(error){
+      let errorMessage = "Login failed. Please try again.";
+      
+      if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    toast.error(errorMessage); 
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-background flex items-center justify-center p-4">
@@ -189,6 +230,10 @@ const Login = () => {
                   "Sign In"
                 )}
               </Button>
+               <div >
+                                        <GoogleLogin onSuccess={handleGoogleLogin} onError={() => console.log('login failed')} useOneTap={false}></GoogleLogin>
+
+                                    </div>
             </form>
 
             <div className="text-center">

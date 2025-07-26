@@ -14,6 +14,9 @@ import { sendResetEmailToClient } from "../../adapters/controllers/client/authen
 import { ResetForgtoPasswordClient } from "../../adapters/controllers/client/authentication/resetForgotPassword";
 import { ResetPasswordClientUseCase } from "../../useCases/client/authentication/forgotPasswordUseCase";
 import { VendorDatabase } from "../../adapters/repository/vendor/vendorDatabase";
+import { GoogleLoginClient } from "../../adapters/controllers/vendor/authentication/clientGoogleLogin";
+import { GoogleLoginClientUseCase } from "../../useCases/client/authentication/googleLoginClientUseCase";
+
 
 const otpService=new OtpService()
 const EmailService=new emailService()
@@ -38,3 +41,8 @@ export const injectedSendMailForgetPasswordController = new sendResetEmailToClie
 //change password for forgot password
 const forgotPasswordClientUseCase = new ResetPasswordClientUseCase(jwtService,ClientRepository)
 export const injectedForgotPasswordClientController = new ResetForgtoPasswordClient(forgotPasswordClientUseCase)
+
+//google login
+const googleLoginClientUseCase = new GoogleLoginClientUseCase(ClientRepository)
+export const injectedGoogleLoginController = new GoogleLoginClient(googleLoginClientUseCase,jwtService,redisService)
+

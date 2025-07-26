@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   clientSignup,
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,
-  clientForgetPassword
+  clientForgetPassword,clientGoogleLogin
 } from "../services/ApiServiceClient";
 import { email } from "zod";
 
@@ -17,6 +17,13 @@ interface FormValues {
   phone: string;
   password: string;
   confirmPassword: string;
+}
+
+type Client={
+  email:string,
+  googleVerified:boolean,
+  name:string,
+  profileImage:string
 }
 
 export const useClientSignupMutation = () => {
@@ -63,5 +70,11 @@ export const useClientForgotPassword=()=>{
       email,newPassword,token 
     } :{ email:string,newPassword:string,token:string
     })=>clientForgetPassword({email,newPassword,token})
+  })
+}
+
+export const useClientGoogleLoginMutation =()=>{
+  return useMutation({
+    mutationFn:(client : Client )=>clientGoogleLogin(client)
   })
 }
