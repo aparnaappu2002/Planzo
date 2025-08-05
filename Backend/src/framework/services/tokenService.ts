@@ -16,4 +16,8 @@ export class TokenService implements ITokenService{
     verifyToken(token: string): Promise<string | JwtPayload> {
         return this.jwtService.verifyAccessToken(token,this.accessSecretKey)
     }
+    async checkTokenBlacklist(token: string): Promise<boolean> {
+        const result = await this.redisService.get(`blacklist:${token}`)
+        return !!result
+    }
 }

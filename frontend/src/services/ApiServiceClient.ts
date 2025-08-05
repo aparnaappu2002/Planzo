@@ -2,6 +2,7 @@ import { isAxiosError } from "axios";
 import axios from "../axios/clientAxios";
 import clodAxios from 'axios'
 import { email, string } from "zod";
+import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 
 interface Login{
     email:string,
@@ -115,3 +116,27 @@ export const clientGoogleLogin = async(client:Client)=>{
         throw new Error("Error while client google login")
     }
 }
+
+export const updateProfileClient = async (client: ClientUpdateProfileEntity) => {
+    try {
+        const response = await axios.put('/updateProfile', { client })
+        return response.data
+    } catch (error) {
+        console.log('error while udpating client profile', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while updating client profile')
+    }
+}
+
+export const changePasswordClient = async (userId: string, oldPassword: string, newPassword: string) => {
+    try {
+        const response = await axios.patch('/changePassword', { userId, oldPassword, newPassword })
+        return response.data
+    } catch (error) {
+        console.log('error while changing password client', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while changing client password')
+    }
+}
+
+

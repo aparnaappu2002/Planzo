@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   clientSignup,
-  clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,
-  clientForgetPassword,clientGoogleLogin
+  clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
+  clientForgetPassword,changePasswordClient,updateProfileClient
 } from "../services/ApiServiceClient";
-import { email } from "zod";
+import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
+
 
 type LoginProps = {
   email: string;
@@ -78,3 +79,24 @@ export const useClientGoogleLoginMutation =()=>{
     mutationFn:(client : Client )=>clientGoogleLogin(client)
   })
 }
+
+export const useUpdateClientProfie = () => {
+  return useMutation({
+    mutationFn: (client: ClientUpdateProfileEntity) =>
+      updateProfileClient(client),
+  });
+};
+
+export const useChangePasswordClient = () => {
+  return useMutation({
+    mutationFn: ({
+      userId,
+      oldPassword,
+      newPassword,
+    }: {
+      userId: string;
+      oldPassword: string;
+      newPassword: string;
+    }) => changePasswordClient(userId, oldPassword, newPassword),
+  });
+};

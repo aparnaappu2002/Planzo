@@ -2,16 +2,19 @@ import { Request,Response } from "express";
 import { IvendorAuthenticationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IregisterVendorUseCase";
 import { IsendOtpVendorInterface } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IsendOtpVendorUseCase";
 import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { IresendOtpVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IresendOtpVendorUseCase";
 
 export class VendorAuthenticationController{
     private vendorAuthenticationUseCase:IvendorAuthenticationUseCase
     private vendorSendOtp:IsendOtpVendorInterface
+    private resendOtpVendoUseCase: IresendOtpVendorUseCase
 
     constructor(vendorAuthenticationUseCase:IvendorAuthenticationUseCase,
-        vendorSendOtp:IsendOtpVendorInterface
+        vendorSendOtp:IsendOtpVendorInterface,resendOtpVendorUseCase:IresendOtpVendorUseCase
     ){
         this.vendorAuthenticationUseCase=vendorAuthenticationUseCase
         this.vendorSendOtp=vendorSendOtp
+        this.resendOtpVendoUseCase=resendOtpVendorUseCase
     }
 
     async sendOtp(req:Request,res:Response){
@@ -54,5 +57,20 @@ export class VendorAuthenticationController{
             return
         }
 
+    }
+    async handleResendOtp(req:Request,res:Response):Promise<void>{
+        try{
+            const {email}=req.body
+            await this.resendOtpVendoUseCase.resendOtp(email)
+            res.status(HttpStatus.OK).json({
+                message:"Resended the otp"
+            })
+        }catch(error){
+            console.log('error while resending otp in vendor',error)
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message:"error while resending otp",
+                error : error instanceof Error ? error.message : "error while resending otp"
+            })
+        }
     }
 }

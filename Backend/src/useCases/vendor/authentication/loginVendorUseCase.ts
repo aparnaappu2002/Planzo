@@ -13,6 +13,7 @@ export class LoginVendorUseCase implements IloginVendorUseCase{
 
     async loginVendor(email: string, password: string): Promise<VendorEntity | null> {
         const vendor=await this.vendorDatabase.findByEmaill(email)
+        console.log(vendor)
         if(!vendor) throw new Error("No vendor exists in the email")
         if(vendor.status=='block') 
             throw new Error("You are blocked by admin")

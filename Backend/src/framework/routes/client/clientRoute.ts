@@ -1,8 +1,10 @@
 import { Request,Response,Router } from "express";
 import { ClientAuthenticationController } from "../../../adapters/controllers/client/authentication/clientAuthenticationController";
-import { clientAuthenticationController,injectedClientLoginController,injectedSendMailForgetPasswordController,
-    injectedForgotPasswordClientController,injectedGoogleLoginController
+import { clientAuthenticationController,injectedClientLoginController,
+    injectedForgotPasswordClientController,injectedProfileClientController
  } from "../../inject/clientInject";
+ import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
+ import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
 
 export class clientRoute{
     public clientRoute:Router
@@ -26,13 +28,20 @@ export class clientRoute{
             injectedClientLoginController.handleLogin(req,res)
         })
         this.clientRoute.post('/sendForgotPassword',(req:Request,res:Response)=>{
-            injectedSendMailForgetPasswordController.handleSendResetEmail(req,res)
+            injectedForgotPasswordClientController.handleSendResetEmail(req,res)
         })
         this.clientRoute.post('/forgotPassword',(req:Request,res:Response)=>{
             injectedForgotPasswordClientController.handleResetPassword(req,res)
         })
         this.clientRoute.post('/googleLogin',(req:Request,res:Response)=>{
-            injectedGoogleLoginController.handleGoogleLogin(req,res)
+            injectedClientLoginController.handleGoogleLogin(req,res)
         })
+        this.clientRoute.patch('/changePassword',(req:Request,res:Response)=>{
+            injectedProfileClientController.handeChangePasswordClient(req,res)
+        })
+        this.clientRoute.put('/updateProfile',injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware,(req:Request,res:Response)=>{
+            injectedProfileClientController.handleUpdateProfileClient(req,res)
+        })
+        
     }
 }

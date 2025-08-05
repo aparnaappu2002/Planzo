@@ -115,7 +115,7 @@ const Login = () => {
         const response = await googleLoginMutation.mutateAsync(client)
         console.log(response)
         localStorage.setItem('clientId',response.selectedFields._id)
-        dispatch(addClient(response?.client))
+        dispatch(addClient(response?.selectedFields))
         dispatch(addToken(response?.accessToken))
         toast.success("Google login successfull")
         navigate('/')
@@ -242,6 +242,7 @@ const Login = () => {
                 <a
                   href="#"
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
+                  onClick={()=>navigate('/signup')}
                 >
                   Sign up here
                 </a>

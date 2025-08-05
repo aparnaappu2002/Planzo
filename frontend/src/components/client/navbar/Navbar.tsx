@@ -49,7 +49,7 @@ export const Navbar: React.FC = () => {
   }
   
   const handleProfileClick = () => {
-    navigate('/userProfile')
+    navigate('/profile')
   }
 
   const handleLogoutClick = () => {
@@ -68,8 +68,8 @@ export const Navbar: React.FC = () => {
       dispatch(removeToken())
       
       
-      localStorage.removeItem('clientToken')
-      localStorage.removeItem('clientData')
+      localStorage.removeItem('clientID')
+     
       
       
       toast.update(toastId, {

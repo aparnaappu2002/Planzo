@@ -33,7 +33,7 @@ export class LoginVendorController {
         vendorId: vendor?.vendorId,
         vendorStatus: vendor?.vendorStatus,
         rejectReason: vendor?.rejectionReason,
-        profileImage: vendor?.profileImage,
+        profileImage: vendor?.idProof,
       };
       if (!vendor) throw new Error("Invalid credentials");
       const accessTokenSecretKey = process.env.ACCESSTOKEN_SECRET_KEY as string;

@@ -8,6 +8,7 @@ import redisService from "./framework/services/redisService";
 import { clientRoute } from "./framework/routes/client/clientRoute";
 import { VendorRoute } from "./framework/routes/vendor/vendorRoute";
 import { AdminRoute } from "./framework/routes/admin/adminRoute";
+import { AuthRoute } from "./framework/routes/auth/authRoute";
 
 export class App {
   private app: Express;
@@ -21,6 +22,7 @@ export class App {
     this.setClientRoute();
     this.setVendorRoute();
     this.setAdminRoute()
+    this.setAuthRoute()
     this.connectRedis()
 
   }
@@ -47,6 +49,9 @@ export class App {
   }
   private setAdminRoute(){
     this.app.use('/admin',new AdminRoute().adminRoute)
+  }
+  private setAuthRoute() {
+    this.app.use('/auth', new AuthRoute().AuthRouter)
   }
   public listen() {
     const port = process.env.PORT;

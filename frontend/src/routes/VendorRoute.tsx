@@ -3,8 +3,12 @@ import VendorSignup from "@/components/vendor/signup/VendorSignup";
 import VendorLogin from "@/components/vendor/login/VendorLogin";
 import ForgotPasswordVendor from "@/components/vendor/forgotpassword/ForgotPasswordVendor";
 import PasswordResetVendor from "@/components/vendor/forgotpassword/PasswordResetVendor";
-
-
+import VendorProfile from "@/components/vendor/profile/VendorProfile";
+import { VendorLayout } from "@/components/vendor/sidebar/VendorLayout";
+import { EventCreation } from "@/components/vendor/event/EventCreation";
+import Events from "@/components/vendor/event/updateEvent/Events";
+import ProtectedRouteVendor from "@/protectRoute/protectRouteVendor";
+import ProfileNotApproved from "@/components/vendor/VendorDashboard";
 
 
 
@@ -15,7 +19,13 @@ const VendorRoute=()=>{
             <Route path="/login" element={< VendorLogin/>}></Route>
             <Route path="/forgotpassword" element={< ForgotPasswordVendor/>}></Route>
             <Route path="/resetPassword/:token?" element={< PasswordResetVendor/>}></Route>
+            <Route path="/dashboard" element={< ProfileNotApproved/>}></Route>
 
+            <Route path="/" element={<VendorLayout/>}>
+            <Route path="/profile" element={<ProtectedRouteVendor>< VendorProfile/> </ProtectedRouteVendor>  }></Route>
+            <Route path="/createEvent" element={<ProtectedRouteVendor> < EventCreation/> </ProtectedRouteVendor>  }></Route>
+            <Route path="/events" element={<ProtectedRouteVendor>  < Events/> </ProtectedRouteVendor> }></Route>
+            </Route>
         </Routes>
     )
 }

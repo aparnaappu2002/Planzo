@@ -51,7 +51,7 @@ export default function VendorLogin() {
     dispatch(addVendorToken(response.accessToken))
     dispatch(addVendor(response.vendor))
     toast.success("Login Successfull")
-    navigate('/vendor/home')
+    navigate('/vendor/profile')
    }catch(error){
     console.log("Error while login vendor")
     const errorMessage = error instanceof Error ? error.message : "Login failed. Please try again.";
@@ -160,7 +160,8 @@ export default function VendorLogin() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <button className="text-primary hover:underline font-medium transition-smooth">
+              <button className="text-primary hover:underline font-medium transition-smooth"
+              onClick={()=> navigate('/vendor/signup')}>
                 Sign up here
               </button>
             </p>

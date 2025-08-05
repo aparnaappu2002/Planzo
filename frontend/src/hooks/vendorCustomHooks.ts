@@ -1,8 +1,10 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
-    uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail
+    uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
  } from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
+import { EventType } from "@/types/EventType";
+import { EventUpdateEntity } from "@/types/EventUpdateEntity";
 
 
 
@@ -69,3 +71,35 @@ export const useVendorForgotPassword =()=>{
     })
 }
 
+export const useUpdateVendorDetailsMutation = () => {
+    return useMutation({
+        mutationFn: ({ id, about, phone, name }: { id: string, about: string, phone: string, name: string }) => updateVendorDetails(id, about, phone, name)
+    })
+}
+
+
+
+export const useVendorChangePassword = () => {
+    return useMutation({
+        mutationFn: ({ userId, oldPassword, newPassword }: { userId: string, oldPassword: string, newPassword: string }) => changePasswordVendor(userId, oldPassword, newPassword)
+    })
+}
+
+export const useCreateEvent = () => {
+    return useMutation({
+        mutationFn: ({ event, vendorId }: { event: EventType, vendorId: string }) => createEvent(event, vendorId)
+    })
+}
+
+export const useFindAllEventsVendorSide = (vendorId: string, pageNo: number) => {
+    return useQuery({
+        queryKey: ['eventsInVendor', pageNo],
+        queryFn: () => findAllEventsInVendor(vendorId, pageNo)
+    })
+}
+
+export const useUpdateEvent = () => {
+    return useMutation({
+        mutationFn: ({ eventId, update }: { eventId: string, update: EventUpdateEntity }) => updateEvent(eventId, update)
+    })
+}

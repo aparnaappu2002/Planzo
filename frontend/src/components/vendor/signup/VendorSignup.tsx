@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { useVendorSignupMutation,useUploadImageMutation,useVendorResendOtpMutation,useVendorVerifyOtpMutation } from '@/hooks/vendorCustomHooks';
 import OtpModal from '@/components/client/signup/OtpModal';
 import { useNavigate } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 
 interface FormValues {
   name: string;
@@ -191,12 +192,12 @@ const VendorSignup = () => {
                 ...formValues,
                 idProof:uploadedImageUrl
             }
-            await vendorSignupMutation.mutateAsync(vendorData)
+            const response=await vendorSignupMutation.mutateAsync(vendorData)
             setIsOtpModalOpen(true)
-            toast.success('Otp Sent to your email')
+            toast.success(response.mess)
         }catch(error){
-            console.log("Signup error:",error)
-            toast.error('Registration failed.Please try again')
+           const errorMessage = error instanceof Error ? error.message : "Signup Failed";
+               toast.error(errorMessage);
         }
     
   };
@@ -218,7 +219,7 @@ const VendorSignup = () => {
     idProof: '',
     });
     toast.success("Account created successfully")
-    navigate('/login')
+    navigate('/vendor/login')
   };
 
   return (
