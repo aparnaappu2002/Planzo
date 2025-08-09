@@ -7,7 +7,7 @@ export class JwtService implements IjwtInterface {
     userId: string,
     role: string
   ): string {
-    return jwt.sign({ userId, role }, accessSecretKey, { expiresIn: "15m" });
+    return jwt.sign({ userId, role }, accessSecretKey, { expiresIn: "30m" });
   }
   createRefreshToken(refreshSecretKey: string, userId: string): string {
     return jwt.sign({ userId }, refreshSecretKey, { expiresIn: "1d" });

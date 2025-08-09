@@ -1,7 +1,6 @@
 import { Request,Response,Router } from "express";
-import { ClientAuthenticationController } from "../../../adapters/controllers/client/authentication/clientAuthenticationController";
 import { clientAuthenticationController,injectedClientLoginController,
-    injectedForgotPasswordClientController,injectedProfileClientController
+    injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -42,6 +41,17 @@ export class clientRoute{
         this.clientRoute.put('/updateProfile',injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware,(req:Request,res:Response)=>{
             injectedProfileClientController.handleUpdateProfileClient(req,res)
         })
-        
+        this.clientRoute.get('/events/:pageNo',(req:Request,res:Response)=>{
+            injectedEventClientController.handleFindAllEventsClient(req,res)
+        })
+        this.clientRoute.get('/findEvent/:eventId', (req: Request, res: Response) => {
+            injectedEventClientController.handleFindEventById(req, res)
+        })
+        this.clientRoute.post('/createTicket', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketClientController.handleCreateUseCase(req, res)
+        })
+        this.clientRoute.post('/confirmTicket', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketClientController.handleConfirmTicketAndPayment(req, res)
+        })
     }
 }

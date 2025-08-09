@@ -2,9 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   clientSignup,
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
-  clientForgetPassword,changePasswordClient,updateProfileClient
+  clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
+import { TicketEntity } from "@/types/TicketPaymentType";
 
 
 type LoginProps = {
@@ -98,5 +99,52 @@ export const useChangePasswordClient = () => {
       oldPassword: string;
       newPassword: string;
     }) => changePasswordClient(userId, oldPassword, newPassword),
+  });
+};
+
+export const useFindEvents = (pageNo: number) => {
+  return useQuery({
+    queryKey: ["events", pageNo],
+    queryFn: () => findevents(pageNo),
+  });
+};
+
+export const useFindEventById = (eventId: string) => {
+  return useQuery({
+    queryKey: ["eventById", eventId],
+    queryFn: () => findEventById(eventId),
+  });
+};
+
+export const useCreateTicket = () => {
+  return useMutation({
+    mutationFn: ({
+      ticket,
+      totalCount,
+      totalAmount,
+      paymentIntentId,
+      vendorId,
+    }: {
+      ticket: TicketEntity;
+      totalCount: number;
+      totalAmount: number;
+      paymentIntentId: string;
+      vendorId: string;
+    }) =>
+      createTicket(ticket, totalCount, totalAmount, paymentIntentId, vendorId),
+  });
+};
+
+export const useConfirmTicketAndPayment = () => {
+  return useMutation({
+    mutationFn: ({
+      ticket,
+      paymentIntent,
+      vendorId,
+    }: {
+      ticket: TicketEntity;
+      paymentIntent: string;
+      vendorId: string;
+    }) => confirmTicketAndPayment(ticket, paymentIntent, vendorId),
   });
 };

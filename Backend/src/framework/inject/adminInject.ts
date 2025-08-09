@@ -20,10 +20,12 @@ import { FindAllPendingVendorsUseCase } from "../../useCases/admin/vendorManagem
 import { UserManagementController } from "../../adapters/controllers/admin/userManagement/userManagementController";
 import { SearchClientsUseCase } from "../../useCases/admin/userManagement/searchClientUseCase";
 import { SearchVendorsUseCase } from "../../useCases/admin/vendorManagement/searchVendorUseCase";
+import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
 
 
 const adminRepository=new AdminRepository()
-const adminLoginUseCase=new AdminLoginUseCase(adminRepository)
+const walletRepository=new WalletRepository()
+const adminLoginUseCase=new AdminLoginUseCase(adminRepository,walletRepository)
 const jwtService=new JwtService()
 const redisService=new RedisService()
 export const injectedAdminLoginController = new AdminLoginController(adminLoginUseCase,jwtService,redisService)

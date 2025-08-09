@@ -31,7 +31,16 @@ interface EventEditModalProps {
 }
 
 export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) => {
-  const { register, handleSubmit, setValue, watch, reset } = useForm<EventUpdateEntity>();
+  const { 
+    register, 
+    handleSubmit, 
+    setValue, 
+    watch, 
+    reset, 
+    formState: { errors },
+    getValues 
+  } = useForm<EventUpdateEntity>();
+  
   const updateEventMutation = useUpdateEvent();
   const uploadImageMutation = useUploadImageMutation();
   
@@ -42,6 +51,14 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
 
   const watchedStatus = watch('status');
 
+  // Helper function to format date for datetime-local input
+  const formatDateForInput = (dateString: string | Date) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return format(date, "yyyy-MM-dd'T'HH:mm");
+  };
+
   // Reset form when event changes
   React.useEffect(() => {
     if (event) {
@@ -49,13 +66,13 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
         title: event.title,
         description: event.description,
         location: event.location,
-        startTime: event.startTime,
-        endTime: event.endTime,
+        startTime: formatDateForInput(event.startTime),
+        endTime: formatDateForInput(event.endTime),
         posterImage: event.posterImage,
         pricePerTicket: event.pricePerTicket,
         maxTicketsPerUser: event.maxTicketsPerUser,
         totalTicket: event.totalTicket,
-        date: event.date,
+        date: event.date ? format(new Date(event.date), 'yyyy-MM-dd') : '',
         createdAt: event.createdAt,
         ticketPurchased: event.ticketPurchased,
         address: event.address,
@@ -63,11 +80,17 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
         category: event.category,
         status: event.status,
       });
+      
+      // Explicitly set the datetime values using setValue to ensure they populate
+      setValue('startTime', formatDateForInput(event.startTime));
+      setValue('endTime', formatDateForInput(event.endTime));
+      setValue('date', event.date ? format(new Date(event.date), 'yyyy-MM-dd') : '');
+      
       setExistingImages(event.posterImage || []);
       setNewImages([]);
       setPreviewUrls([]);
     }
-  }, [event, reset]);
+  }, [event, reset, setValue]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -133,8 +156,64 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
     return Promise.all(uploadPromises);
   };
 
+  // Custom validation functions
+  const validateDateTime = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const now = new Date();
+    
+    if (start < now) {
+      return 'Start time cannot be in the past';
+    }
+    
+    if (end <= start) {
+      return 'End time must be after start time';
+    }
+    
+    // Check if the time difference is reasonable (at least 30 minutes)
+    const timeDiff = end.getTime() - start.getTime();
+    const minDuration = 30 * 60 * 1000; // 30 minutes in milliseconds
+    
+    if (timeDiff < minDuration) {
+      return 'Event must be at least 30 minutes long';
+    }
+    
+    return true;
+  };
+
+  const validateTickets = (maxTickets: number, totalTickets: number, soldTickets: number = 0) => {
+    if (maxTickets > totalTickets) {
+      return 'Max tickets per user cannot exceed total tickets';
+    }
+    
+    if (totalTickets < soldTickets) {
+      return `Total tickets cannot be less than already sold tickets (${soldTickets})`;
+    }
+    
+    return true;
+  };
+
   const onSubmit = async (data: EventUpdateEntity) => {
     if (!event) return;
+    
+    // Additional validation before submission
+    const startTime = data.startTime;
+    const endTime = data.endTime;
+    const soldTickets = event.ticketPurchased || 0;
+    
+    if (startTime && endTime) {
+      const dateValidation = validateDateTime(startTime, endTime);
+      if (dateValidation !== true) {
+        toast.error(dateValidation);
+        return;
+      }
+    }
+    
+    const ticketValidation = validateTickets(data.maxTicketsPerUser!, data.totalTicket!, soldTickets);
+    if (ticketValidation !== true) {
+      toast.error(ticketValidation);
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -173,8 +252,8 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
       
       toast.success(response.message);
       onClose();
-    } catch (error) {
-      let errorMessage 
+    } catch (error: any) {
+      let errorMessage;
             
       if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -209,41 +288,64 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Event Title</Label>
+                <Label htmlFor="title">Event Title *</Label>
                 <Input
                   id="title"
-                  {...register('title', { required: true })}
+                  {...register('title', { 
+                    required: 'Event title is required',
+                    minLength: { value: 3, message: 'Title must be at least 3 characters' },
+                    maxLength: { value: 100, message: 'Title cannot exceed 100 characters' }
+                  })}
                   placeholder="Enter event title"
+                  className={errors.title ? 'border-red-500' : ''}
                 />
+                {errors.title && (
+                  <p className="text-sm text-red-500">{errors.title.message}</p>
+                )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Category *</Label>
                 <Input
                   id="category"
-                  {...register('category', { required: true })}
+                  {...register('category', { 
+                    required: 'Category is required',
+                    minLength: { value: 2, message: 'Category must be at least 2 characters' }
+                  })}
                   placeholder="e.g., Music, Technology, Art"
+                  className={errors.category ? 'border-red-500' : ''}
                 />
+                {errors.category && (
+                  <p className="text-sm text-red-500">{errors.category.message}</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
-                {...register('description', { required: true })}
+                {...register('description', { 
+                  required: 'Description is required',
+                  minLength: { value: 10, message: 'Description must be at least 10 characters' },
+                  maxLength: { value: 1000, message: 'Description cannot exceed 1000 characters' }
+                })}
                 placeholder="Enter event description"
                 rows={4}
+                className={errors.description ? 'border-red-500' : ''}
               />
+              {errors.description && (
+                <p className="text-sm text-red-500">{errors.description.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Event Status</Label>
+              <Label htmlFor="status">Event Status *</Label>
               <Select
                 value={watchedStatus}
                 onValueChange={(value) => setValue('status', value as any)}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -252,6 +354,9 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.status && (
+                <p className="text-sm text-red-500">Event status is required</p>
+              )}
             </div>
           </div>
 
@@ -259,25 +364,65 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Date & Time</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Start Date & Time</Label>
+                <Label htmlFor="date">Event Date *</Label>
                 <Input
-                  id="startTime"
-                  type="datetime-local"
-                  {...register('startTime', { required: true })}
-                  defaultValue={event.startTime ? format(new Date(event.startTime), "yyyy-MM-dd'T'HH:mm") : ''}
+                  id="date"
+                  type="date"
+                  {...register('date', { 
+                    required: 'Event date is required'
+                  })}
+                  className={errors.date ? 'border-red-500' : ''}
                 />
+                {errors.date && (
+                  <p className="text-sm text-red-500">{errors.date.message}</p>
+                )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="endTime">End Date & Time</Label>
+                <Label htmlFor="startTime">Start Date & Time *</Label>
+                <Input
+                  id="startTime"
+                  type="datetime-local"
+                  {...register('startTime', { 
+                    required: 'Start time is required',
+                    validate: (value) => {
+                      const now = new Date();
+                      const startDate = new Date(value);
+                      if (startDate < now) {
+                        return 'Start time cannot be in the past';
+                      }
+                      return true;
+                    }
+                  })}
+                  className={errors.startTime ? 'border-red-500' : ''}
+                />
+                {errors.startTime && (
+                  <p className="text-sm text-red-500">{errors.startTime.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="endTime">End Date & Time *</Label>
                 <Input
                   id="endTime"
                   type="datetime-local"
-                  {...register('endTime', { required: true })}
-                  defaultValue={event.endTime ? format(new Date(event.endTime), "yyyy-MM-dd'T'HH:mm") : ''}
+                  {...register('endTime', { 
+                    required: 'End time is required',
+                    validate: (value) => {
+                      const startTime = getValues('startTime');
+                      if (startTime && new Date(value) <= new Date(startTime)) {
+                        return 'End time must be after start time';
+                      }
+                      return true;
+                    }
+                  })}
+                  className={errors.endTime ? 'border-red-500' : ''}
                 />
+                {errors.endTime && (
+                  <p className="text-sm text-red-500">{errors.endTime.message}</p>
+                )}
               </div>
             </div>
           </div>
@@ -291,18 +436,30 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
                 <Label htmlFor="venueName">Venue Name</Label>
                 <Input
                   id="venueName"
-                  {...register('venueName')}
+                  {...register('venueName', {
+                    maxLength: { value: 100, message: 'Venue name cannot exceed 100 characters' }
+                  })}
                   placeholder="Enter venue name"
+                  className={errors.venueName ? 'border-red-500' : ''}
                 />
+                {errors.venueName && (
+                  <p className="text-sm text-red-500">{errors.venueName.message}</p>
+                )}
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
-                  {...register('address')}
+                  {...register('address', {
+                    maxLength: { value: 200, message: 'Address cannot exceed 200 characters' }
+                  })}
                   placeholder="Enter full address"
+                  className={errors.address ? 'border-red-500' : ''}
                 />
+                {errors.address && (
+                  <p className="text-sm text-red-500">{errors.address.message}</p>
+                )}
               </div>
             </div>
           </div>
@@ -313,45 +470,84 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="pricePerTicket">Price per Ticket ($)</Label>
+                <Label htmlFor="pricePerTicket">Price per Ticket ($) *</Label>
                 <Input
                   id="pricePerTicket"
                   type="number"
                   step="0.01"
                   min="0"
-                  {...register('pricePerTicket', { required: true, valueAsNumber: true })}
+                  {...register('pricePerTicket', { 
+                    required: 'Price per ticket is required',
+                    min: { value: 0, message: 'Price cannot be negative' },
+                    max: { value: 10000, message: 'Price cannot exceed $10,000' },
+                    valueAsNumber: true 
+                  })}
                   placeholder="0.00"
+                  className={errors.pricePerTicket ? 'border-red-500' : ''}
                 />
+                {errors.pricePerTicket && (
+                  <p className="text-sm text-red-500">{errors.pricePerTicket.message}</p>
+                )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="totalTicket">Total Tickets</Label>
+                <Label htmlFor="totalTicket">Total Tickets *</Label>
                 <Input
                   id="totalTicket"
                   type="number"
-                  min="1"
-                  {...register('totalTicket', { required: true, valueAsNumber: true })}
+                  min={event.ticketPurchased || 1}
+                  {...register('totalTicket', { 
+                    required: 'Total tickets is required',
+                    min: { value: event.ticketPurchased || 1, message: `Cannot be less than already sold tickets (${event.ticketPurchased || 0})` },
+                    max: { value: 100000, message: 'Cannot exceed 100,000 tickets' },
+                    valueAsNumber: true,
+                    validate: (value) => {
+                      const soldTickets = event.ticketPurchased || 0;
+                      if (value < soldTickets) {
+                        return `Total tickets cannot be less than already sold tickets (${soldTickets})`;
+                      }
+                      return true;
+                    }
+                  })}
                   placeholder="100"
+                  className={errors.totalTicket ? 'border-red-500' : ''}
                 />
+                {errors.totalTicket && (
+                  <p className="text-sm text-red-500">{errors.totalTicket.message}</p>
+                )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="maxTicketsPerUser">Max Tickets per User</Label>
+                <Label htmlFor="maxTicketsPerUser">Max Tickets per User *</Label>
                 <Input
                   id="maxTicketsPerUser"
                   type="number"
                   min="1"
-                  {...register('maxTicketsPerUser', { required: true, valueAsNumber: true })}
+                  {...register('maxTicketsPerUser', { 
+                    required: 'Max tickets per user is required',
+                    min: { value: 1, message: 'Must allow at least 1 ticket per user' },
+                    max: { value: 100, message: 'Cannot exceed 100 tickets per user' },
+                    valueAsNumber: true 
+                  })}
                   placeholder="4"
+                  className={errors.maxTicketsPerUser ? 'border-red-500' : ''}
                 />
+                {errors.maxTicketsPerUser && (
+                  <p className="text-sm text-red-500">{errors.maxTicketsPerUser.message}</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Current Sales</Label>
               <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <strong>{event.ticketPurchased}</strong> tickets sold out of{' '}
+                <strong>{event.ticketPurchased || 0}</strong> tickets sold out of{' '}
                 <strong>{event.totalTicket}</strong> total tickets
+                {event.totalTicket && event.ticketPurchased && (
+                  <span className="ml-2">
+                    ({Math.round((event.ticketPurchased / event.totalTicket) * 100)}% sold)
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -400,6 +596,9 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
                 className="border-border/60 focus:border-primary file:bg-secondary file:border-0 file:text-secondary-foreground"
                 disabled={isSubmitting}
               />
+              <p className="text-xs text-muted-foreground">
+                Maximum file size: 5MB per image. Supported formats: JPG, PNG, GIF, WebP
+              </p>
             </div>
             
             {/* New Image Previews */}
@@ -435,6 +634,7 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
               variant="outline"
               onClick={onClose}
               className="flex-1"
+              disabled={isSubmitting}
             >
               <X className="h-4 w-4 mr-2" />
               Cancel

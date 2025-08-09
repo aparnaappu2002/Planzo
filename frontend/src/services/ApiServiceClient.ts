@@ -1,7 +1,8 @@
 import { isAxiosError } from "axios";
 import axios from "../axios/clientAxios";
-import clodAxios from 'axios'
-import { email, string } from "zod";
+import { TicketEntity } from "@/types/TicketPaymentType";
+
+
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 
 interface Login{
@@ -139,4 +140,45 @@ export const changePasswordClient = async (userId: string, oldPassword: string, 
     }
 }
 
+export const findevents = async (pageNo: number) => {
+    try {
+        const resposne = await axios.get(`/events/${pageNo}`)
+        return resposne.data
+    } catch (error) {
+        console.log('error while fetching events in client side', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while fetching events in client side')
+    }
+}
 
+export const findEventById = async (eventId: string) => {
+    try {
+        const response = await axios.get(`/findEvent/${eventId}`)
+        return response.data
+    } catch (error) {
+        console.log('error while finding event by id', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while finding event by id')
+    }
+}
+
+export const createTicket = async (ticket: TicketEntity, totalCount: number, totalAmount: number, paymentIntentId: string, vendorId: string) => {
+    try {
+        const response = await axios.post('/createTicket', { ticket, totalCount, totalAmount, paymentIntentId, vendorId })
+        return response.data
+    } catch (error) {
+        console.log('error while creating ticket', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while creating ticket')
+    }
+
+}
+
+export const confirmTicketAndPayment = async (ticket: TicketEntity, paymentIntent: string, vendorId: string) => {
+    try {
+        const response = await axios.post('/confirmTicket', { ticket, paymentIntent, vendorId })
+        return response.data
+    } catch (error) {
+        console.log('error while confirming ticket and payment', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while confirming ticket and payment')
+    }
+}

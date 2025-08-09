@@ -5,7 +5,7 @@ import { HttpStatus } from "../../domain/entities/httpStatus";
 export const verifyTokenAndCheckBlackList = (TokenService: ITokenService) => {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         const authHeader = req.headers.authorization
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!authHeader || !authHeader.startsWith('Bearer')) {
             res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Access denied. No token provided.' });
             return
         }

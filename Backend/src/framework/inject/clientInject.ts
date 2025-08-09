@@ -18,11 +18,22 @@ import { ProfileClientController } from "../../adapters/controllers/client/profi
 import { ChangePasswordClientUseCase } from "../../useCases/client/profile/changePasswordClientUseCase";
 import { hashPassword } from "../hashpassword/hashPassword";
 import { ChangeProfileImageClientUseCase } from "../../useCases/client/profile/changeProfileImageUseCase";
-import { ChangeProfileImageClientController } from "../../adapters/controllers/client/profile/changeProfileImageClientController";
 import { ShowProfileDetailsInClientUseCase } from "../../useCases/client/profile/showProfileDetailsClientsUseCase";
-import { ShowProfileClientController } from "../../adapters/controllers/client/profile/showProfileClientController";
 import { UpdateProfileClientUseCase } from "../../useCases/client/profile/updateProfileDataClientUseCase";
-import { UpdateProfileClientController } from "../../adapters/controllers/client/profile/updateProfileClientController";
+import { EventsClientController } from "../../adapters/controllers/client/event/eventClientController";
+import { FindAllEventsUseCase } from "../../useCases/client/events/findAllEventsUseCase";
+import { EventRepository } from "../../adapters/repository/event/eventRepository";
+import { FindEventByIdUseCase } from "../../useCases/client/events/findEventsByIdUseCase";
+import { CreateTicketUseCase } from "../../useCases/client/ticket/ticketCreationUseCase";
+import { TicketClientController } from "../../adapters/controllers/client/ticket/ticketClientController";
+import { TicketRepository } from "../../adapters/repository/ticket/ticketRepository";
+import { PaymentService } from "../services/paymentService";
+import { QrService } from "../services/qrService";
+import { PaymentRepository } from "../../adapters/repository/payment/paymentRepository";
+import { ConfirmTicketAndPaymentUseCase } from "../../useCases/client/ticket/confirmTicketAndPaymentUseCase";
+import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
+import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
+
 
 const otpService=new OtpService()
 const EmailService=new emailService()
@@ -54,7 +65,22 @@ const showProfileDetailsClientUseCase=new ShowProfileDetailsInClientUseCase(Clie
 const updateProfileClientUseCase = new UpdateProfileClientUseCase(ClientRepository)
 export const injectedProfileClientController =  new ProfileClientController(changePasswordClientUseCase,changeProfileImageClientUseCase,showProfileDetailsClientUseCase,updateProfileClientUseCase)
 
+//events
+const eventRepository=new EventRepository()
+const findAllEventsClientsUseCase = new FindAllEventsUseCase(eventRepository)
+const findEventByIdClientUseCase=new FindEventByIdUseCase(eventRepository)
+export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase)
 
+//ticket 
+const ticketRepository=new TicketRepository()
+const paymentService = new PaymentService()
+const qrService=new QrService()
+const paymentRepository=new PaymentRepository()
+const walletRepository=new WalletRepository()
+const transactionRepository=new TransactionRepository()
+const createTicketUseCase=new CreateTicketUseCase(eventRepository,ticketRepository,paymentService,qrService,paymentRepository)
+const confirmTicketAndPaymentUseCase=new ConfirmTicketAndPaymentUseCase(paymentService,eventRepository,ticketRepository,walletRepository,transactionRepository)
+export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase)
 
 
 

@@ -107,7 +107,8 @@ const handleSignupClick = () => {
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Button className="h-12 text-base bg-yellow-500 hover:bg-yellow-600">
+                <Button className="h-12 text-base bg-yellow-500 hover:bg-yellow-600"
+                onClick={()=>navigate('/events')}>
                   Explore Events
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>

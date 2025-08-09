@@ -114,8 +114,8 @@ const Login = () => {
         }
         const response = await googleLoginMutation.mutateAsync(client)
         console.log(response)
-        localStorage.setItem('clientId',response.selectedFields._id)
-        dispatch(addClient(response?.selectedFields))
+        localStorage.setItem('clientId',response.client._id)
+        dispatch(addClient(response?.client))
         dispatch(addToken(response?.accessToken))
         toast.success("Google login successfull")
         navigate('/')
