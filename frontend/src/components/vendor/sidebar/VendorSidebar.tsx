@@ -29,7 +29,7 @@ const vendorItems = [
   { title: "Profile", url: "/vendor/profile", icon: BarChart3 },
   { title: "Create Event", url: "/vendor/createEvent", icon: Package },
   { title: "Event Management", url: "/vendor/events", icon: ShoppingCart },
-  // { title: "Customers", url: "/vendor/customers", icon: Users },
+   { title: "Wallet", url: "/vendor/wallet", icon: Store },
   // { title: "Analytics", url: "/vendor/analytics", icon: TrendingUp },
   // { title: "Reviews", url: "/vendor/reviews", icon: Star },
   // { title: "Messages", url: "/vendor/messages", icon: MessageSquare },

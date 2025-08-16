@@ -9,6 +9,7 @@ import { EventCreation } from "@/components/vendor/event/EventCreation";
 import Events from "@/components/vendor/event/updateEvent/Events";
 import ProtectedRouteVendor from "@/protectRoute/protectRouteVendor";
 import ProfileNotApproved from "@/components/vendor/VendorDashboard";
+import VendorWallet from "@/components/vendor/wallet/VendorWallet";
 
 
 
@@ -25,6 +26,7 @@ const VendorRoute=()=>{
             <Route path="/profile" element={<ProtectedRouteVendor>< VendorProfile/> </ProtectedRouteVendor>  }></Route>
             <Route path="/createEvent" element={<ProtectedRouteVendor> < EventCreation/> </ProtectedRouteVendor>  }></Route>
             <Route path="/events" element={<ProtectedRouteVendor>  < Events/> </ProtectedRouteVendor> }></Route>
+            <Route path="/wallet" element={<ProtectedRouteVendor>  < VendorWallet/> </ProtectedRouteVendor> }></Route>
             </Route>
         </Routes>
     )

@@ -215,7 +215,7 @@ const VendorProfile = () => {
         {/* Header */}
         <div className="text-center py-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent mb-2">
-            Vendor Profile
+            Vendor Profile Verified
           </h1>
           <p className="text-muted-foreground">Manage your vendor account and settings</p>
         </div>
@@ -247,6 +247,7 @@ const VendorProfile = () => {
                 <User className="w-5 h-5" />
                 Profile Information
               </CardTitle>
+              <h2>Verified Vendor</h2>
               <Button
                 variant={isEditing ? "secondary" : "default"}
                 size="sm"
