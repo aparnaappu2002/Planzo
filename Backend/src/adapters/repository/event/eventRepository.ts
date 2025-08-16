@@ -20,7 +20,7 @@ export class EventRepository implements IeventRepository{
         return await eventModal.findByIdAndUpdate(eventId, update, { new: true }).select('-__v')
     }
     async findAllEventsClient(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }> {
-        const limit = 6
+        const limit = 8
         const page = Math.max(pageNo, 1)
         const skip = (page - 1) * limit
         const events = await eventModal.find({ isActive: true }).select('-__v').skip(skip).limit(limit).sort({ createdAt: -1 })
@@ -40,5 +40,31 @@ export class EventRepository implements IeventRepository{
     }
     async updateTicketPurchaseCount(eventId: string | ObjectId, newCount: number): Promise<EventEntity | null> {
         return eventModal.findByIdAndUpdate(eventId, { ticketPurchased: newCount })
+    }
+    async findEventsBasedOnQuery(query: string): Promise<EventEntity[] | []> {
+        const regex = new RegExp(query || '', 'i');
+        return await eventModal.find({ title: { $regex: regex }, isActive: true }).select('_id title posterImage')
+    }
+    async findEventsNearToClient(latitude: number, longitude: number, pageNo: number, range: number): Promise<{ events: EventEntity[] | [], totalPages: number }> {
+        const page = Math.max(pageNo, 1)
+        const limit = 5
+        const skip = (page - 1) * limit
+
+
+        const locationQuery = {
+            location: {
+                $near: {
+                    $geometry: {
+                        type: 'Point',
+                        coordinates: [longitude, latitude],
+                    },
+                    $maxDistance: range,
+                },
+            },
+        };
+
+        const events = await eventModal.find({ ...locationQuery, isActive: true }).skip(skip).limit(limit).sort({ createdAt: -1 })
+        const totalPages = Math.ceil(await eventModal.countDocuments({ locationQuery, isActive: true }) / limit)
+        return { events, totalPages }
     }
 }

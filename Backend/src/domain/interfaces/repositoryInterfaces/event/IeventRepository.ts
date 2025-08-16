@@ -11,4 +11,6 @@ export interface IeventRepository{
     findTotalTicketAndBookedTicket(eventId: string): Promise<EventEntity | null>
     findTotalTicketCountAndticketPurchased(eventId: string | ObjectId): Promise<{ totalTicket: number, ticketPurchased: number }>
     updateTicketPurchaseCount(eventId: string | ObjectId, newCount: number): Promise<EventEntity | null>
+    findEventsBasedOnQuery(query: string): Promise<EventEntity[] | []>
+    findEventsNearToClient(latitude: number, longitude: number, totalPages: number, range: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
 }

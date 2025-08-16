@@ -1,6 +1,7 @@
 import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
-    injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController
+    injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
+    injectedWalletClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -52,6 +53,21 @@ export class clientRoute{
         })
         this.clientRoute.post('/confirmTicket', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedTicketClientController.handleConfirmTicketAndPayment(req, res)
+        })
+        this.clientRoute.get('/events/search', (req: Request, res: Response) => {
+            injectedEventClientController.handleSearchEvents(req, res)
+        })
+        this.clientRoute.get('/eventsNearToUse/:latitude/:longitude/:pageNo/:range', (req: Request, res: Response) => {
+            injectedEventClientController.handleEventsNearToUse(req, res)
+        })
+        this.clientRoute.get('/bookings/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketClientController.handleFetchTicketAndEventDetails(req, res)
+        })
+        this.clientRoute.patch('/ticketCancel', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketClientController.handleTicketCancel(req, res)
+        })
+        this.clientRoute.get('/wallet/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedWalletClientController.handleFindClientWallet(req, res)
         })
     }
 }

@@ -182,3 +182,55 @@ export const confirmTicketAndPayment = async (ticket: TicketEntity, paymentInten
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while confirming ticket and payment')
     }
 }
+
+export const searchEvents = async (query: string) => {
+    try {
+        const response = await axios.get('/events/search', { params: { query } })
+        console.log(response)
+        return response.data
+    } catch (error) {
+        console.log('error while finding events based on query', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding events based on query')
+    }
+}
+
+export const findEventsNearToUser = async (latitude: number, longitude: number, pageNo: number, range: number) => {
+    try {
+        const response = await axios.get(`/eventsNearToUse/${latitude}/${longitude}/${pageNo}/${range}`)
+        return response.data
+    } catch (error) {
+        console.log('error while finding events near to user', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding events near to user')
+    }
+}
+
+export const findTicketAndEventDetailsClient = async (clientId: string, pageNo: number) => {
+    try {
+        console.log(clientId)
+        const response = await axios.get(`/bookings/${clientId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while fetching ticketAndEventDetails', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching ticketAndEvent details')
+    }
+}
+
+export const ticketCancel = async (ticketId: string) => {
+    try {
+        const response = await axios.patch('/ticketCancel', { ticketId })
+        return response.data
+    } catch (error) {
+        console.log('error while ticket cancellation', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'erro while ticket cancellation')
+    }
+}
+
+export const findWalletOfClient = async (clientId: string, pageNo: number) => {
+    try {
+        const response = await axios.get(`/wallet/${clientId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while finding wallet of client', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding wallet of client')
+    }
+}

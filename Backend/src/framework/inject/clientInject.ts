@@ -33,6 +33,13 @@ import { PaymentRepository } from "../../adapters/repository/payment/paymentRepo
 import { ConfirmTicketAndPaymentUseCase } from "../../useCases/client/ticket/confirmTicketAndPaymentUseCase";
 import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
 import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
+import { searchEventsUseCase } from "../../useCases/client/events/searchEventsUseCase";
+import { FindEventsNearToClientUseCase } from "../../useCases/client/events/findEventsNearToClient";
+import { ShowTicketAndEventClientUseCase } from "../../useCases/client/ticket/showBookingEventsUseCase";
+import { TicketCancelUseCase } from "../../useCases/client/ticket/ticketCancelUseCase";
+import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
+import { ClientWalletController } from "../../adapters/controllers/client/wallet/walletClientController";
+import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
 
 
 const otpService=new OtpService()
@@ -69,7 +76,9 @@ export const injectedProfileClientController =  new ProfileClientController(chan
 const eventRepository=new EventRepository()
 const findAllEventsClientsUseCase = new FindAllEventsUseCase(eventRepository)
 const findEventByIdClientUseCase=new FindEventByIdUseCase(eventRepository)
-export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase)
+const SearchEventsUseCase=new searchEventsUseCase(eventRepository)
+const findEventsNearToClientUseCase=new FindEventsNearToClientUseCase(eventRepository)
+export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase,SearchEventsUseCase,findEventsNearToClientUseCase)
 
 //ticket 
 const ticketRepository=new TicketRepository()
@@ -80,8 +89,13 @@ const walletRepository=new WalletRepository()
 const transactionRepository=new TransactionRepository()
 const createTicketUseCase=new CreateTicketUseCase(eventRepository,ticketRepository,paymentService,qrService,paymentRepository)
 const confirmTicketAndPaymentUseCase=new ConfirmTicketAndPaymentUseCase(paymentService,eventRepository,ticketRepository,walletRepository,transactionRepository)
-export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase)
+const showTicketAndEventUseCase=new ShowTicketAndEventClientUseCase(ticketRepository)
+const ticketCancelUseCase=new TicketCancelUseCase(ticketRepository,walletRepository,transactionRepository)
+export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase,showTicketAndEventUseCase,ticketCancelUseCase)
 
-
+//wallet
+const findWalletClientUseCase = new FindWalletUseCase(walletRepository)
+const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
+export const injectedWalletClientController= new ClientWalletController(findWalletClientUseCase,findTransactionUseCase)
 
 
