@@ -21,7 +21,10 @@ import { UserManagementController } from "../../adapters/controllers/admin/userM
 import { SearchClientsUseCase } from "../../useCases/admin/userManagement/searchClientUseCase";
 import { SearchVendorsUseCase } from "../../useCases/admin/vendorManagement/searchVendorUseCase";
 import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
-
+import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
+import { FindAdminWalletDetailsController } from "../../adapters/controllers/admin/wallet/walletAdminController";
+import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
+import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
 
 const adminRepository=new AdminRepository()
 const walletRepository=new WalletRepository()
@@ -59,3 +62,10 @@ export const injectedBlockUnblockController = new VendorBlockUnblockController(u
 const approveVendorUseCase =  new ApproveVendorUseCase(VendorRepository)
 const rejectVendorUseCase = new RejectVendorUseCase(VendorRepository)
 export const injectedVendorStatusController = new VendorStatusController(approveVendorUseCase,rejectVendorUseCase)
+
+
+//wallet 
+const findWalletAdminUseCase=new FindWalletUseCase(walletRepository)
+const transactionRepository=new TransactionRepository()
+const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
+export const injectedAdminWalletController = new FindAdminWalletDetailsController(findWalletAdminUseCase,findTransactionUseCase)

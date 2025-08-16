@@ -1,5 +1,6 @@
 import { adminLogin,unblockClient,blockClient,fetchClientsAdmin,
-    fetchVendorsAdmin,blockVendor,unblockVendor,fetchPendingVendorsAdmin,approvePendingVendor,rejectPendingVendor,searchClients,searchVendors
+    fetchVendorsAdmin,blockVendor,unblockVendor,fetchPendingVendorsAdmin,approvePendingVendor,rejectPendingVendor,searchClients,searchVendors,
+    findWalletAdmin
  } from "@/services/ApiServiceAdmin";
 import { useMutation,useQuery } from "@tanstack/react-query";
 
@@ -108,3 +109,10 @@ export const useSearchVendors = (search: string) => {
         refetchOnReconnect: false, 
     });
 };
+
+export const useFindAdminWallet = (userId: string, pageNo: number) => {
+    return useQuery({
+        queryKey: ['adminWallet', pageNo],
+        queryFn: () => findWalletAdmin(userId, pageNo)
+    })
+}

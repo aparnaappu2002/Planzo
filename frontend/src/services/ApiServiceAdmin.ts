@@ -153,3 +153,13 @@ export const searchVendors = async (search: string) => {
         throw new Error('Unknown error while searching vendors');
     }
 };
+
+export const findWalletAdmin = async (userId: string, pageNo: number) => {
+    try {
+        const response = await axios.get(`/wallet/${userId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while finding admin wallet details', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding admin wallet')
+    }
+}

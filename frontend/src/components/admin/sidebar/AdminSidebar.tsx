@@ -26,8 +26,9 @@ import {
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "User Management", url: "/admin/users", icon: Users },
-  { title: "Vendor Management", url: "/admin/vendors", icon: Store },
-  { title: "Pending Vendors", url: "/admin/pending", icon: Store },
+  { title: "Vendor Management", url: "/admin/vendors", icon: Users },
+  { title: "Pending Vendors", url: "/admin/pending", icon: Users },
+  { title: "Wallet", url: "/admin/wallet", icon: Store },
 ];
 
 export function AdminSidebar() {

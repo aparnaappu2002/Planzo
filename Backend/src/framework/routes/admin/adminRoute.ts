@@ -1,5 +1,5 @@
 import { Request,Response, Router } from "express";
-import { injectedAdminLoginController,injectedUserManagementController,injectedBlockUnblockController,injectedVendorStatusController,
+import { injectedAdminLoginController,injectedUserManagementController,injectedBlockUnblockController,injectedVendorStatusController,injectedAdminWalletController,
     injectedFindVendorsController
  } from "../../inject/adminInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,checkAdminMiddleWare } from "../../inject/serviceInject";
@@ -47,6 +47,9 @@ export class AdminRoute{
         })
         this.adminRoute.get('/searchVendor',injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,checkAdminMiddleWare,(req:Request,res:Response)=>{
             injectedBlockUnblockController.searchVendor(req,res)
+        })
+        this.adminRoute.get('/wallet/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedAdminWalletController.handleFindWalletDetails(req, res)
         })
     }
 }
