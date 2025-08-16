@@ -131,6 +131,8 @@ export default function UserManagement() {
     currentPage
   ]);
 
+
+
   // Reset page when starting/stopping search
   useEffect(() => {
     if (isSearching) {
@@ -289,7 +291,25 @@ export default function UserManagement() {
 
   // Show loading state only for initial load or when searching changes
   const showLoading = activeQuery.isLoading && (!isSearching || debouncedSearchTerm !== searchTerm.trim());
+  const formatDate = (dateString) => {
+  if (!dateString) return "Never";
   
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    return "N/A";
+  }
+};
   if (showLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -367,9 +387,10 @@ export default function UserManagement() {
             {/* Users List */}
             {clients.length > 0 ? (
               clients.map((user, index) => {
+                
                 const userBlocked = isUserBlocked(user);
                 const displayStatus = getDisplayStatus(user);
-
+                
                 return (
                   <div
                     key={user.clientId || user._id || index}
@@ -405,7 +426,7 @@ export default function UserManagement() {
                         {displayStatus}
                       </Badge>
                       <div className="text-sm text-muted-foreground min-w-[100px]">
-                        {user.lastLogin || "N/A"}
+                        {formatDate(user.lastLogin) || "N/A"}
                       </div>
 
                       <DropdownMenu>

@@ -307,6 +307,7 @@ const ClientProfile: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground">{client?.name || 'Unknown User'}</h2>
+              
               <p className="text-muted-foreground capitalize">{client?.role || 'User'}</p>
             </div>
           </CardHeader>
