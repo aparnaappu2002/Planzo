@@ -52,6 +52,23 @@ export const Navbar: React.FC = () => {
     navigate('/profile')
   }
 
+  // Add navigation handlers for dropdown items
+  const handleBookingsClick = () => {
+    navigate('/bookings')
+  }
+
+  const handleWalletClick = () => {
+    navigate('/wallet')
+  }
+
+  const handleChatClick = () => {
+    navigate('/chat')
+  }
+
+  const handleMyTicketsClick = () => {
+    navigate('/my-tickets') // or whatever your tickets route is
+  }
+
   const handleLogoutClick = () => {
     setIsLogoutDialogOpen(true)
   }
@@ -68,7 +85,7 @@ export const Navbar: React.FC = () => {
       dispatch(removeToken())
       
       
-      localStorage.removeItem('clientID')
+      localStorage.removeItem('clientId')
      
       
       
@@ -130,18 +147,18 @@ export const Navbar: React.FC = () => {
             <span className="text-xl font-bold">Planzo</span>
           </div>
 
-          {/* Desktop Navigation */}
+          
           <div className="hidden md:flex md:items-center md:gap-6">
-            <a href="#" className="text-sm font-medium hover:text-primary">
+            <a href="/" className="text-sm font-medium hover:text-primary">
               Home
             </a>
-            <a href="#" className="text-sm font-medium hover:text-primary">
+            <a href="/events" className="text-sm font-medium hover:text-primary">
               Events
             </a>
-            <a href="#" className="text-sm font-medium hover:text-primary">
+            <a href="/about" className="text-sm font-medium hover:text-primary">
               About
             </a>
-            <a href="#" className="text-sm font-medium hover:text-primary">
+            <a href="/contact" className="text-sm font-medium hover:text-primary">
               Contact
             </a>
 
@@ -149,16 +166,16 @@ export const Navbar: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-1">
                   <Ticket className="w-4 h-4" />
-                  <span>Book Tickets</span>
+                  <span>Details</span>
                   <ChevronDown className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Event Categories</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Concerts</DropdownMenuItem>
-                <DropdownMenuItem>Conferences</DropdownMenuItem>
-                <DropdownMenuItem>Exhibitions</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleBookingsClick}>Bookings</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleWalletClick}>Wallet</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleChatClick}>Chat</DropdownMenuItem>
                 <DropdownMenuItem>Sports</DropdownMenuItem>
                 <DropdownMenuItem>Theater</DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -182,7 +199,7 @@ export const Navbar: React.FC = () => {
                     <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleMyTicketsClick}>
                     <Ticket className="w-4 h-4 mr-2" />
                     My Tickets
                   </DropdownMenuItem>
@@ -213,34 +230,34 @@ export const Navbar: React.FC = () => {
         {isMenuOpen && (
           <div className="fixed inset-0 z-40 flex flex-col w-full h-full pt-16 bg-white md:hidden">
             <div className="flex flex-col p-4 space-y-4 overflow-y-auto">
-              <a href="#" className="py-2 text-lg font-medium border-b">
+              <a href="/" className="py-2 text-lg font-medium border-b">
                 Home
               </a>
-              <a href="#" className="py-2 text-lg font-medium border-b">
+              <a href="/events" className="py-2 text-lg font-medium border-b">
                 Events
               </a>
-              <a href="#" className="py-2 text-lg font-medium border-b">
+              <a href="/about" className="py-2 text-lg font-medium border-b">
                 About
               </a>
-              <a href="#" className="py-2 text-lg font-medium border-b">
+              <a href="/contact" className="py-2 text-lg font-medium border-b">
                 Contact
               </a>
 
               <div className="py-2 text-lg font-medium border-b">
                 <div className="flex items-center justify-between">
-                  <span>Book Tickets</span>
+                  <span>Details</span>
                   <ChevronDown className="w-5 h-5" />
                 </div>
                 <div className="pl-4 mt-2 space-y-2">
-                  <a href="#" className="block py-1">
-                    Concerts
-                  </a>
-                  <a href="#" className="block py-1">
-                    Conferences
-                  </a>
-                  <a href="#" className="block py-1">
-                    Exhibitions
-                  </a>
+                  <button onClick={handleBookingsClick} className="block py-1 text-left w-full">
+                    Bookings
+                  </button>
+                  <button onClick={handleWalletClick} className="block py-1 text-left w-full">
+                    Wallet
+                  </button>
+                  <button onClick={handleChatClick} className="block py-1 text-left w-full">
+                    Chat
+                  </button>
                   <a href="#" className="block py-1">
                     Sports
                   </a>
@@ -257,12 +274,12 @@ export const Navbar: React.FC = () => {
                     <ChevronDown className="w-5 h-5" />
                   </div>
                   <div className="pl-4 mt-2 space-y-2">
-                    <a href="/profile" className="block py-1">
+                    <button onClick={handleProfileClick} className="block py-1 text-left w-full">
                       Profile
-                    </a>
-                    <a href="#" className="block py-1">
+                    </button>
+                    <button onClick={handleMyTicketsClick} className="block py-1 text-left w-full">
                       My Tickets
-                    </a>
+                    </button>
                     <button 
                       onClick={handleLogoutClick} 
                       className="block py-1 text-left"
