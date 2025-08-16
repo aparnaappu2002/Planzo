@@ -23,6 +23,11 @@ import { EventCreationUseCase } from "../../useCases/vendor/event/eventCreationU
 import { EventController } from "../../adapters/controllers/vendor/event/eventController";
 import { FindAllEventsVendorUseCase } from "../../useCases/vendor/event/findAllEventsUseCase";
 import { UpdateEventUseCase } from "../../useCases/vendor/event/updateEventUseCase";
+import { WalletVendorController } from "../../adapters/controllers/vendor/wallet/walletVendorController";
+import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
+import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
+import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
+import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
 
 
 const EmailService  = new emailService()
@@ -63,5 +68,9 @@ const findAllEventsUseCase = new FindAllEventsVendorUseCase(eventRepository)
 const updateEventUseCase = new UpdateEventUseCase(eventRepository)
 export const injectedEventController = new EventController(eventCreationUseCase,findAllEventsUseCase,updateEventUseCase)
 
-
-
+//wallet
+const walletRepository=new WalletRepository()
+const transactionRepository=new TransactionRepository()
+const findWalletUseCase=new FindWalletUseCase(walletRepository)
+const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
+export const injectedWalletVendorController = new WalletVendorController(findWalletUseCase,findTransactionUseCase)

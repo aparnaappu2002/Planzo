@@ -165,3 +165,13 @@ export const updateEvent = async (eventId: string, update: EventUpdateEntity) =>
         throw new Error('Error while updating event')
     }
 }
+
+export const findWalletDetailsVendor = async (userId: string, pageNo: number) => {
+    try {
+        const response = await axios.get(`/wallet/${userId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while finding the wallet details', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding wallet details')
+    }
+}

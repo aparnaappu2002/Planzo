@@ -1,8 +1,8 @@
 import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
     injectedVendorLoginController,
-    injectedForgotPasswordVendorController,injectedProfileVendorController
-    ,injectedEventController
+    injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
+    injectedEventController
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -46,6 +46,9 @@ export class VendorRoute{
         })
         this.vendorRoute.put('/updateEvent',injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware,(req:Request,res:Response)=>{
             injectedEventController.handleUpdateEvent(req,res)
+        })
+        this.vendorRoute.get('/wallet/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedWalletVendorController.handleShowWalletDetaills(req, res)
         })
     }
 }

@@ -3,7 +3,7 @@ import { IfindWalletUseCase } from "../../../../domain/interfaces/repositoryInte
 import { IfindTransactionsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/trasaction/IfindTransactionUseCase";
 import { HttpStatus } from "../../../../domain/entities/httpStatus";
 
-export class FindWalletDetailsVendorController {
+export class WalletVendorController {
     private findWalletDetails: IfindWalletUseCase
     private findTransactions: IfindTransactionsUseCase
     constructor(findWalletDetails: IfindWalletUseCase, findTransactions: IfindTransactionsUseCase) {
