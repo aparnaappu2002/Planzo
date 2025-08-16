@@ -2,7 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   clientSignup,
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
-  clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment
+  clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
+  findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 import { TicketEntity } from "@/types/TicketPaymentType";
@@ -146,5 +147,50 @@ export const useConfirmTicketAndPayment = () => {
       paymentIntent: string;
       vendorId: string;
     }) => confirmTicketAndPayment(ticket, paymentIntent, vendorId),
+  });
+};
+
+export const useFindEventsOnQuery = () => {
+  return useMutation({
+    mutationFn: (query: string) => searchEvents(query),
+  });
+};
+
+export const useFindEventsNearToUser = () => {
+  return useMutation({
+    mutationFn: ({
+      latitude,
+      longitude,
+      pageNo,
+      range,
+    }: {
+      latitude: number;
+      longitude: number;
+      pageNo: number;
+      range: number;
+    }) => findEventsNearToUser(latitude, longitude, pageNo, range),
+  });
+};
+
+export const useFindTicketAndEventsDetails = (
+  clientId: string,
+  pageNo: number
+) => {
+  return useQuery({
+    queryKey: ["ticketAndEventDetaills", pageNo],
+    queryFn: () => findTicketAndEventDetailsClient(clientId, pageNo),
+  });
+};
+
+export const useTicketCancellation = () => {
+  return useMutation({
+    mutationFn: (ticketId: string) => ticketCancel(ticketId),
+  });
+};
+
+export const useFindWalletClient = (clientId: string, pageNo: number) => {
+  return useQuery({
+    queryKey: ["walletClient", pageNo],
+    queryFn: () => findWalletOfClient(clientId, pageNo),
   });
 };

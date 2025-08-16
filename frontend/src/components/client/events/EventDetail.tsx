@@ -31,8 +31,15 @@ const EventDetail = () => {
   const { data: responseData, isLoading, error } = useFindEventById(eventId || "");
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const event = responseData?.event || responseData;
-  console.log(event);
+  // Debug logs
+  console.log("EventId from params:", eventId);
+  console.log("Response data:", responseData);
+  console.log("Is loading:", isLoading);
+  console.log("Error:", error);
+  
+  // Try different ways to access event data
+  const event = responseData?.event || responseData?.data?.event || responseData;
+  console.log("Final event object:", event);
 
   if (isLoading) {
     return (
@@ -45,7 +52,29 @@ const EventDetail = () => {
     );
   }
 
-  if (error || !event) {
+  if (error) {
+    console.log("Error details:", error);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="text-center p-8">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Event</h2>
+            <p className="text-gray-600 mb-4">
+              {error?.message || "An error occurred while loading the event."}
+            </p>
+            <p className="text-sm text-gray-500 mb-4">Event ID: {eventId}</p>
+            <Button onClick={() => navigate(-1)} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!event) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center">
         <Card className="max-w-md mx-auto">
@@ -54,6 +83,12 @@ const EventDetail = () => {
             <h2 className="text-2xl font-bold text-red-600 mb-2">Event Not Found</h2>
             <p className="text-gray-600 mb-4">
               Sorry, we couldn't find the event you're looking for.
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Event ID: {eventId}
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Response Data: {JSON.stringify(responseData)}
             </p>
             <Button onClick={() => navigate(-1)} variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -106,7 +141,7 @@ const EventDetail = () => {
     }
   };
 
-  const availableTickets = event.totalTicket - event.ticketPurchased;
+  const availableTickets = (event.totalTicket || 0) - (event.ticketPurchased || 0);
   const ticketsSoldPercentage = event.totalTicket > 0 ? (event.ticketPurchased / event.totalTicket) * 100 : 0;
 
   return (
@@ -147,12 +182,16 @@ const EventDetail = () => {
         <Card className="shadow-xl border-2 border-yellow-200 bg-white">
           <CardHeader className="pb-4">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 capitalize">
-                {event.category}
-              </Badge>
-              <Badge className={getStatusColor(event.status)} variant="secondary">
-                {event.status}
-              </Badge>
+              {event.category && (
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 capitalize">
+                  {event.category}
+                </Badge>
+              )}
+              {event.status && (
+                <Badge className={getStatusColor(event.status)} variant="secondary">
+                  {event.status}
+                </Badge>
+              )}
               {event.isActive && (
                 <Badge className="bg-green-100 text-green-800" variant="secondary">
                   <CheckCircle className="w-3 h-3 mr-1" />
@@ -161,10 +200,10 @@ const EventDetail = () => {
               )}
             </div>
             <CardTitle className="text-3xl lg:text-4xl font-bold text-gray-900">
-              {event.title}
+              {event.title || 'Event Title'}
             </CardTitle>
             <p className="text-lg text-gray-600 mt-2">
-              {event.description}
+              {event.description || 'No description available'}
             </p>
           </CardHeader>
           
@@ -195,7 +234,7 @@ const EventDetail = () => {
                 <MapPin className="w-5 h-5 text-green-600" />
                 <div>
                   <p className="text-sm font-medium">Venue</p>
-                  <p className="text-sm text-gray-600">{event.venueName}</p>
+                  <p className="text-sm text-gray-600">{event.venueName || 'TBA'}</p>
                 </div>
               </div>
               
@@ -231,10 +270,12 @@ const EventDetail = () => {
                     <span className="text-sm text-gray-600">End Time:</span>
                     <span className="text-sm font-medium">{formatDateTime(event.endTime)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Created:</span>
-                    <span className="text-sm font-medium">{formatDateTime(event.createdAt)}</span>
-                  </div>
+                  {event.createdAt && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Created:</span>
+                      <span className="text-sm font-medium">{formatDateTime(event.createdAt)}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -249,20 +290,22 @@ const EventDetail = () => {
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Total Tickets:</span>
-                    <span className="text-sm font-medium">{event.totalTicket}</span>
+                    <span className="text-sm font-medium">{event.totalTicket || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Sold:</span>
-                    <span className="text-sm font-medium text-green-600">{event.ticketPurchased}</span>
+                    <span className="text-sm font-medium text-green-600">{event.ticketPurchased || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Available:</span>
                     <span className="text-sm font-medium text-blue-600">{availableTickets}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Max per user:</span>
-                    <span className="text-sm font-medium">{event.maxTicketsPerUser}</span>
-                  </div>
+                  {event.maxTicketsPerUser && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Max per user:</span>
+                      <span className="text-sm font-medium">{event.maxTicketsPerUser}</span>
+                    </div>
+                  )}
                   {/* Progress Bar */}
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -294,11 +337,11 @@ const EventDetail = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Venue Name</p>
-                    <p className="text-gray-900">{event.venueName}</p>
+                    <p className="text-gray-900">{event.venueName || 'TBA'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Address</p>
-                    <p className="text-gray-900">{event.address}</p>
+                    <p className="text-gray-900">{event.address || 'TBA'}</p>
                   </div>
                   {event.location?.coordinates && (
                     <div className="md:col-span-2">
@@ -325,11 +368,11 @@ const EventDetail = () => {
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{event.attendeesCount}</p>
+                    <p className="text-2xl font-bold text-blue-600">{event.attendeesCount || 0}</p>
                     <p className="text-sm text-gray-600">Current Attendees</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{event.ticketPurchased}</p>
+                    <p className="text-2xl font-bold text-green-600">{event.ticketPurchased || 0}</p>
                     <p className="text-sm text-gray-600">Tickets Purchased</p>
                   </div>
                   <div className="text-center">
@@ -360,7 +403,7 @@ const EventDetail = () => {
 
             {/* Event ID for Reference */}
             <div className="text-center text-xs text-gray-400 pt-4">
-              Event ID: {event._id}
+              Event ID: {event._id || event.id || eventId}
             </div>
           </CardContent>
         </Card>

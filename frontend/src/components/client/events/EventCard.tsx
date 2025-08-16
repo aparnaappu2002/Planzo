@@ -1,174 +1,170 @@
-import { Calendar, Clock, MapPin, Users, Star,IndianRupee } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+// Updated EventCard component with page navigation
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { toast } from 'react-toastify';
+import { Calendar, MapPin, Users, Clock, DollarSign } from 'lucide-react';
+
 interface EventCardProps {
-  event: any; // Changed from EventType to any since the structure doesn't match
-  featured?: boolean;
+  event: any;
+  isSearchResult?: boolean; 
 }
 
-export const EventCard = ({ event, featured = false }: EventCardProps) => {
-  
+export const EventCard = ({ event, isSearchResult = false }: EventCardProps) => {
   const navigate = useNavigate();
-  const [isNavigating, setIsNavigating] = useState(false);
+  
+  
+  const isLimitedData = isSearchResult && (!event.date || !event.address || !event.category);
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return 'Date TBA';
+    if (!dateString) return 'Date TBD';
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
+      year: 'numeric'
     });
   };
 
   const formatTime = (timeString: string) => {
-    if (!timeString) return 'Time TBA';
-    // Handle different time formats
-    if (timeString.includes('T')) {
-      return new Date(timeString).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
-    }
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+    if (!timeString) return 'Time TBD';
+    return new Date(timeString).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
+      hour12: true
     });
   };
 
-
-
-  const getAttendancePercentage = () => {
-    if (!event.maxAttendees || !event.attendees) return 0;
-    const currentAttendees = Array.isArray(event.attendees) ? event.attendees.length : event.attendees;
-    return Math.round((currentAttendees / event.maxAttendees) * 100);
-  };
-
-  const handleViewDetails = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleBookNowClick = () => {
     
-    try {
-      setIsNavigating(true);
-      const eventId = event._id || event.id;
-      
-      if (!eventId) {
-        console.error('Event ID not found in event object:', event);
-        return;
-      }
-      
-      navigate(`/event/${eventId.trim()}`);
-      
-    } catch (error) {
-      console.error('Error navigating to event details:', error);
-      toast.error('An error occurred while trying to view event details. Please try again.');
-    } finally {
-      setTimeout(() => setIsNavigating(false), 500);
-    }
+    navigate(`/event/${event._id || event.id}`);
   };
 
-
-  // Extract location from nested object or use address
-  const getLocation = () => {
-    if (event.location?.address) return event.location.address;
-    if (event.address) return event.address;
-    return 'Location TBA';
-  };
-
-  return (
-    <Card 
-      className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-event ${
-        featured 
-          ? 'bg-event-featured border-accent shadow-featured' 
-          : 'bg-event-card hover:bg-event-hover'
-      }`}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary" className="text-xs font-medium capitalize">
-                {event.category || 'General'}
-              </Badge>
-              {featured && (
-                <Star className="w-4 h-4 fill-accent text-accent-foreground" />
-              )}
-            </div>
-            <h3 className="font-bold text-lg leading-tight text-foreground group-hover:text-accent-foreground transition-colors">
-              {event.title || event.name || 'Event Title'}
-            </h3>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        <p className="text-muted-foreground text-sm line-clamp-2">
-          {event.description || 'No description available'}
-        </p>
-
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>{formatDate(event.date || event.startDate)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            <span>{formatTime(event.time || event.startTime)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground col-span-2">
-            <MapPin className="w-4 h-4" />
-            <span className="truncate">{getLocation()}</span>
-          </div>
-        </div>
-
-        {event.maxAttendees && event.attendees && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span>
-              {Array.isArray(event.attendees) ? event.attendees.length : event.attendees}
-              /{event.maxAttendees} attending
-            </span>
-            <div className="flex-1 bg-muted rounded-full h-2 ml-2">
-              <div 
-                className="bg-accent h-2 rounded-full transition-all duration-300"
-                style={{ width: `${getAttendancePercentage()}%` }}
+  if (isLimitedData) {
+    // Render simplified card for search results with limited data
+    return (
+      <>
+        <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-yellow-primary/30 bg-white">
+          <div className="aspect-video relative overflow-hidden rounded-t-lg">
+            {event.posterImage && event.posterImage[0] ? (
+              <img 
+                src={event.posterImage[0]} 
+                alt={event.title || 'Event'} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-1">
-            {event.pricePerTicket ? (
-              <>
-                <IndianRupee className="w-4 h-4 text-accent" />
-                <span className="font-semibold text-foreground">
-                  ₹{event.pricePerTicket}
-                </span>
-              </>
             ) : (
-              <span className="font-semibold text-accent">Free</span>
+              <div className="w-full h-full bg-gradient-to-br from-yellow-100 to-yellow-200 flex items-center justify-center">
+                <Calendar className="w-12 h-12 text-yellow-600" />
+              </div>
             )}
           </div>
-         <Button 
-            size="sm" 
-            className="bg-gradient-primary hover:opacity-90 transition-opacity disabled:opacity-50"
-            onClick={handleViewDetails}
-            disabled={isNavigating}
+          
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 group-hover:text-yellow-primary transition-colors">
+                {event.title || 'Event Title'}
+              </h3>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-700 text-center">
+                Click to view full event details
+              </p>
+            </div>
+
+            <Button 
+              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+              onClick={handleBookNowClick}
+            >
+              View Details
+            </Button>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
+
+  // Render full card for complete event data
+  return (
+    <>
+      <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-yellow-primary/30 bg-white">
+        <div className="aspect-video relative overflow-hidden rounded-t-lg">
+          {event.posterImage && event.posterImage[0] ? (
+            <img 
+              src={event.posterImage[0]} 
+              alt={event.title} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-yellow-100 to-yellow-200 flex items-center justify-center">
+              <Calendar className="w-12 h-12 text-yellow-600" />
+            </div>
+          )}
+          
+          {event.category && (
+            <Badge className="absolute top-3 left-3 bg-white/90 text-gray-800 hover:bg-white">
+              {event.category}
+            </Badge>
+          )}
+
+          {event.pricePerTicket !== undefined && (
+            <Badge className="absolute top-3 right-3 bg-green-600 text-white">
+              {event.pricePerTicket === 0 ? 'Free' : `₹${event.pricePerTicket}`}
+            </Badge>
+          )}
+        </div>
+        
+        <CardContent className="p-4 space-y-3">
+          <div>
+            <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 group-hover:text-yellow-primary transition-colors">
+              {event.title}
+            </h3>
+            {event.description && (
+              <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                {event.description}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2 text-sm">
+            {event.date && event.date[0] && (
+              <div className="flex items-center gap-2 text-gray-600">
+                <Calendar className="w-4 h-4 text-yellow-primary" />
+                <span>{formatDate(event.date[0])}</span>
+              </div>
+            )}
+
+            {event.startTime && (
+              <div className="flex items-center gap-2 text-gray-600">
+                <Clock className="w-4 h-4 text-yellow-primary" />
+                <span>{formatTime(event.startTime)}</span>
+              </div>
+            )}
+
+            {event.address && (
+              <div className="flex items-center gap-2 text-gray-600">
+                <MapPin className="w-4 h-4 text-yellow-primary" />
+                <span className="line-clamp-1">{event.address}</span>
+              </div>
+            )}
+
+            {event.totalTicket !== undefined && event.ticketPurchased !== undefined && (
+              <div className="flex items-center gap-2 text-gray-600">
+                <Users className="w-4 h-4 text-yellow-primary" />
+                <span>{event.totalTicket - event.ticketPurchased} spots left</span>
+              </div>
+            )}
+          </div>
+
+          <Button 
+            className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+            onClick={handleBookNowClick}
           >
-            {isNavigating ? 'Loading...' : 'View Details'}
+            {event.pricePerTicket === 0 ? 'Register Free' : 'Book Now'}
           </Button>
-
-        </div>
-
-        <div className="text-xs text-muted-foreground pt-1 border-t border-border">
-          Organized by {event.organizer || event.organizerName || 'Unknown Organizer'}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 };
