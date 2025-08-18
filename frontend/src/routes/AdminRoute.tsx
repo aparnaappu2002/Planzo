@@ -7,6 +7,7 @@ import VendorManagement from "@/components/admin/vendormanagement/VendorManageme
 import PendingVendors from "@/components/admin/pendingVendors/PendingVendors";
 import ProtectedRouteAdmin from "@/protectRoute/protectRouteAdmin";
 import AdminWallet from "@/components/admin/wallet/AdminWallet";
+import CategoryManagement from "@/components/admin/category/CategoryManagement";
 const AdminRoute=()=>{
     return(
         <Routes>
@@ -17,6 +18,7 @@ const AdminRoute=()=>{
             <Route path="vendors" element={<ProtectedRouteAdmin>   <VendorManagement/>  </ProtectedRouteAdmin> } ></Route>
             <Route path="pending" element={ <ProtectedRouteAdmin>  <PendingVendors/> </ProtectedRouteAdmin> } ></Route>
             <Route path="wallet" element={ <ProtectedRouteAdmin>  <AdminWallet/> </ProtectedRouteAdmin> } ></Route>
+            <Route path="category" element={ <ProtectedRouteAdmin>  <CategoryManagement/> </ProtectedRouteAdmin> } ></Route>
             </Route>
         </Routes>
     )

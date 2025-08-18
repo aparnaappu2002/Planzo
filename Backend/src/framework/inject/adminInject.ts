@@ -25,6 +25,14 @@ import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
 import { FindAdminWalletDetailsController } from "../../adapters/controllers/admin/wallet/walletAdminController";
 import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
 import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
+import { CategoryController } from "../../adapters/controllers/admin/categoryManagement/categoryController";
+import { CreateCategoryUseCase } from "../../useCases/admin/categoryManagement/createCategoryUseCase";
+import { UpdateCategoryUseCase } from "../../useCases/admin/categoryManagement/updateCategoryUseCase";
+import { FindCategoryUseCase } from "../../useCases/admin/categoryManagement/findCategoryUseCase";
+import { ChangeCategoryStatusUseCase } from "../../useCases/admin/categoryManagement/changeCategoryStatusUseCase";
+import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
+
+
 
 const adminRepository=new AdminRepository()
 const walletRepository=new WalletRepository()
@@ -69,3 +77,11 @@ const findWalletAdminUseCase=new FindWalletUseCase(walletRepository)
 const transactionRepository=new TransactionRepository()
 const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
 export const injectedAdminWalletController = new FindAdminWalletDetailsController(findWalletAdminUseCase,findTransactionUseCase)
+
+//category
+const categoryRepository=new CategoryDatabaseRepository()
+const createCategoryUseCase=new CreateCategoryUseCase(categoryRepository)
+const findCategoryUseCase = new FindCategoryUseCase(categoryRepository)
+const updateCategoryUseCase = new UpdateCategoryUseCase(categoryRepository)
+const changeCategoryStatusUseCase=new ChangeCategoryStatusUseCase(categoryRepository)
+export const injectedCategoryController=new CategoryController(createCategoryUseCase,findCategoryUseCase,updateCategoryUseCase,changeCategoryStatusUseCase)

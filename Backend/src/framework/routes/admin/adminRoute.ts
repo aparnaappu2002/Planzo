@@ -1,6 +1,6 @@
 import { Request,Response, Router } from "express";
 import { injectedAdminLoginController,injectedUserManagementController,injectedBlockUnblockController,injectedVendorStatusController,injectedAdminWalletController,
-    injectedFindVendorsController
+    injectedFindVendorsController,injectedCategoryController
  } from "../../inject/adminInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,checkAdminMiddleWare } from "../../inject/serviceInject";
 
@@ -50,6 +50,18 @@ export class AdminRoute{
         })
         this.adminRoute.get('/wallet/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
             injectedAdminWalletController.handleFindWalletDetails(req, res)
+        })
+        this.adminRoute.get('/categories', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedCategoryController.handleFindCategory(req, res)
+        })
+        this.adminRoute.post('/createCategory', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedCategoryController.handleCreatecategory(req, res)
+        })
+        this.adminRoute.patch('/changeStatusCategory', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedCategoryController.handleChangeCategoryStatus(req, res)
+        })
+        this.adminRoute.patch('/updateCategory', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedCategoryController.handleUpdateCategory(req, res)
         })
     }
 }

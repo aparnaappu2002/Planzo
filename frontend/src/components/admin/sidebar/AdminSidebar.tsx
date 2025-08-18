@@ -29,6 +29,7 @@ const navigationItems = [
   { title: "Vendor Management", url: "/admin/vendors", icon: Users },
   { title: "Pending Vendors", url: "/admin/pending", icon: Users },
   { title: "Wallet", url: "/admin/wallet", icon: Store },
+  { title: "Category", url: "/admin/category", icon: Store },
 ];
 
 export function AdminSidebar() {

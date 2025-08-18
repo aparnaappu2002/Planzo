@@ -1,8 +1,9 @@
 import { adminLogin,unblockClient,blockClient,fetchClientsAdmin,
     fetchVendorsAdmin,blockVendor,unblockVendor,fetchPendingVendorsAdmin,approvePendingVendor,rejectPendingVendor,searchClients,searchVendors,
-    findWalletAdmin
+    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory
  } from "@/services/ApiServiceAdmin";
 import { useMutation,useQuery } from "@tanstack/react-query";
+import { CategoryUpdate } from "@/types/CategoryUpdate";
 
 interface Login{
     email:string,
@@ -114,5 +115,39 @@ export const useFindAdminWallet = (userId: string, pageNo: number) => {
     return useQuery({
         queryKey: ['adminWallet', pageNo],
         queryFn: () => findWalletAdmin(userId, pageNo)
+    })
+}
+
+export const useFindAllCategories = (currentPage: number) => {
+    return useQuery({
+        queryKey: ['categories', currentPage],
+        queryFn: () => {
+            return findAllCategory(currentPage)
+
+        },
+        refetchOnWindowFocus: false,
+        staleTime: 5 * 60 * 1000
+    })
+}
+
+interface Category { title: string; image: File | null; }
+
+
+export const useCreateCategory = () => {
+    return useMutation({
+        mutationFn: ({ title, image }: Category) => createCategory({ title, image }),
+
+    })
+}
+
+export const useChangeStatusCategory = () => {
+    return useMutation({
+        mutationFn: (categoryId: string) => changeStatusCategory(categoryId)
+    })
+}
+
+export const useUpdateCategory = () => {
+    return useMutation({
+        mutationFn: ({ categoryId, updates }: { categoryId: string, updates: CategoryUpdate }) => updateCategory(categoryId, updates)
     })
 }

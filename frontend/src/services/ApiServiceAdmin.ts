@@ -1,5 +1,6 @@
 import { AxiosResponse,isAxiosError } from "axios";
 import axios from '../axios/adminAxios'
+import { CategoryUpdate } from "@/types/CategoryUpdate";
 
 
 interface Login{
@@ -161,5 +162,54 @@ export const findWalletAdmin = async (userId: string, pageNo: number) => {
     } catch (error) {
         console.log('error while finding admin wallet details', error)
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding admin wallet')
+    }
+}
+
+export const findAllCategory = async (currentPage: number) => {
+    try {
+        const response = await axios.get('/categories', { params: { pageNo: currentPage } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching all categories', error)
+        if (error instanceof Error)
+            throw new Error(error.message)
+    }
+}
+
+interface Category { title: string; image: File | null; }
+
+export const createCategory = async ({ title, image }: Category) => {
+    try {
+        const response = await axios.post('/createCategory', { title, image })
+        return response.data
+    } catch (error) {
+        console.log('error while creating category', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data?.error)
+        }
+        throw new Error('error while creating category')
+    }
+}
+
+export const changeStatusCategory = async (categoryId: string) => {
+    try {
+        const response = await axios.patch('/changeStatusCategory', { categoryId })
+        return response.data
+    } catch (error) {
+        console.log('error while changing the status of the category', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data.error)
+        }
+        throw new Error('error while changing the status of the category')
+    }
+}
+export const updateCategory = async (categoryId: string, updates: CategoryUpdate) => {
+    try {
+        const response = await axios.patch('/updateCategory', { categoryId, updates })
+        return response.data
+    } catch (error) {
+        console.log('error while changning titlle and image of category', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while changning titlle and image of category')
     }
 }
