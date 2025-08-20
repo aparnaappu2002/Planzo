@@ -67,4 +67,23 @@ export class EventRepository implements IeventRepository{
         const totalPages = Math.ceil(await eventModal.countDocuments({ locationQuery, isActive: true }) / limit)
         return { events, totalPages }
     }
+    async findEventsBaseOnCategory(category: string, pageNo: number, sortBy: string): Promise<{ events: EventEntity[] | []; totalPages: number; }> {
+        const sortOptions: Record<string, any> = {
+            "a-z": { title: 1 },
+            "z-a": { title: -1 },
+            "price-low-high": { pricePerTicket: 1 },
+            "price-high-low": { pricePerTicket: -1 },
+            "newest": { createdAt: -1 },
+            "oldest": { createdAt: 1 }
+        }
+        const sort = sortOptions[sortBy] || { createdAt: -1 }
+        const limit = 5
+        const page = Math.max(pageNo, 1)
+        const skip = (page - 1) * limit
+        const categoryQuery = { category: { $regex: new RegExp(category, 'i') } }
+        const events = await eventModal.find(categoryQuery).select('-__v').skip(skip).limit(limit).sort(sort)
+        const totalPages = Math.ceil(await eventModal.countDocuments(categoryQuery) / limit)
+        return { events, totalPages }
+
+    }
 }
