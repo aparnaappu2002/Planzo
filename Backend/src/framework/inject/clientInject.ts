@@ -40,6 +40,10 @@ import { TicketCancelUseCase } from "../../useCases/client/ticket/ticketCancelUs
 import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
 import { ClientWalletController } from "../../adapters/controllers/client/wallet/walletClientController";
 import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
+import { FindEventsBasedOnCategoryUseCase } from "../../useCases/client/events/findEventsBasedOnCategory";
+import { FindCategoryClientUseCase } from "../../useCases/client/category/findCategoryUseCase";
+import { CategoryClientController } from "../../adapters/controllers/client/category/categoryClientController";
+import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
 
 
 const otpService=new OtpService()
@@ -78,7 +82,8 @@ const findAllEventsClientsUseCase = new FindAllEventsUseCase(eventRepository)
 const findEventByIdClientUseCase=new FindEventByIdUseCase(eventRepository)
 const SearchEventsUseCase=new searchEventsUseCase(eventRepository)
 const findEventsNearToClientUseCase=new FindEventsNearToClientUseCase(eventRepository)
-export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase,SearchEventsUseCase,findEventsNearToClientUseCase)
+const findEventsBasedOnCategoryUseCase=new FindEventsBasedOnCategoryUseCase(eventRepository)
+export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase,SearchEventsUseCase,findEventsNearToClientUseCase,findEventsBasedOnCategoryUseCase)
 
 //ticket 
 const ticketRepository=new TicketRepository()
@@ -98,4 +103,7 @@ const findWalletClientUseCase = new FindWalletUseCase(walletRepository)
 const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
 export const injectedWalletClientController= new ClientWalletController(findWalletClientUseCase,findTransactionUseCase)
 
-
+//category
+const categoryRepository=new CategoryDatabaseRepository()
+const findCategoryClientUSeCase=new FindCategoryClientUseCase(categoryRepository)
+export const injectedCategoryClientController = new CategoryClientController(findCategoryClientUSeCase) 

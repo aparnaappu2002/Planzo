@@ -1,33 +1,56 @@
-import { Search, Filter, Calendar, MapPin, Navigation } from 'lucide-react';
+import { Search, Filter, Calendar, MapPin, Navigation, ChevronDown, SortAsc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import useClientLocation from '@/hooks/locationCutsomHooks';
-import { useFindEventsOnQuery, useFindEventsNearToUser } from '@/hooks/clientCustomHooks';
+import { useFindEventsOnQuery, useFindEventsNearToUser, useFindEventsBasedOnCategory } from '@/hooks/clientCustomHooks';
 
 interface EventsHeroProps {
   onSearchResults?: (results: any) => void;
   onSearchStart?: () => void;
   onSearchError?: (error: any) => void;
+  categories?: string[];
 }
 
-export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: EventsHeroProps) => {
+const sortOptions = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'a-z', label: 'Title A-Z' },
+  { value: 'z-a', label: 'Title Z-A' },
+  { value: 'price-low-high', label: 'Price: Low to High' },
+  { value: 'price-high-low', label: 'Price: High to Low' }
+];
+
+// Default hardcoded categories
+const DEFAULT_CATEGORIES = [
+  'All Categories',
+  'Music',
+  'Entertainment', 
+  'Workshop',
+  'Seminar',
+  'Conference',
+  
+];
+
+const QUICK_CATEGORIES = ['Music', 'Entertainment', 'Workshop', 'Seminar', 'Technology'];
+
+export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, categories }: EventsHeroProps) => {
   const { location, error: locationError } = useClientLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'query' | 'location'>('query');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedSort, setSelectedSort] = useState('newest');
+  const [searchType, setSearchType] = useState<'query' | 'location' | 'category'>('query');
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchRange, setSearchRange] = useState(25000); 
+  const [searchRange, setSearchRange] = useState(25000);
+  const [showFilters, setShowFilters] = useState(false);
   
   const findEvents = useFindEventsOnQuery();
   const findEventsNearby = useFindEventsNearToUser();
 
-  
+  // Use provided categories or fall back to defaults
+  const availableCategories = categories || DEFAULT_CATEGORIES;
+  const quickCategories = QUICK_CATEGORIES;
 
-  
-
-  
-
-  // Add useEffect to track location changes
   useEffect(() => {
     console.log('Location changed:', { location, locationError });
   }, [location, locationError]);
@@ -67,10 +90,7 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
     }
     
     try {
-      
-      
       if (!findEventsNearby.mutateAsync) {
-        
         const error = new Error('Location search function not available');
         onSearchError?.(error);
         return;
@@ -86,7 +106,6 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
       console.log('Location-based search result:', result);
       
       if (result?.events) {
-        
         onSearchResults?.({
           ...result,
           query: `Events within ${searchRange / 1000}km`,
@@ -113,8 +132,6 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
   };
 
   const handleQuerySearch = async () => {
-  
-    
     const trimmedQuery = searchQuery.trim();
     
     if (!trimmedQuery) {
@@ -170,45 +187,55 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
     }
   };
 
-  const handleSearch = async () => {
-    console.log('handleSearch called');
+  // Fixed: Proper category search implementation
+  const handleCategorySearch = async (category: string = selectedCategory, sortBy: string = selectedSort) => {
+    console.log('handleCategorySearch called with category:', category, 'sortBy:', sortBy);
     
-    // If there's a search query, use query-based search
-    if (searchQuery.trim()) {
-      await handleQuerySearch();
-    } else if (location) {
-      // If no query but location available, use location-based search
-      await handleLocationBasedSearch();
-    } else {
-      console.log('Search aborted: no query and no location');
-      const error = new Error('Please enter a search query or enable location access');
-      onSearchError?.(error);
-    }
-  };
-
-  const handleCategorySearch = async (category: string) => {
-    console.log('handleCategorySearch called with category:', category);
-    
-    setSearchQuery(category);
-    setSearchType('query');
-    
-    if (!findEvents.mutateAsync) {
-      console.error('findEvents.mutateAsync is not available for category search');
+    if (category === 'All Categories') {
+      // If "All Categories" is selected, fall back to regular search or location search
+      if (searchQuery.trim()) {
+        await handleQuerySearch();
+      } else if (location) {
+        await handleLocationBasedSearch();
+      } else {
+        const error = new Error('Please select a specific category or enter a search query');
+        onSearchError?.(error);
+      }
       return;
     }
     
-    try {
-      const result = await findEvents.mutateAsync(category);
-      
-      if (result?.events) {
-        onSearchResults?.({
-          ...result,
-          query: category,
-          searchType: 'query'
-        });
-      }
-    } catch (error) {
-      console.error('Category search error:', error);
+    setSearchType('category');
+    
+    if (onSearchStart) {
+      console.log('Calling onSearchStart callback for category search');
+      onSearchStart();
+    }
+    
+    // Instead of trying to create a new hook instance, just send the search parameters
+    // to the parent component which will handle the actual API call
+    onSearchResults?.({
+      events: [], // Empty initially, will be populated by parent component
+      totalPages: 1,
+      query: `${category} events (${sortOptions.find(opt => opt.value === sortBy)?.label})`,
+      searchType: 'category',
+      category: category,
+      sortBy: sortBy
+    });
+  };
+
+  const handleSearch = async () => {
+    console.log('handleSearch called');
+    
+    // Priority: 1. Search query, 2. Category filter, 3. Location
+    if (searchQuery.trim()) {
+      await handleQuerySearch();
+    } else if (selectedCategory !== 'All Categories') {
+      await handleCategorySearch();
+    } else if (location) {
+      await handleLocationBasedSearch();
+    } else {
+      console.log('Search aborted: no query, category, or location');
+      const error = new Error('Please enter a search query, select a category, or enable location access');
       onSearchError?.(error);
     }
   };
@@ -226,32 +253,42 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
     setSearchQuery(e.target.value);
   };
 
-  const handleButtonClick = (category: string) => {
-    console.log('Category button clicked:', category);
-    handleCategorySearch(category);
+  const handleCategoryChange = (category: string) => {
+    console.log('Category changed:', category);
+    setSelectedCategory(category);
+  };
+
+  const handleSortChange = (sortBy: string) => {
+    console.log('Sort changed:', sortBy);
+    setSelectedSort(sortBy);
+  };
+
+  const handleApplyFilters = () => {
+    console.log('Applying filters:', { selectedCategory, selectedSort });
+    if (selectedCategory !== 'All Categories') {
+      handleCategorySearch(selectedCategory, selectedSort);
+    } else {
+      handleSearch();
+    }
+    setShowFilters(false);
   };
 
   const handleNearbyEventsClick = () => {
     console.log('Nearby events button clicked');
-    setSearchQuery(''); // Clear search query for location-based search
+    setSearchQuery('');
+    setSelectedCategory('All Categories');
     handleLocationBasedSearch();
+  };
+
+  const handleQuickCategoryClick = (category: string) => {
+    console.log('Quick category clicked:', category);
+    setSelectedCategory(category);
+    setSearchQuery(''); // Clear search query when selecting category
+    handleCategorySearch(category, selectedSort);
   };
 
   const isSearchDisabled = (!location && !locationError) || findEvents.isPending || findEventsNearby.isPending;
   const isAnySearchPending = findEvents.isPending || findEventsNearby.isPending;
-  const currentError = findEvents.isError ? findEvents.error : findEventsNearby.isError ? findEventsNearby.error : null;
-  const isAnySuccess = findEvents.isSuccess || findEventsNearby.isSuccess;
-  const currentData = searchType === 'query' ? findEvents.data : findEventsNearby.data;
-
-  // Add early return if hooks are not working
-  if (typeof useClientLocation !== 'function' || typeof useFindEventsOnQuery !== 'function' || typeof useFindEventsNearToUser !== 'function') {
-    console.error('Custom hooks are not properly imported or defined');
-    return (
-      <div className="bg-red-50 p-4 text-red-600">
-        Error: Custom hooks are not working properly. Check imports and hook definitions.
-      </div>
-    );
-  }
 
   return (
     <section className="relative bg-gradient-to-br from-yellow-400 min-h-[400px] flex items-center justify-center overflow-hidden">
@@ -283,7 +320,7 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
                   value={searchQuery}
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
-                  placeholder={location ? "Search events or leave empty to find nearby..." : "Search events, venues, or organizers..."}
+                  placeholder={location ? "Search events or use filters below..." : "Search events, venues, or organizers..."}
                   className="pl-10 h-12 text-base bg-white border-yellow-primary/30 focus:border-yellow-primary focus:ring-yellow-primary"
                   disabled={isAnySearchPending}
                 />
@@ -303,14 +340,17 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
                   </Button>
                 )}
                 
-                <Button variant="outline" size="lg" className="h-12 px-6 bg-white hover:bg-yellow-light/10 border-yellow-primary/30 text-yellow-primary hover:text-accent-foreground">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-12 px-6 bg-white hover:bg-yellow-light/10 border-yellow-primary/30 text-yellow-primary hover:text-accent-foreground"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
                   <Filter className="w-4 h-4 mr-2" />
                   Filters
+                  <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                 </Button>
-                <Button variant="outline" size="lg" className="h-12 px-6 bg-white hover:bg-yellow-light/10 border-yellow-primary/30 text-yellow-primary hover:text-accent-foreground">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Dates
-                </Button>
+
                 <Button 
                   size="lg" 
                   className="h-12 px-8 bg-gradient-yellow-warm hover:shadow-yellow-warm text-gray-800 shadow-lg transition-all duration-300 font-semibold"
@@ -322,24 +362,86 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
               </div>
             </div>
 
-            {/* Status messages */}
-            {currentError && (
-              <div className="mt-4 text-sm text-red-600 bg-red-50 rounded-lg p-3 border border-red-200">
-                <span>Failed to search events. Please try again.</span>
-                <div className="text-xs mt-1 opacity-75">
-                  Error: {String(currentError)}
+            {/* Filters Panel */}
+            {showFilters && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
+                        className="w-full h-10 px-3 bg-white border border-gray-300 rounded-md focus:border-yellow-primary focus:ring-1 focus:ring-yellow-primary appearance-none cursor-pointer"
+                      >
+                        {availableCategories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Sort Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sort By
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedSort}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                        className="w-full h-10 px-3 bg-white border border-gray-300 rounded-md focus:border-yellow-primary focus:ring-1 focus:ring-yellow-primary appearance-none cursor-pointer"
+                      >
+                        {sortOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedCategory('All Categories');
+                      setSelectedSort('newest');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button
+                    onClick={handleApplyFilters}
+                    disabled={isAnySearchPending}
+                    className="bg-yellow-primary hover:bg-yellow-primary/90 text-gray-800"
+                  >
+                    <SortAsc className="w-4 h-4 mr-2" />
+                    Apply Filters
+                  </Button>
                 </div>
               </div>
             )}
 
-            {isAnySuccess && currentData?.events && (
-              <div className="mt-4 text-sm text-green-600 bg-green-50 rounded-lg p-3 border border-green-200">
-                <span>
-                  Found {currentData.events.length} events
-                  {searchType === 'query' && searchQuery ? ` for "${searchQuery}"` : ''}
-                  {searchType === 'location' ? ` within ${searchRange / 1000}km of your location` : ''}
-                  {currentData.totalPages && currentData.totalPages > 1 ? ` (Page ${currentPage} of ${currentData.totalPages})` : ''}.
-                </span>
+            {/* Status indicator */}
+            {(selectedCategory !== 'All Categories' || selectedSort !== 'newest') && (
+              <div className="mt-4 text-sm text-blue-600 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  <span>
+                    Filters active: 
+                    {selectedCategory !== 'All Categories' && ` Category: ${selectedCategory}`}
+                    {selectedSort !== 'newest' && ` • Sort: ${sortOptions.find(opt => opt.value === selectedSort)?.label}`}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -347,7 +449,7 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
               <div className="mt-4 text-sm text-gray-600 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-gray-500" />
-                  <span>Location access unavailable. Use search to find events or enable location access for nearby events.</span>
+                  <span>Location access unavailable. Use search or filters to find events.</span>
                 </div>
               </div>
             )}
@@ -356,21 +458,21 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError }: Ev
               <div className="mt-4 text-sm text-gray-600">
                 <div className="flex items-center justify-center gap-2">
                   <MapPin className="w-4 h-4 text-green-600" />
-                  <span>Location available - search by keyword or click "Nearby" for local events within {searchRange / 1000}km</span>
+                  <span>Location available - search by keyword, filter by category, or click "Nearby" for local events</span>
                 </div>
               </div>
             )}
           </div>
 
           <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <span className="text-gray-700 font-medium">Popular {location ? "Categories" : ""}:</span>
-            {['Music', 'Technology', 'Food & Drink', 'Art', 'Business'].map((category) => (
+            <span className="text-gray-700 font-medium">Quick Categories:</span>
+            {quickCategories.map((category) => (
               <Button 
                 key={category}
                 variant="ghost" 
                 size="sm"
                 className="h-8 px-3 text-gray-700 hover:bg-yellow-soft/50 hover:text-gray-800 border border-yellow-primary/30 hover:border-yellow-primary/50 transition-all duration-200"
-                onClick={() => handleButtonClick(category)}
+                onClick={() => handleQuickCategoryClick(category)}
                 disabled={isAnySearchPending}
               >
                 {category}

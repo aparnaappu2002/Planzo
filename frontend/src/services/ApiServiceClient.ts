@@ -234,3 +234,28 @@ export const findWalletOfClient = async (clientId: string, pageNo: number) => {
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding wallet of client')
     }
 }
+
+export const findEventsBasedOnCategory = async (category: string, pageNo: number, sortBy: string) => {
+    try {
+        const response = await axios.get(`/events/${category}/${pageNo}/${sortBy}`)
+        return response.data
+    } catch (error) {
+        console.log('error while fetching events based on category', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching events based on category')
+    }
+}
+
+export const clientFindCategory = async () => {
+    try {
+        const response = await axios.get('/categories')
+        return response.data
+    } catch (error) {
+        console.log('error while fetching category', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data.error)
+        }
+        throw new Error('error while fetching category')
+    }
+}
+
+

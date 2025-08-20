@@ -4,18 +4,22 @@ import { HttpStatus } from "../../../../domain/entities/httpStatus";
 import { IfindEventByIdUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventByIdUseCase";
 import { IsearchEventsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IsearchEventsUseCase";
 import { IfindEventsNearToClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsNearToClient";
+import { IfindEventsBasedOnCategoryUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsBasedOnCategory";
 
 export class EventsClientController {
     private findAllEventClientUseCase: IfindAllEventsUseCase
     private findEventByIdUseCase:IfindEventByIdUseCase
     private searchEventsUseCase: IsearchEventsUseCase
     private findEventsNearToClient: IfindEventsNearToClientUseCase
+    private findEventsBasedOnCategory: IfindEventsBasedOnCategoryUseCase
     constructor(findAllEventClientUseCase: IfindAllEventsUseCase,findEventByIdUseCase:IfindEventByIdUseCase,
-        searchEventsUseCase:IsearchEventsUseCase,findEventsNearToClient:IfindEventsNearToClientUseCase) {
+        searchEventsUseCase:IsearchEventsUseCase,findEventsNearToClient:IfindEventsNearToClientUseCase,
+        findEventsBasedOnCategory:IfindEventsBasedOnCategoryUseCase) {
         this.findAllEventClientUseCase = findAllEventClientUseCase
         this.findEventByIdUseCase=findEventByIdUseCase
         this.searchEventsUseCase=searchEventsUseCase
         this.findEventsNearToClient=findEventsNearToClient
+        this.findEventsBasedOnCategory=findEventsBasedOnCategory
     }
     async handleFindAllEventsClient(req: Request, res: Response): Promise<void> {
         try {
@@ -80,6 +84,22 @@ export class EventsClientController {
             res.status(HttpStatus.BAD_REQUEST).json({
                 message: 'error while finding the events near to you',
                 error: error instanceof Error ? error.message : 'error while finding the events near to you'
+            })
+        }
+    }
+    async handleFindEventsBasedOnCategory(req: Request, res: Response): Promise<void> {
+        try {
+            const { category, pageNo, sortBy } = req.params
+            console.log(category,pageNo,sortBy)
+            const page = parseInt(pageNo, 10) || 1
+            const { events, totalPages } = await this.findEventsBasedOnCategory.findEventsbasedOnCategory(category, page, sortBy)
+            console.log(events)
+            res.status(HttpStatus.OK).json({ message: "events fetched", events, totalPages })
+        } catch (error) {
+            console.log('error while finding events based on category', error)
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: 'error while finding events based on category',
+                error: error instanceof Error ? error.message : 'error while finding events based on category'
             })
         }
     }
