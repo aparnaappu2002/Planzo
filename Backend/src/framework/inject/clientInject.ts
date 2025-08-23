@@ -44,6 +44,7 @@ import { FindEventsBasedOnCategoryUseCase } from "../../useCases/client/events/f
 import { FindCategoryClientUseCase } from "../../useCases/client/category/findCategoryUseCase";
 import { CategoryClientController } from "../../adapters/controllers/client/category/categoryClientController";
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
+import { SearchEventsOnLocationUseCase } from "../../useCases/client/events/searchEventsOnLocationUseCase";
 
 
 const otpService=new OtpService()
@@ -83,7 +84,8 @@ const findEventByIdClientUseCase=new FindEventByIdUseCase(eventRepository)
 const SearchEventsUseCase=new searchEventsUseCase(eventRepository)
 const findEventsNearToClientUseCase=new FindEventsNearToClientUseCase(eventRepository)
 const findEventsBasedOnCategoryUseCase=new FindEventsBasedOnCategoryUseCase(eventRepository)
-export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase,SearchEventsUseCase,findEventsNearToClientUseCase,findEventsBasedOnCategoryUseCase)
+const searchEventsOnLocationUseCase=new SearchEventsOnLocationUseCase(eventRepository)
+export const injectedEventClientController = new EventsClientController(findAllEventsClientsUseCase,findEventByIdClientUseCase,SearchEventsUseCase,findEventsNearToClientUseCase,findEventsBasedOnCategoryUseCase,searchEventsOnLocationUseCase)
 
 //ticket 
 const ticketRepository=new TicketRepository()

@@ -3,6 +3,8 @@ import { EventUpdateEntity } from "../../../domain/entities/event/eventUpdateEnt
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { eventModal } from "../../../framework/database/models/eventModel";
 import { ObjectId } from "mongoose";
+import { SearchLocationOptions } from "../../../domain/entities/event/searchLocationOptionsDTO";
+import { SearchEventsResult } from "../../../domain/entities/event/searchResultDTO";
 
 export class EventRepository implements IeventRepository{
     async createEvent(event: EventEntity): Promise<EventEntity> {
@@ -42,9 +44,23 @@ export class EventRepository implements IeventRepository{
         return eventModal.findByIdAndUpdate(eventId, { ticketPurchased: newCount })
     }
     async findEventsBasedOnQuery(query: string): Promise<EventEntity[] | []> {
-        const regex = new RegExp(query || '', 'i');
-        return await eventModal.find({ title: { $regex: regex }, isActive: true }).select('_id title posterImage')
+    const regex = new RegExp(query || '', 'i');
+    
+    return await eventModal.find({ 
+        $and: [
+            { isActive: true },
+            {
+                $or: [
+                    { title: { $regex: regex } },
+                    { address: { $regex: regex } },
+                    { venueName: { $regex: regex } },
+                    
+                ]
+            }
+        ]
+    }).select('_id title posterImage address venueName location ')
     }
+
     async findEventsNearToClient(latitude: number, longitude: number, pageNo: number, range: number): Promise<{ events: EventEntity[] | [], totalPages: number }> {
         const page = Math.max(pageNo, 1)
         const limit = 5
@@ -86,4 +102,39 @@ export class EventRepository implements IeventRepository{
         return { events, totalPages }
 
     }
+    async findEventsNearLocation(
+        locationQuery: string, 
+        options: SearchLocationOptions
+    ): Promise<SearchEventsResult> {
+        const { pageNo = 1, limit = 10, range = 25 } = options;
+        const skip = (pageNo - 1) * limit;
+        
+        
+        const locationRegex = new RegExp(locationQuery.replace(/\s+/g, '\\s*'), 'i');
+        
+        const query = {
+            $and: [
+                { isActive: true },
+                {
+                    $or: [
+                        { address: { $regex: locationRegex } },
+                        { venueName: { $regex: locationRegex } },
+                        { title: { $regex: locationRegex } }
+                    ]
+                }
+            ]
+        };
+        
+        const events = await eventModal.find(query)
+            .select('_id title posterImage address venueName location category pricePerTicket date startTime endTime')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+        
+        const totalCount = await eventModal.countDocuments(query);
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        return { events, totalPages, totalCount };
+    }
+
 }

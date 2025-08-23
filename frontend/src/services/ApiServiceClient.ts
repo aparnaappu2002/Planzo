@@ -258,4 +258,19 @@ export const clientFindCategory = async () => {
     }
 }
 
+export const searchEventsOnLocation = async (locationQuery: string, pageNo: number, limit: number, range: number) => {
+    try {
+        const response = await axios.post(`/events/searchNearby`, {
+            locationQuery,
+            pageNo,
+            limit,
+            range
+        })
+        return response.data
+    } catch (error) {
+        console.log('error while searching events on location', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while searching events on location')
+    }
+}
+
 

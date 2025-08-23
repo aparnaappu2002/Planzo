@@ -3,7 +3,8 @@ import {
   clientSignup,
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
-  findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient
+  findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation
+
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 import { TicketEntity } from "@/types/TicketPaymentType";
@@ -193,4 +194,38 @@ export const useFindWalletClient = (clientId: string, pageNo: number) => {
     queryKey: ["walletClient", pageNo],
     queryFn: () => findWalletOfClient(clientId, pageNo),
   });
+};
+
+export const useFindEventsBasedOnCategory = (
+  category: string,
+  pageNo: number,
+  sortBy: string
+) => {
+  return useQuery({
+    queryKey: ["eventsBasedOnCategory", category, pageNo, sortBy],
+    queryFn: () => findEventsBasedOnCategory(category, pageNo, sortBy),
+    enabled: !!category || !!sortBy,
+  });
+};
+
+export const useFindCategoryClient = () => {
+  return useQuery({
+    queryKey: ["categoriesClient"],
+    queryFn: clientFindCategory,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useSearchEventsOnLocation = (
+    locationQuery: string,
+    pageNo: number,
+    limit: number,
+    range: number
+) => {
+    return useQuery({
+        queryKey: ["searchEventsOnLocation", locationQuery, pageNo, limit, range],
+        queryFn: () => searchEventsOnLocation(locationQuery, pageNo, limit, range),
+        enabled: !!locationQuery,
+    });
 };

@@ -1,10 +1,11 @@
 import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
-    injectedWalletClientController
+    injectedWalletClientController,injectedCategoryClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
+import { injectedEventController } from "../../inject/vendorInject";
 
 export class clientRoute{
     public clientRoute:Router
@@ -68,6 +69,12 @@ export class clientRoute{
         })
         this.clientRoute.get('/wallet/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedWalletClientController.handleFindClientWallet(req, res)
+        })
+        this.clientRoute.get('/events/:category/:pageNo/:sortBy', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedEventClientController.handleFindEventsBasedOnCategory(req, res)
+        })
+        this.clientRoute.post('/events/searchNearby', (req: Request, res: Response) => {
+            injectedEventClientController.handleEventsNearLocation(req, res)
         })
     }
 }

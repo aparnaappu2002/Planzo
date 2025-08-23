@@ -1,6 +1,8 @@
 import { ObjectId } from "mongoose";
 import { EventEntity } from "../../../entities/event/eventEntity";
 import { EventUpdateEntity } from "../../../entities/event/eventUpdateEntity";
+import { SearchLocationOptions } from "../../../entities/event/searchLocationOptionsDTO";
+import { SearchEventsResult } from "../../../entities/event/searchResultDTO";
 
 export interface IeventRepository{
     createEvent(event: EventEntity): Promise<EventEntity>
@@ -14,4 +16,6 @@ export interface IeventRepository{
     findEventsBasedOnQuery(query: string): Promise<EventEntity[] | []>
     findEventsNearToClient(latitude: number, longitude: number, totalPages: number, range: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
     findEventsBaseOnCategory(category: string, pageNo: number, sortBy: string): Promise<{ events: EventEntity[] | [], totalPages: number }>
+    findEventsNearLocation(locationQuery: string, options?: SearchLocationOptions): Promise<SearchEventsResult>;
+
 }

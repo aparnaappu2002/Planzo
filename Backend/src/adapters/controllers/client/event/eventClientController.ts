@@ -5,6 +5,7 @@ import { IfindEventByIdUseCase } from "../../../../domain/interfaces/useCaseInte
 import { IsearchEventsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IsearchEventsUseCase";
 import { IfindEventsNearToClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsNearToClient";
 import { IfindEventsBasedOnCategoryUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsBasedOnCategory";
+import { IsearchEventsOnLocationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/events/IsearchEventsOnLocationUseCase";
 
 export class EventsClientController {
     private findAllEventClientUseCase: IfindAllEventsUseCase
@@ -12,14 +13,16 @@ export class EventsClientController {
     private searchEventsUseCase: IsearchEventsUseCase
     private findEventsNearToClient: IfindEventsNearToClientUseCase
     private findEventsBasedOnCategory: IfindEventsBasedOnCategoryUseCase
+    private searchEventsOnLocationUseCase: IsearchEventsOnLocationUseCase
     constructor(findAllEventClientUseCase: IfindAllEventsUseCase,findEventByIdUseCase:IfindEventByIdUseCase,
         searchEventsUseCase:IsearchEventsUseCase,findEventsNearToClient:IfindEventsNearToClientUseCase,
-        findEventsBasedOnCategory:IfindEventsBasedOnCategoryUseCase) {
+        findEventsBasedOnCategory:IfindEventsBasedOnCategoryUseCase,searchEventsOnLocationUseCase:IsearchEventsOnLocationUseCase) {
         this.findAllEventClientUseCase = findAllEventClientUseCase
         this.findEventByIdUseCase=findEventByIdUseCase
         this.searchEventsUseCase=searchEventsUseCase
         this.findEventsNearToClient=findEventsNearToClient
         this.findEventsBasedOnCategory=findEventsBasedOnCategory
+        this.searchEventsOnLocationUseCase=searchEventsOnLocationUseCase
     }
     async handleFindAllEventsClient(req: Request, res: Response): Promise<void> {
         try {
@@ -103,4 +106,73 @@ export class EventsClientController {
             })
         }
     }
+    async handleEventsNearLocation(req: Request, res: Response): Promise<void> {
+        try {
+            const { locationQuery, pageNo, limit, range } = req.body;
+            
+            // Validate required fields
+            if (!locationQuery || locationQuery.trim() === '') {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Location query is required',
+                    error: 'Please provide a valid location query'
+                });
+                return;
+            }
+
+            // Parse and validate optional parameters
+            const page = parseInt(pageNo, 10) || 1;
+            const itemsPerPage = parseInt(limit, 10) || 10;
+            const searchRange = parseInt(range, 10) || 25;
+
+            // Validate parameters
+            if (page < 1) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Invalid page number',
+                    error: 'Page number must be greater than 0'
+                });
+                return;
+            }
+
+            if (itemsPerPage < 1 || itemsPerPage > 100) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Invalid limit',
+                    error: 'Limit must be between 1 and 100'
+                });
+                return;
+            }
+
+            // Call use case
+            const result = await this.searchEventsOnLocationUseCase.searchEventsByLocation(
+                locationQuery.trim(), 
+                { 
+                    pageNo: page, 
+                    limit: itemsPerPage, 
+                    range: searchRange 
+                }
+            );
+
+            res.status(HttpStatus.OK).json({
+                message: `Events found near ${locationQuery}`,
+                success: true,
+                data: result,
+                pagination: {
+                    currentPage: page,
+                    totalPages: result.totalPages,
+                    totalEvents: result.totalCount,
+                    eventsPerPage: itemsPerPage,
+                    hasNextPage: page < result.totalPages,
+                    hasPreviousPage: page > 1
+                }
+            });
+
+        } catch (error) {
+            console.error('Error while finding events near location:', error);
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error while finding events near location',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error occurred'
+            });
+        }
+    }
+
 }

@@ -7,5 +7,6 @@ export interface IcategoryRepository {
     findCategory(pageNo: number): Promise<{ categories: categoryEntity[] | [], totalPages: number }>
     changeNameAndImage(categoryId: string, updates: CategoryUpdate): Promise<boolean | null>
     changeStatusOfCategory(categoryId: string): Promise<categoryEntity | null>
+    findCategoryForClient(): Promise<categoryEntity[] | []>
 }
 
