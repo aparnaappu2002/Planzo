@@ -19,13 +19,14 @@ import {
 } from 'lucide-react';
 import { RootState } from '@/redux/Store';
 import { useSelector } from 'react-redux';
-import { data } from 'react-router-dom';
- 
+import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 
 const Events = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
+  const queryClient = useQueryClient(); // Initialize query client
   console.log(vendorId)
   const [pageNo] = useState(1);
+  const [localEvents, setLocalEvents] = useState<EventType[]>([]); // NEW: Local state for events
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
   const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
@@ -33,10 +34,23 @@ const Events = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const { data: apiResponse, isLoading, error } = useFindAllEventsVendorSide(vendorId, pageNo);
+  const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId, pageNo);
   
+  const events = localEvents.length > 0 ? localEvents : (apiResponse?.events || []);
+  console.log('Current events from API:', events);
   
-  const events = apiResponse?.events || [];
+  // Update local events when API data changes
+  React.useEffect(() => {
+    if (apiResponse?.events && Array.isArray(apiResponse.events)) {
+      setLocalEvents(apiResponse.events);
+      console.log('Local events updated from API:', apiResponse.events.length);
+    }
+  }, [apiResponse?.events]);
+  
+  // DEBUG: Log when data changes
+  React.useEffect(() => {
+    console.log('Events data updated:', events.length, 'events');
+  }, [events]);
   
 
   
@@ -78,16 +92,90 @@ const Events = () => {
   }, [events]);
 
   const handleViewEvent = (event: EventType) => {
+    
     setViewingEvent(event);
   };
 
   const handleEditEvent = (event: EventType) => {
+   
     setEditingEvent(event);
   };
 
   const handleCloseModals = () => {
+    
     setViewingEvent(null);
     setEditingEvent(null);
+  };
+
+  // NEW: Handle event update without page refresh
+  const handleEventUpdated = async (updatedEvent: EventType) => {
+    console.log('🔄 Handling event update:', updatedEvent._id);
+    
+    try {
+      // 1. Update local state immediately for instant UI feedback
+      setLocalEvents(prevEvents => {
+        const updated = prevEvents.map(event => 
+          event._id === updatedEvent._id ? { ...event, ...updatedEvent } : event
+        );
+        
+        return updated;
+      });
+      
+      // 2. Try to find and invalidate the correct query key
+      const possibleQueryKeys = [
+        // Common patterns for vendor events
+        ['findAllEventsVendorSide', vendorId, pageNo],
+        ['findAllEventsVendorSide', vendorId],
+        ['vendorEvents', vendorId, pageNo],
+        ['vendorEvents', vendorId],
+        ['events', 'vendor', vendorId],
+        ['events', vendorId, pageNo],
+        ['events', vendorId],
+        // Without parameters
+        ['findAllEventsVendorSide'],
+        ['vendorEvents'],
+        ['events']
+      ];
+      
+      
+      
+      // Try invalidating each possible key
+      for (const queryKey of possibleQueryKeys) {
+        try {
+          await queryClient.invalidateQueries({ queryKey });
+          
+        } catch (error) {
+          
+        }
+      }
+      
+      // 3. Force complete cache invalidation as backup
+      await queryClient.invalidateQueries();
+      
+      // 4. Force immediate refetch
+      const refetchResult = await refetch();
+      
+      // 5. Update viewing modal if it's the same event
+      if (viewingEvent && viewingEvent._id === updatedEvent._id) {
+        setViewingEvent(updatedEvent);
+      }
+      
+      // 6. Update editing modal if it's the same event (though it should be closing)
+      if (editingEvent && editingEvent._id === updatedEvent._id) {
+        setEditingEvent(updatedEvent);
+      }
+      
+      
+    } catch (error) {
+      
+      // Ultimate fallback: Force refetch after a delay
+      setTimeout(async () => {
+        try {
+          await refetch();
+        } catch (fallbackError) {
+        }
+      }, 500);
+    }
   };
 
   if (error) {
@@ -146,10 +234,16 @@ const Events = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
               <EventCard
-                key={event._id || event.id}
+                key={`${event._id || event.id}-${event.updatedAt || Date.now()}`} // Include timestamp to force updates
                 event={event}
-                onView={handleViewEvent}
-                onEdit={handleEditEvent}
+                onView={(eventData) => {
+                  console.log('🎯 EventCard triggered view for:', eventData._id);
+                  handleViewEvent(eventData);
+                }}
+                onEdit={(eventData) => {
+                  console.log('🎯 EventCard triggered edit for:', eventData._id);
+                  handleEditEvent(eventData);
+                }}
               />
             ))}
           </div>
@@ -171,12 +265,15 @@ const Events = () => {
         event={viewingEvent}
         isOpen={!!viewingEvent}
         onClose={handleCloseModals}
+        key={viewingEvent?._id || 'view-modal'} // Force re-render when event changes
       />
       
       <EventEditModal
         event={editingEvent}
         isOpen={!!editingEvent}
         onClose={handleCloseModals}
+        onEventUpdated={handleEventUpdated} // NEW: Pass the update handler
+        key={editingEvent?._id || 'edit-modal'} // Force re-render when event changes
       />
     </div>
   );

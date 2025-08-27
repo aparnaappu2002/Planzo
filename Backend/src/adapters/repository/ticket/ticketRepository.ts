@@ -4,7 +4,7 @@ import { IticketRepositoryInterface } from "../../../domain/interfaces/repositor
 import { ticketModel } from "../../../framework/database/models/ticketModel";
 import { TicketAndEventDTO } from "../../../domain/entities/ticket/ticketAndEventDTO";
 import { TicketAndVendorDTO } from "../../../domain/entities/ticket/ticketAndVendorDTO";
-
+import { eventModal } from "../../../framework/database/models/eventModel";
 
 export class TicketRepository implements IticketRepositoryInterface {
     async createTicket(ticket: TicketEntity): Promise<TicketEntity> {
@@ -72,4 +72,63 @@ export class TicketRepository implements IticketRepositoryInterface {
         };
         return result
     }
+    async checkUserTicketLimit(
+    clientId: string, 
+    eventId: string, 
+    ticketVariant: 'standard' | 'premium' | 'vip', 
+    requestedQuantity: number
+): Promise<{ canBook: boolean; remainingLimit: number; maxPerUser: number }> {
+    const event = await eventModal.findById(eventId).select('ticketVariants').lean();
+    
+    if (!event) {
+        return {
+            canBook: false,
+            remainingLimit: 0,
+            maxPerUser: 0
+        };
+    }
+
+    // Find the specific ticket variant
+    const variant = event.ticketVariants.find(v => v.type === ticketVariant);
+    
+    if (!variant) {
+        return {
+            canBook: false,
+            remainingLimit: 0,
+            maxPerUser: 0
+        };
+    }
+
+    // Count existing tickets for this user, event, and variant (excluding refunded tickets)
+    const existingTicketsCount = await ticketModel.aggregate([
+        {
+            $match: {
+                clientId: new Types.ObjectId(clientId),
+                eventId: new Types.ObjectId(eventId),
+                ticketVariant: ticketVariant,
+                ticketStatus: { $ne: 'refunded' }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                totalTickets: { $sum: '$ticketCount' }
+            }
+        }
+    ]);
+
+    const currentTicketCount = existingTicketsCount.length > 0 ? existingTicketsCount[0].totalTickets : 0;
+    const maxAllowed = variant.maxPerUser;
+    const remainingLimit = maxAllowed - currentTicketCount;
+
+    // Check if the requested quantity exceeds the remaining limit
+    const canBook = currentTicketCount + requestedQuantity <= maxAllowed;
+
+    return {
+        canBook,
+        remainingLimit: Math.max(0, remainingLimit),
+        maxPerUser: maxAllowed
+    };
 }
+}
+

@@ -45,6 +45,7 @@ import { FindCategoryClientUseCase } from "../../useCases/client/category/findCa
 import { CategoryClientController } from "../../adapters/controllers/client/category/categoryClientController";
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
 import { SearchEventsOnLocationUseCase } from "../../useCases/client/events/searchEventsOnLocationUseCase";
+import { CheckTicketLimitUseCase } from "../../useCases/client/ticket/checkTicketLimitUseCase";
 
 
 const otpService=new OtpService()
@@ -98,7 +99,8 @@ const createTicketUseCase=new CreateTicketUseCase(eventRepository,ticketReposito
 const confirmTicketAndPaymentUseCase=new ConfirmTicketAndPaymentUseCase(paymentService,eventRepository,ticketRepository,walletRepository,transactionRepository)
 const showTicketAndEventUseCase=new ShowTicketAndEventClientUseCase(ticketRepository)
 const ticketCancelUseCase=new TicketCancelUseCase(ticketRepository,walletRepository,transactionRepository)
-export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase,showTicketAndEventUseCase,ticketCancelUseCase)
+const checkTicketLimitUseCase=new CheckTicketLimitUseCase(ticketRepository)
+export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase,showTicketAndEventUseCase,ticketCancelUseCase,checkTicketLimitUseCase)
 
 //wallet
 const findWalletClientUseCase = new FindWalletUseCase(walletRepository)

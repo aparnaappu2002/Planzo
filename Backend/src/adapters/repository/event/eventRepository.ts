@@ -33,13 +33,19 @@ export class EventRepository implements IeventRepository{
         return eventModal.findById(eventId).select('-__v')
     }
     async findTotalTicketAndBookedTicket(eventId: string): Promise<EventEntity | null> {
-        return eventModal.findById(eventId).select('totalTicket ticketPurchased status')
+    return eventModal.findById(eventId).select('totalTicket ticketPurchased status ticketVariants')
     }
+
     async findTotalTicketCountAndticketPurchased(eventId: string | ObjectId): Promise<{ totalTicket: number; ticketPurchased: number; }> {
-        const eventDetails = await eventModal.findById(eventId).select('ticketPurchased totalTicket')
-        if (!eventDetails) throw new Error('No event found in this ID')
-        return { totalTicket: eventDetails?.totalTicket, ticketPurchased: eventDetails?.ticketPurchased }
+    const eventDetails = await eventModal.findById(eventId).select('ticketVariants');
+    if (!eventDetails) throw new Error('No event found in this ID');
+    
+    const totalTicket = eventDetails.ticketVariants.reduce((sum, variant) => sum + variant.totalTickets, 0);
+    const ticketPurchased = eventDetails.ticketVariants.reduce((sum, variant) => sum + variant.ticketsSold, 0);
+    
+    return { totalTicket, ticketPurchased };
     }
+
     async updateTicketPurchaseCount(eventId: string | ObjectId, newCount: number): Promise<EventEntity | null> {
         return eventModal.findByIdAndUpdate(eventId, { ticketPurchased: newCount })
     }
@@ -136,5 +142,20 @@ export class EventRepository implements IeventRepository{
         
         return { events, totalPages, totalCount };
     }
+    async updateVariantTicketsSold(eventId: string | ObjectId, variantType: string, ticketCount: number): Promise<EventEntity | null> {
+    return eventModal.findOneAndUpdate(
+        { 
+            _id: eventId,
+            "ticketVariants.type": variantType 
+        },
+        { 
+            $inc: { 
+                "ticketVariants.$.ticketsSold": ticketCount,
+                "attendeesCount": ticketCount
+            }
+        },
+        { new: true }
+    );
+}
 
 }
