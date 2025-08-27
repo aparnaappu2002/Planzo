@@ -28,6 +28,9 @@ import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
 import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
 import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
 import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
+import { TicketAndUserDetailsController } from "../../adapters/controllers/vendor/ticket/ticketAndUserDetailsVendorController";
+import { TicketAndUserDetailsOfEventUseCase } from "../../useCases/vendor/ticket/ticketAndUserDetailsofEventUseCase";
+import { TicketRepository } from "../../adapters/repository/ticket/ticketRepository";
 
 
 const EmailService  = new emailService()
@@ -74,3 +77,8 @@ const transactionRepository=new TransactionRepository()
 const findWalletUseCase=new FindWalletUseCase(walletRepository)
 const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
 export const injectedWalletVendorController = new WalletVendorController(findWalletUseCase,findTransactionUseCase)
+
+//ticket
+const ticketRepository=new TicketRepository()
+const ticketAndUserDetailsOfEventUseCase=new TicketAndUserDetailsOfEventUseCase(ticketRepository)
+export const injectedTicketAndUserDetailsOfEventController= new TicketAndUserDetailsController(ticketAndUserDetailsOfEventUseCase)

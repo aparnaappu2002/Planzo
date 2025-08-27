@@ -5,6 +5,7 @@ import { ticketModel } from "../../../framework/database/models/ticketModel";
 import { TicketAndEventDTO } from "../../../domain/entities/ticket/ticketAndEventDTO";
 import { TicketAndVendorDTO } from "../../../domain/entities/ticket/ticketAndVendorDTO";
 import { eventModal } from "../../../framework/database/models/eventModel";
+import { TicketAndUserDTO } from "../../../domain/entities/ticket/ticketAndUseDTO";
 
 export class TicketRepository implements IticketRepositoryInterface {
     async createTicket(ticket: TicketEntity): Promise<TicketEntity> {
@@ -137,6 +138,104 @@ export class TicketRepository implements IticketRepositoryInterface {
         remainingLimit: Math.max(0, remainingLimit),
         maxPerUser: maxAllowed
     };
+}
+
+async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAndEventDetails: TicketAndUserDTO[] | [], totalPages: number }> {
+    const page = Math.max(pageNo, 1)
+    const limit = 6
+    const skip = (page - 1) * limit
+    const matchStage: any = {
+        'event.hostedBy': new Types.ObjectId(vendorId)
+    };
+    
+    const tickets = await ticketModel.aggregate([
+        {
+            $lookup: {
+                from: 'events',
+                localField: 'eventId',
+                foreignField: '_id',
+                as: 'event'
+            }
+        },
+        { $unwind: '$event' },
+        {
+            $match: {
+                ...matchStage
+            }
+        },
+        {
+            $lookup: {
+                from: 'clients',
+                localField: 'clientId',
+                foreignField: '_id',
+                as: 'client'
+            }
+        },
+        { $unwind: '$client' },
+        {
+            $addFields: {
+                eventId: '$event',
+                clientId: '$client'
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                ticketId: 1,
+                totalAmount: 1,
+                ticketCount: 1,
+                phone: 1,
+                email: 1,
+                paymentStatus: 1,
+                qrCodeLink: 1,
+                ticketVariant: 1,
+                ticketStatus: 1,
+                paymentTransactionId: 1,
+                eventId: {
+                    _id: '$event._id',
+                    title: '$event.title',
+                    description: '$event.description',
+                    date: '$event.date',
+                    startTime: '$event.startTime',
+                    endTime: '$event.endTime',
+                    status: '$event.status',
+                    address: '$event.address',
+                    pricePerTicket: '$event.pricePerTicket',
+                    posterImage: '$event.posterImage'
+                },
+                clientId: {
+                    _id: '$client._id',
+                    name: '$client.name',
+                    profileImage: '$client.profileImage'
+                }
+            }
+        },
+        { $skip: skip },
+        { $limit: limit }
+    ]);
+    
+    const countResult = await ticketModel.aggregate([
+        {
+            $lookup: {
+                from: 'events',
+                localField: 'eventId',
+                foreignField: '_id',
+                as: 'event'
+            }
+        },
+        { $unwind: '$event' },
+        {
+            $match: {
+                'event.hostedBy': new Types.ObjectId(vendorId)
+            }
+        },
+        { $count: 'total' }
+    ]);
+    
+    const totalCount = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return { ticketAndEventDetails: tickets, totalPages }
 }
 }
 

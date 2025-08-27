@@ -175,3 +175,13 @@ export const findWalletDetailsVendor = async (userId: string, pageNo: number) =>
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding wallet details')
     }
 }
+
+export const ticketDetailsWithUser = async ( vendorId: string, pageNo: number) => {
+    try {
+        const response = await axios.get('/ticketDetailsWithUser', { params: { vendorId, pageNo } })
+        return response.data
+    } catch (error) {
+        console.log('error while finding the ticket details with user', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding the ticket details with user')
+    }
+}
