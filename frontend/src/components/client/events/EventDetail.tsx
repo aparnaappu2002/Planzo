@@ -20,7 +20,10 @@ import {
   User,
   ShoppingCart,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Crown,
+  Gem,
+  Shield
 } from "lucide-react";
 import { useState } from "react";
 import TicketPurchaseModal from "../payment/TicketPurchase";
@@ -30,12 +33,6 @@ const EventDetail = () => {
   const navigate = useNavigate();
   const { data: responseData, isLoading, error } = useFindEventById(eventId || "");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Debug logs
-  console.log("EventId from params:", eventId);
-  console.log("Response data:", responseData);
-  console.log("Is loading:", isLoading);
-  console.log("Error:", error);
   
   // Try different ways to access event data
   const event = responseData?.event || responseData?.data?.event || responseData;
@@ -141,8 +138,36 @@ const EventDetail = () => {
     }
   };
 
-  const availableTickets = (event.totalTicket || 0) - (event.ticketPurchased || 0);
-  const ticketsSoldPercentage = event.totalTicket > 0 ? (event.ticketPurchased / event.totalTicket) * 100 : 0;
+  const getTicketTypeIcon = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'vip': return <Crown className="w-4 h-4" />;
+      case 'premium': return <Gem className="w-4 h-4" />;
+      case 'standard': return <Shield className="w-4 h-4" />;
+      default: return <Ticket className="w-4 h-4" />;
+    }
+  };
+
+  const getTicketTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'vip': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'premium': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'standard': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Calculate totals from ticket variants
+  const totalTickets = event.ticketVariants?.reduce((sum: number, variant: any) => sum + (variant.totalTickets || 0), 0) || 0;
+  const totalSold = event.ticketVariants?.reduce((sum: number, variant: any) => sum + (variant.ticketsSold || 0), 0) || 0;
+  const availableTickets = totalTickets - totalSold;
+  const ticketsSoldPercentage = totalTickets > 0 ? (totalSold / totalTickets) * 100 : 0;
+
+  // Get price range
+  const prices = event.ticketVariants?.map((variant: any) => variant.price).filter(Boolean) || [];
+  const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+  const priceDisplay = minPrice && maxPrice ? 
+    (minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`) : 'Free';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50">
@@ -241,15 +266,95 @@ const EventDetail = () => {
               <div className="flex items-center gap-3 p-4 rounded-lg bg-purple-50">
                 <IndianRupee className="w-5 h-5 text-purple-600" />
                 <div>
-                  <p className="text-sm font-medium">Price</p>
-                  <p className="text-sm text-gray-600">
-                    {event.pricePerTicket ? `₹${event.pricePerTicket}` : 'Free'}
-                  </p>
+                  <p className="text-sm font-medium">Price Range</p>
+                  <p className="text-sm text-gray-600">{priceDisplay}</p>
                 </div>
               </div>
             </div>
 
             <Separator />
+
+            {/* Ticket Variants Section */}
+            {event.ticketVariants && event.ticketVariants.length > 0 && (
+              <>
+                <Card className="bg-gradient-to-r from-yellow-50 to-orange-50">
+                  <CardHeader className="pb-3">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Ticket className="w-5 h-5 text-yellow-600" />
+                      Ticket Options
+                    </h3>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {event.ticketVariants.map((variant: any, index: number) => {
+                        const availableForVariant = variant.totalTickets - variant.ticketsSold;
+                        const soldPercentage = variant.totalTickets > 0 ? (variant.ticketsSold / variant.totalTickets) * 100 : 0;
+                        
+                        return (
+                          <Card key={variant._id || index} className={`border-2 ${getTicketTypeColor(variant.type)}`}>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {getTicketTypeIcon(variant.type)}
+                                  <h4 className="font-semibold capitalize">{variant.type}</h4>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {availableForVariant}/{variant.totalTickets}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <p className="text-sm text-gray-600">{variant.description}</p>
+                              
+                              <div className="flex justify-between items-center">
+                                <span className="text-lg font-bold text-gray-900">₹{variant.price}</span>
+                                <span className="text-sm text-gray-500">Max {variant.maxPerUser}</span>
+                              </div>
+
+                              {variant.benefits && variant.benefits.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-700 mb-1">Benefits:</p>
+                                  <ul className="text-xs text-gray-600 space-y-1">
+                                    {variant.benefits.map((benefit: string, idx: number) => (
+                                      <li key={idx} className="flex items-center gap-1">
+                                        <CheckCircle className="w-3 h-3 text-green-500" />
+                                        {benefit}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {/* Progress Bar for this variant */}
+                              <div>
+                                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                  <span>Sold</span>
+                                  <span>{Math.round(soldPercentage)}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div 
+                                    className="bg-gradient-to-r from-yellow-400 to-orange-500 h-1.5 rounded-full transition-all duration-300"
+                                    style={{ width: `${soldPercentage}%` }}
+                                  />
+                                </div>
+                              </div>
+
+                              {availableForVariant === 0 && (
+                                <Badge className="w-full justify-center bg-red-100 text-red-800">
+                                  Sold Out
+                                </Badge>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Separator />
+              </>
+            )}
 
             {/* Detailed Information Grid */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -279,42 +384,40 @@ const EventDetail = () => {
                 </CardContent>
               </Card>
 
-              {/* Ticket Information */}
+              {/* Overall Ticket Summary */}
               <Card className="bg-gray-50">
                 <CardHeader className="pb-3">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <Ticket className="w-5 h-5 text-blue-600" />
-                    Ticket Information
+                    Ticket Summary
                   </h3>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Total Tickets:</span>
-                    <span className="text-sm font-medium">{event.totalTicket || 0}</span>
+                    <span className="text-sm font-medium">{totalTickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Sold:</span>
-                    <span className="text-sm font-medium text-green-600">{event.ticketPurchased || 0}</span>
+                    <span className="text-sm font-medium text-green-600">{totalSold}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Available:</span>
                     <span className="text-sm font-medium text-blue-600">{availableTickets}</span>
                   </div>
-                  {event.maxTicketsPerUser && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Max per user:</span>
-                      <span className="text-sm font-medium">{event.maxTicketsPerUser}</span>
-                    </div>
-                  )}
-                  {/* Progress Bar */}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Ticket Types:</span>
+                    <span className="text-sm font-medium">{event.ticketVariants?.length || 0}</span>
+                  </div>
+                  {/* Overall Progress Bar */}
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>Tickets Sold</span>
+                      <span>Overall Sales</span>
                       <span>{Math.round(ticketsSoldPercentage)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${ticketsSoldPercentage}%` }}
                       />
                     </div>
@@ -372,7 +475,7 @@ const EventDetail = () => {
                     <p className="text-sm text-gray-600">Current Attendees</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{event.ticketPurchased || 0}</p>
+                    <p className="text-2xl font-bold text-green-600">{totalSold}</p>
                     <p className="text-sm text-gray-600">Tickets Purchased</p>
                   </div>
                   <div className="text-center">
@@ -393,7 +496,7 @@ const EventDetail = () => {
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
                 {availableTickets === 0 ? 'Sold Out' : 
-                 event.pricePerTicket ? `Buy Tickets - ₹${event.pricePerTicket}` : 'Get Free Tickets'}
+                 minPrice ? `Buy Tickets - ${priceDisplay}` : 'Get Free Tickets'}
               </Button>
               <Button variant="outline" size="lg" className="flex-1 border-yellow-300 text-yellow-700 hover:bg-yellow-50">
                 <User className="w-5 h-5 mr-2" />

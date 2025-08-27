@@ -43,35 +43,28 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
   const [showFilters, setShowFilters] = useState(false);
   const [searchMode, setSearchMode] = useState<'text' | 'location' | 'auto'>('auto');
   
-  // State for location-based search using useSearchEventsOnLocation
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [enableLocationSearch, setEnableLocationSearch] = useState(false);
   
   const findEvents = useFindEventsOnQuery();
   const findEventsNearby = useFindEventsNearToUser();
   
-  // Location-based search hook
   const locationSearchResults = useSearchEventsOnLocation(
     locationSearchQuery,
     currentPage,
-    10, // limit
+    10, 
     searchRange
   );
 
-  // Use provided categories or fall back to defaults
   const availableCategories = categories || DEFAULT_CATEGORIES;
   const quickCategories = QUICK_CATEGORIES;
 
   useEffect(() => {
-    console.log('Location changed:', { location, locationError });
   }, [location, locationError]);
 
-  // Handle location search results - only process when explicitly doing location search
   useEffect(() => {
     if (enableLocationSearch && locationSearchResults.data && searchType === 'location' && locationSearchQuery) {
-      console.log('useSearchEventsOnLocation results received:', locationSearchResults.data);
       
-      // Handle the API response structure - it seems your API returns data in a nested structure
       const responseData = locationSearchResults.data.data || locationSearchResults.data;
       
       onSearchResults?.({
@@ -87,23 +80,18 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
       });
       
       setEnableLocationSearch(false);
-      console.log('Location search completed, resetting state');
     }
   }, [locationSearchResults.data, enableLocationSearch, searchType, searchRange, location, onSearchResults, locationSearchQuery]);
 
-  // Handle location search errors - only when doing location search
   useEffect(() => {
     if (enableLocationSearch && locationSearchResults.error && searchType === 'location' && locationSearchQuery) {
-      console.error('useSearchEventsOnLocation error:', locationSearchResults.error);
       onSearchError?.(locationSearchResults.error);
       setEnableLocationSearch(false);
     }
   }, [locationSearchResults.error, enableLocationSearch, searchType, onSearchError, locationSearchQuery]);
 
-  // Handle loading state for location search - only when doing location search
   useEffect(() => {
     if (enableLocationSearch && locationSearchResults.isFetching && searchType === 'location' && locationSearchQuery) {
-      console.log('useSearchEventsOnLocation is fetching...');
       onSearchStart?.();
     }
   }, [locationSearchResults.isFetching, enableLocationSearch, searchType, onSearchStart, locationSearchQuery]);
@@ -120,39 +108,30 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
     return "From music festivals to tech conferences, discover local events tailored to your location";
   };
 
-  // Location-based search using useSearchEventsOnLocation
   const handleLocationBasedSearch = async () => {
-    console.log('handleLocationBasedSearch called - using useSearchEventsOnLocation');
     
     if (!location || !location.latitude || !location.longitude) {
-      console.log('Location-based search aborted: location not available');
       const error = new Error('Location not available for search');
       onSearchError?.(error);
       return;
     }
     
     if (locationSearchResults.isFetching) {
-      console.log('Location-based search aborted: already fetching');
       return;
     }
     
     setSearchType('location');
     
-    // Try using the search query if it looks like a place name, otherwise use coordinates
     let locQuery;
     const trimmedQuery = searchQuery.trim();
     
     if (trimmedQuery && /^[a-zA-Z\s]+$/.test(trimmedQuery)) {
-      // If search query contains only letters and spaces, use it as location name
       locQuery = trimmedQuery;
-      console.log('Using place name for useSearchEventsOnLocation:', locQuery);
     } else {
       // Otherwise use coordinates
       locQuery = `${location.latitude},${location.longitude}`;
-      console.log('Using coordinates for useSearchEventsOnLocation:', locQuery);
     }
     
-    console.log('Setting location search query:', locQuery, 'with range:', searchRange, 'page:', currentPage);
     
     setLocationSearchQuery(locQuery);
     setEnableLocationSearch(true);
@@ -160,17 +139,14 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
 
   // Nearby events using useFindEventsNearToUser (mutation-based)
   const handleNearbyEventsSearch = async () => {
-    console.log('handleNearbyEventsSearch called - using useFindEventsNearToUser');
     
     if (!location || !location.latitude || !location.longitude) {
-      console.log('Nearby events search aborted: location not available');
       const error = new Error('Location not available for nearby events search');
       onSearchError?.(error);
       return;
     }
     
     if (findEventsNearby.isPending) {
-      console.log('Nearby events search aborted: already pending');
       return;
     }
     
@@ -181,7 +157,6 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
     setEnableLocationSearch(false);
     
     if (onSearchStart) {
-      console.log('Calling onSearchStart callback for nearby events search');
       onSearchStart();
     }
     
@@ -199,7 +174,6 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
         range: searchRange
       });
       
-      console.log('useFindEventsNearToUser result:', result);
       
       if (result?.events) {
         onSearchResults?.({
@@ -214,7 +188,6 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
           }
         });
       } else {
-        console.log('No nearby events found');
         onSearchResults?.({
           events: [],
           totalPages: 0,
@@ -225,7 +198,6 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
       }
       
     } catch (error) {
-      console.error('useFindEventsNearToUser error:', error);
       onSearchError?.(error);
     }
   };
@@ -234,27 +206,22 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
     const trimmedQuery = searchQuery.trim();
     
     if (!trimmedQuery) {
-      console.log('Query search aborted: empty query');
       return;
     }
     
     if (findEvents.isPending) {
-      console.log('Query search aborted: already pending');
       return;
     }
     
     setSearchType('query');
     
     if (onSearchStart) {
-      console.log('Calling onSearchStart callback for query search');
       onSearchStart();
     }
     
     try {
-      console.log('Executing query search...');
       
       if (!findEvents.mutateAsync) {
-        console.error('findEvents.mutateAsync is not available');
         const error = new Error('Search function not available');
         onSearchError?.(error);
         return;
@@ -262,17 +229,14 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
       
       const result = await findEvents.mutateAsync(trimmedQuery);
       
-      console.log('Query search result:', result);
       
       if (result?.events) {
-        console.log('Calling onSearchResults with query data');
         onSearchResults?.({
           ...result,
           query: trimmedQuery,
           searchType: 'query'
         });
       } else {
-        console.log('No events found in query response');
         onSearchResults?.({
           events: [],
           query: trimmedQuery,
@@ -281,16 +245,13 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
       }
       
     } catch (error) {
-      console.error('Query search error:', error);
       onSearchError?.(error);
     }
   };
 
   const handleCategorySearch = async (category: string = selectedCategory, sortBy: string = selectedSort) => {
-    console.log('handleCategorySearch called with category:', category, 'sortBy:', sortBy);
     
     if (category === 'All Categories') {
-      // If "All Categories" is selected, fall back to regular search or location search
       if (searchQuery.trim()) {
         await handleQuerySearch();
       } else if (location) {
@@ -305,13 +266,11 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
     setSearchType('category');
     
     if (onSearchStart) {
-      console.log('Calling onSearchStart callback for category search');
       onSearchStart();
     }
     
-    // Send the search parameters to the parent component which will handle the actual API call
     onSearchResults?.({
-      events: [], // Empty initially, will be populated by parent component
+      events: [], 
       totalPages: 1,
       query: `${category} events (${sortOptions.find(opt => opt.value === sortBy)?.label})`,
       searchType: 'category',
@@ -321,21 +280,19 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
   };
 
   const isLikelyPlaceName = (query: string): boolean => {
-    // Check if query looks like a place name
     const trimmed = query.trim();
     
-    // Basic checks for place names
     const hasOnlyValidChars = /^[a-zA-Z\s,.-]+$/.test(trimmed);
     const hasReasonableLength = trimmed.length >= 3 && trimmed.length <= 50;
     const hasNoSpecialSearchTerms = !/^(event|concert|workshop|seminar|conference|music|entertainment)/i.test(trimmed);
     
-    // Indian place name patterns (since you're in Kerala)
+    
     const indianPlacePatterns = [
       /kuda$/i,  // ends with 'kuda' (like Irinjalakuda)
       /pur$/i,   // ends with 'pur'
       /bad$/i,   // ends with 'bad'
       /nagar$/i, // ends with 'nagar'
-      /kochi|ernakulam|thrissur|calicut|trivandrum|kottayam|palakkad/i // Kerala cities
+      /kochi|ernakulam|thrissur|calicut|trivandrum|kottayam|palakkad/i 
     ];
     
     const matchesIndianPattern = indianPlacePatterns.some(pattern => pattern.test(trimmed));
@@ -344,16 +301,13 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
   };
 
   const handleSearch = async () => {
-    console.log('handleSearch called with mode:', searchMode, 'query:', searchQuery.trim());
     
     const trimmedQuery = searchQuery.trim();
     
     if (trimmedQuery) {
       if (searchMode === 'text') {
-        console.log('Forced text search mode - using useFindEventsOnQuery');
         await handleQuerySearch();
       } else if (searchMode === 'location') {
-        console.log('Forced location search mode - using useSearchEventsOnLocation');
         if (location) {
           await handleLocationBasedSearch();
         } else {
@@ -365,51 +319,40 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
         const isPlaceName = isLikelyPlaceName(trimmedQuery);
         
         if (isPlaceName && location) {
-          console.log('Auto mode: Query detected as place name, using useSearchEventsOnLocation:', trimmedQuery);
           await handleLocationBasedSearch();
         } else {
-          console.log('Auto mode: Query detected as general search, using useFindEventsOnQuery:', trimmedQuery);
           await handleQuerySearch();
         }
       }
     } else if (selectedCategory !== 'All Categories') {
-      console.log('No query but category selected, using category search');
       await handleCategorySearch();
     } else if (location) {
-      console.log('No query or category but location available, using location search with coordinates');
       await handleLocationBasedSearch();
     } else {
-      console.log('Search aborted: no query, category, or location');
       const error = new Error('Please enter a search query, select a category, or enable location access');
       onSearchError?.(error);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    console.log('Key pressed:', e.key);
     if (e.key === 'Enter') {
-      console.log('Enter key pressed, triggering search');
       handleSearch();
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Input changed:', e.target.value);
     setSearchQuery(e.target.value);
   };
 
   const handleCategoryChange = (category: string) => {
-    console.log('Category changed:', category);
     setSelectedCategory(category);
   };
 
   const handleSortChange = (sortBy: string) => {
-    console.log('Sort changed:', sortBy);
     setSelectedSort(sortBy);
   };
 
   const handleApplyFilters = () => {
-    console.log('Applying filters:', { selectedCategory, selectedSort });
     if (selectedCategory !== 'All Categories') {
       handleCategorySearch(selectedCategory, selectedSort);
     } else {
@@ -419,17 +362,14 @@ export const EventsHero = ({ onSearchResults, onSearchStart, onSearchError, cate
   };
 
   const handleNearbyEventsClick = () => {
-    console.log('Nearby events button clicked - using useFindEventsNearToUser');
     setSearchQuery('');
     setSelectedCategory('All Categories');
-    // Reset location search state to prevent interference
     setLocationSearchQuery('');
     setEnableLocationSearch(false);
     handleNearbyEventsSearch(); // This uses useFindEventsNearToUser only
   };
 
   const handleQuickCategoryClick = (category: string) => {
-    console.log('Quick category clicked:', category);
     setSelectedCategory(category);
     setSearchQuery(''); // Clear search query when selecting category
     handleCategorySearch(category, selectedSort);

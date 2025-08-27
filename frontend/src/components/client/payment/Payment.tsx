@@ -135,26 +135,32 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       let errorMessage = "Something went wrong during payment.";
       
       if (error instanceof Error) {
-        switch (error.message) {
-          case "CARD_ELEMENT_NOT_FOUND":
-            errorMessage = "Payment form is not ready. Please refresh the page and try again.";
-            break;
-          case "COMPONENT_UNMOUNTED":
-            errorMessage = "Payment was interrupted. Please try again.";
-            break;
-          case "INTEGRATION_ERROR":
-            errorMessage = "Payment form error. Please refresh the page and try again.";
-            break;
-          default:
-            if (error.message.includes("could not retrieve data") || 
-                error.message.includes("Element") ||
-                error.message.includes("mounted")) {
-              errorMessage = "Payment form was interrupted. Please refresh the page and try again.";
-            } else {
-              errorMessage = error.message;
-            }
-        }
+      switch (error.message) {
+        case "CARD_ELEMENT_NOT_FOUND":
+          errorMessage = "Payment form is not ready. Please refresh the page and try again.";
+          break;
+        case "COMPONENT_UNMOUNTED":
+          errorMessage = "Payment was interrupted. Please try again.";
+          break;
+        case "INTEGRATION_ERROR":
+          errorMessage = "Payment form error. Please refresh the page and try again.";
+          break;
+        default:
+          // Check for ticket limit exceeded error (this is the key addition)
+          if (error.message.includes("Booking limit exceeded:")) {
+            errorMessage = error.message; // Use the detailed message from backend
+          } else if (error.message.includes("Ticket booking limit exceeded")) {
+            errorMessage = error.message;
+          } else if (error.message.includes("could not retrieve data") || 
+                     error.message.includes("Element") ||
+                     error.message.includes("mounted")) {
+            errorMessage = "Payment form was interrupted. Please refresh the page and try again.";
+          } else {
+            errorMessage = error.message;
+          }
       }
+    }
+
       
       toast.error(errorMessage);
     } finally {

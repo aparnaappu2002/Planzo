@@ -46,10 +46,36 @@ export const eventSchema = new Schema<EventEntity>({
         type: String,
         required: true
     }],
-    pricePerTicket: {
-        type: Number,
-        required: true
-    },
+    ticketVariants: [{
+        type: {
+            type: String,
+            enum: ['standard', 'premium', 'vip'],
+            required: true
+        },
+        price: {
+            type: Number,
+            required: true
+        },
+        totalTickets: {
+            type: Number,
+            required: true
+        },
+        ticketsSold: {
+            type: Number,
+            default: 0
+        },
+        maxPerUser: {
+            type: Number,
+            required: true
+        },
+        description: {
+            type: String,
+            required: false
+        },
+        benefits: [{
+            type: String
+        }]
+    }],
     startTime: {
         type: Date,
         required: true
@@ -62,20 +88,8 @@ export const eventSchema = new Schema<EventEntity>({
         type: String,
         enum: ["upcoming", "completed", "cancelled"]
     },
-    maxTicketsPerUser: {
-        type: Number,
-        required: true
-    },
-    ticketPurchased: {
-        type: Number,
-        required: true
-    },
     title: {
         type: String,
-        required: true
-    },
-    totalTicket: {
-        type: Number,
         required: true
     },
     venueName: {
@@ -90,7 +104,6 @@ export const eventSchema = new Schema<EventEntity>({
         type: Boolean,
         default: true
     }
-
 })
 
 eventSchema.index({ location: '2dsphere' });

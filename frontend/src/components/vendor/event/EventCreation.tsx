@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, MapPin, Clock, Users, DollarSign,IndianRupee, Image as ImageIcon, Tag } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, DollarSign, IndianRupee, Image as ImageIcon, Tag, Plus, Minus, Star, Crown, Gem } from "lucide-react";
 import { EventType } from "@/types/EventType";
 import { RootState } from "@/redux/Store";
 import { toast } from "react-toastify";
@@ -18,7 +18,18 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-// Define validation schema
+// Define ticket variant interface
+interface TicketVariant {
+  type: 'standard' | 'premium' | 'vip';
+  price: number;
+  totalTickets: number;
+  maxPerUser: number;
+  description: string;
+  benefits: string[];
+  enabled: boolean;
+}
+
+// Updated validation schema
 const eventSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(20, "Description must be at least 20 characters"),
@@ -26,9 +37,6 @@ const eventSchema = z.object({
   address: z.string().min(5, "Address must be at least 5 characters").optional(),
   category: z.string().min(1, "Category is required"),
   hostedBy: z.string().min(3, "Host name must be at least 3 characters").optional(),
-  pricePerTicket: z.number().min(0, "Price cannot be negative"),
-  maxTicketsPerUser: z.number().min(1, "Minimum 1 ticket per user"),
-  totalTicket: z.number().min(1, "Minimum 1 ticket required"),
 });
 
 export const EventCreation = () => {
@@ -41,9 +49,6 @@ export const EventCreation = () => {
       venueName: "",
       category: "",
       hostedBy: "",
-      pricePerTicket: 0,
-      maxTicketsPerUser: 1,
-      totalTicket: 100,
     }
   });
 
@@ -56,10 +61,38 @@ export const EventCreation = () => {
   const [posterImages, setPosterImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-  
-  const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
+  // Ticket variants state
+  const [ticketVariants, setTicketVariants] = useState<TicketVariant[]>([
+    {
+      type: 'standard',
+      price: 0,
+      totalTickets: 100,
+      maxPerUser: 4,
+      description: 'General admission',
+      benefits: ['Entry to event', 'Basic seating'],
+      enabled: true
+    },
+    {
+      type: 'premium',
+      price: 0,
+      totalTickets: 50,
+      maxPerUser: 2,
+      description: 'Enhanced experience',
+      benefits: ['Priority entry', 'Reserved seating', 'Welcome drink'],
+      enabled: false
+    },
+    {
+      type: 'vip',
+      price: 0,
+      totalTickets: 20,
+      maxPerUser: 2,
+      description: 'VIP experience',
+      benefits: ['VIP entrance', 'Front row seating', 'Meet & greet', 'Gift bag'],
+      enabled: false
+    }
+  ]);
 
-  
+  const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const createEventMutation = useCreateEvent();
   const uploadImageMutation = useUploadImageMutation();
 
@@ -68,13 +101,82 @@ export const EventCreation = () => {
     trigger(field);
   };
 
+  // Ticket variant handlers
+  const toggleVariantEnabled = (variantType: 'standard' | 'premium' | 'vip') => {
+    setTicketVariants(prev => 
+      prev.map(variant => 
+        variant.type === variantType 
+          ? { ...variant, enabled: !variant.enabled }
+          : variant
+      )
+    );
+  };
+
+  const updateVariantField = (variantType: 'standard' | 'premium' | 'vip', field: keyof TicketVariant, value: any) => {
+    setTicketVariants(prev => 
+      prev.map(variant => 
+        variant.type === variantType 
+          ? { ...variant, [field]: value }
+          : variant
+      )
+    );
+  };
+
+  const addBenefit = (variantType: 'standard' | 'premium' | 'vip') => {
+    setTicketVariants(prev => 
+      prev.map(variant => 
+        variant.type === variantType 
+          ? { ...variant, benefits: [...variant.benefits, ''] }
+          : variant
+      )
+    );
+  };
+
+  const removeBenefit = (variantType: 'standard' | 'premium' | 'vip', benefitIndex: number) => {
+    setTicketVariants(prev => 
+      prev.map(variant => 
+        variant.type === variantType 
+          ? { ...variant, benefits: variant.benefits.filter((_, i) => i !== benefitIndex) }
+          : variant
+      )
+    );
+  };
+
+  const updateBenefit = (variantType: 'standard' | 'premium' | 'vip', benefitIndex: number, value: string) => {
+    setTicketVariants(prev => 
+      prev.map(variant => 
+        variant.type === variantType 
+          ? { 
+              ...variant, 
+              benefits: variant.benefits.map((benefit, i) => i === benefitIndex ? value : benefit)
+            }
+          : variant
+      )
+    );
+  };
+
+  const getVariantIcon = (type: 'standard' | 'premium' | 'vip') => {
+    switch (type) {
+      case 'standard': return <Tag className="w-5 h-5" />;
+      case 'premium': return <Star className="w-5 h-5" />;
+      case 'vip': return <Crown className="w-5 h-5" />;
+    }
+  };
+
+  const getVariantColor = (type: 'standard' | 'premium' | 'vip') => {
+    switch (type) {
+      case 'standard': return 'border-blue-200 bg-blue-50';
+      case 'premium': return 'border-purple-200 bg-purple-50';
+      case 'vip': return 'border-yellow-200 bg-yellow-50';
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     
     const files = Array.from(e.target.files);
     const newPreviewUrls: string[] = [];
     
-   
     const validFiles = files.filter(file => {
       const isValidType = file.type.startsWith('image/');
       const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB max
@@ -90,7 +192,6 @@ export const EventCreation = () => {
       return true;
     });
 
-   
     validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -129,7 +230,21 @@ export const EventCreation = () => {
   };
 
   const onSubmit = async (data: any) => {
+    // Validate enabled variants
+    const enabledVariants = ticketVariants.filter(variant => variant.enabled);
     
+    if (enabledVariants.length === 0) {
+      toast.error("At least one ticket variant must be enabled");
+      return;
+    }
+
+    // Validate variant prices
+    const invalidVariants = enabledVariants.filter(variant => variant.price <= 0);
+    if (invalidVariants.length > 0) {
+      toast.error("All enabled variants must have a price greater than 0");
+      return;
+    }
+
     if (!eventDate) {
       toast.error("Event date is required");
       return;
@@ -151,13 +266,11 @@ export const EventCreation = () => {
     }
 
     try {
-      
       let uploadedImageUrls: string[] = [];
       if (posterImages.length > 0) {
         uploadedImageUrls = await uploadImages(posterImages);
       }
 
-     
       const eventDateTime = new Date(`${eventDate}T${startTime}`);
       const eventEndTime = new Date(`${eventDate}T${endTime}`);
 
@@ -166,30 +279,41 @@ export const EventCreation = () => {
         return;
       }
 
+      // Prepare ticket variants data
+      const processedVariants = enabledVariants.map(variant => ({
+        type: variant.type,
+        price: variant.price,
+        totalTickets: variant.totalTickets,
+        ticketsSold: 0,
+        maxPerUser: variant.maxPerUser,
+        description: variant.description,
+        benefits: variant.benefits.filter(benefit => benefit.trim() !== '')
+      }));
+
       const finalEventData: EventType = {
         ...data,
         startTime: eventDateTime,
         endTime: eventEndTime,
         date: [eventDateTime],
         createdAt: new Date(),
-        ticketPurchased: 0,
+        ticketVariants: processedVariants,
         posterImage: uploadedImageUrls,
         status: "upcoming",
         location: {
           type: "Point",
           coordinates: [longitude, latitude]
-        }
+        },
+        attendeesCount: 0,
+        isActive: true,
+        attendees: []
       } as EventType;
 
-     
       const response = await createEventMutation.mutateAsync({
         event: finalEventData,
         vendorId: vendorId
       });
 
       toast.success(response.message);
-
-      
       resetForm();
 
     } catch (error: any) {
@@ -205,9 +329,6 @@ export const EventCreation = () => {
     setValue("venueName", "");
     setValue("category", "");
     setValue("hostedBy", "");
-    setValue("pricePerTicket", 0);
-    setValue("maxTicketsPerUser", 1);
-    setValue("totalTicket", 100);
     setEventDate("");
     setStartTime("");
     setEndTime("");
@@ -215,6 +336,37 @@ export const EventCreation = () => {
     setLatitude(0);
     setPosterImages([]);
     setPreviewUrls([]);
+    
+    // Reset ticket variants
+    setTicketVariants([
+      {
+        type: 'standard',
+        price: 0,
+        totalTickets: 100,
+        maxPerUser: 4,
+        description: 'General admission',
+        benefits: ['Entry to event', 'Basic seating'],
+        enabled: true
+      },
+      {
+        type: 'premium',
+        price: 0,
+        totalTickets: 50,
+        maxPerUser: 2,
+        description: 'Enhanced experience',
+        benefits: ['Priority entry', 'Reserved seating', 'Welcome drink'],
+        enabled: false
+      },
+      {
+        type: 'vip',
+        price: 0,
+        totalTickets: 20,
+        maxPerUser: 2,
+        description: 'VIP experience',
+        benefits: ['VIP entrance', 'Front row seating', 'Meet & greet', 'Gift bag'],
+        enabled: false
+      }
+    ]);
   };
 
   const isLoading = createEventMutation.isPending || uploadImageMutation.isPending;
@@ -332,7 +484,7 @@ export const EventCreation = () => {
                 </div>
               </div>
 
-              {/* Location Selection with Modals */}
+              {/* Location Selection */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
@@ -433,58 +585,137 @@ export const EventCreation = () => {
                 </div>
               </div>
 
-              {/* Ticket Information */}
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="price" className="text-sm font-medium flex items-center gap-2">
-                    <IndianRupee className="w-4 h-4 text-primary" />
-                    Price per Ticket
-                  </Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    {...register("pricePerTicket", { valueAsNumber: true })}
-                    onChange={(e) => handleInputChange('pricePerTicket', parseFloat(e.target.value) || 0)}
-                    className="border-border/60 focus:border-primary"
-                    disabled={isLoading}
-                  />
-                  {errors.pricePerTicket && <p className="text-sm text-red-500">{errors.pricePerTicket.message}</p>}
+              {/* Ticket Variants Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <IndianRupee className="w-5 h-5 text-primary" />
+                  <Label className="text-lg font-semibold">Ticket Variants *</Label>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="totalTickets" className="text-sm font-medium flex items-center gap-2">
-                    <Users className="w-4 h-4 text-primary" />
-                    Total Tickets *
-                  </Label>
-                  <Input
-                    id="totalTickets"
-                    type="number"
-                    min="1"
-                    {...register("totalTicket", { valueAsNumber: true })}
-                    onChange={(e) => handleInputChange('totalTicket', parseInt(e.target.value) || 100)}
-                    className="border-border/60 focus:border-primary"
-                    disabled={isLoading}
-                  />
-                  {errors.totalTicket && <p className="text-sm text-red-500">{errors.totalTicket.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="maxPerUser" className="text-sm font-medium">
-                    Max Tickets per User *
-                  </Label>
-                  <Input
-                    id="maxPerUser"
-                    type="number"
-                    min="1"
-                    {...register("maxTicketsPerUser", { valueAsNumber: true })}
-                    onChange={(e) => handleInputChange('maxTicketsPerUser', parseInt(e.target.value) || 1)}
-                    className="border-border/60 focus:border-primary"
-                    disabled={isLoading}
-                  />
-                  {errors.maxTicketsPerUser && <p className="text-sm text-red-500">{errors.maxTicketsPerUser.message}</p>}
+                
+                <div className="space-y-6">
+                  {ticketVariants.map((variant) => (
+                    <Card key={variant.type} className={`transition-all duration-200 ${variant.enabled ? getVariantColor(variant.type) : 'bg-gray-50 border-gray-200'}`}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {getVariantIcon(variant.type)}
+                            <CardTitle className="text-lg capitalize">{variant.type} Ticket</CardTitle>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`${variant.type}-enabled`} className="text-sm">Enable</Label>
+                            <input
+                              id={`${variant.type}-enabled`}
+                              type="checkbox"
+                              checked={variant.enabled}
+                              onChange={() => toggleVariantEnabled(variant.type)}
+                              className="w-4 h-4"
+                              disabled={isLoading}
+                            />
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      {variant.enabled && (
+                        <CardContent className="pt-0 space-y-4">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Price (₹) *</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={variant.price}
+                                onChange={(e) => updateVariantField(variant.type, 'price', parseFloat(e.target.value) || 0)}
+                                placeholder="Enter price"
+                                className="border-border/60 focus:border-primary"
+                                disabled={isLoading}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Total Tickets *</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={variant.totalTickets}
+                                onChange={(e) => updateVariantField(variant.type, 'totalTickets', parseInt(e.target.value) || 0)}
+                                placeholder="Enter total tickets"
+                                className="border-border/60 focus:border-primary"
+                                disabled={isLoading}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Max per User *</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={variant.maxPerUser}
+                                onChange={(e) => updateVariantField(variant.type, 'maxPerUser', parseInt(e.target.value) || 1)}
+                                placeholder="Enter max per user"
+                                className="border-border/60 focus:border-primary"
+                                disabled={isLoading}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Description</Label>
+                              <Input
+                                value={variant.description}
+                                onChange={(e) => updateVariantField(variant.type, 'description', e.target.value)}
+                                placeholder="Enter description"
+                                className="border-border/60 focus:border-primary"
+                                disabled={isLoading}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium">Benefits</Label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addBenefit(variant.type)}
+                                className="text-xs"
+                                disabled={isLoading}
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Add Benefit
+                              </Button>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              {variant.benefits.map((benefit, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <Input
+                                    value={benefit}
+                                    onChange={(e) => updateBenefit(variant.type, index, e.target.value)}
+                                    placeholder="Enter benefit"
+                                    className="border-border/60 focus:border-primary text-sm"
+                                    disabled={isLoading}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeBenefit(variant.type, index)}
+                                    className="px-2"
+                                    disabled={isLoading}
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))}
                 </div>
               </div>
 
@@ -545,12 +776,34 @@ export const EventCreation = () => {
                 )}
               </div>
 
+              {/* Validation Messages for Ticket Variants */}
+              {ticketVariants.filter(variant => variant.enabled).length === 0 && (
+                <p className="text-sm text-red-500">At least one ticket variant must be enabled</p>
+              )}
+
               {/* Submit Button */}
               <div className="pt-6 border-t border-border/50">
+                <div className="mb-4">
+                  <div className="text-sm text-muted-foreground">
+                    <strong>Summary:</strong>{" "}
+                    {ticketVariants.filter(variant => variant.enabled).length > 0 ? (
+                      <span>
+                        {ticketVariants
+                          .filter(variant => variant.enabled)
+                          .map(variant => `${variant.type.charAt(0).toUpperCase() + variant.type.slice(1)} (₹${variant.price})`)
+                          .join(", ")
+                        } variants enabled
+                      </span>
+                    ) : (
+                      <span className="text-red-500">No variants enabled</span>
+                    )}
+                  </div>
+                </div>
+                
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-primary to-yellow-500 hover:from-yellow-500 hover:to-primary text-primary-foreground font-semibold py-6 text-lg shadow-glow transition-all duration-300 transform hover:scale-[1.02]"
-                  disabled={isLoading}
+                  disabled={isLoading || ticketVariants.filter(variant => variant.enabled).length === 0}
                 >
                   {isLoading ? "Creating Event..." : "Create Event"}
                 </Button>

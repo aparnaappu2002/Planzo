@@ -17,52 +17,117 @@ export class ConfirmTicketAndPaymentUseCase implements IconfirmTicketAndPaymentU
     private transactionDatabase: ItransactionRepository
     private stripeService: IStripeService
     private eventDatabase: IeventRepository
-    constructor(stripeService: IStripeService, eventDatabase: IeventRepository, ticketDatabase: IticketRepositoryInterface, walletDatabase: IwalletRepository, transactionDatabase: ItransactionRepository) {
+    
+    constructor(
+        stripeService: IStripeService, 
+        eventDatabase: IeventRepository, 
+        ticketDatabase: IticketRepositoryInterface, 
+        walletDatabase: IwalletRepository, 
+        transactionDatabase: ItransactionRepository
+    ) {
         this.ticketDatabase = ticketDatabase
         this.walletDatabase = walletDatabase
         this.transactionDatabase = transactionDatabase
         this.stripeService = stripeService
         this.eventDatabase = eventDatabase
     }
-    async confirmTicketAndPayment(ticket: TicketEntity, paymentIntent: string, vendorId: string): Promise<TicketEntity> {
-        console.log('vendor id in useCase', vendorId)
-        const confirmPayment = await this.stripeService.confirmPayment(paymentIntent)
+
+    async confirmTicketAndPayment(
+        tickets: TicketEntity[], 
+        paymentIntent: string, 
+        vendorId: string
+    ): Promise<TicketEntity[]> {
+        console.log('=== CONFIRM TICKET AND PAYMENT DEBUG ===');
+        console.log('Vendor ID:', vendorId);
+        console.log('Payment Intent:', paymentIntent);
+        console.log('Tickets to confirm:', tickets.length);
+        console.log('Tickets details:', tickets.map(t => ({
+            ticketId: t.ticketId,
+            variant: t.ticketVariant,
+            amount: t.totalAmount
+        })));
+
+        if (!tickets || tickets.length === 0) {
+            throw new Error('No tickets provided for confirmation');
+        }
+
+        // Confirm the payment with Stripe
+        const confirmPayment = await this.stripeService.confirmPayment(paymentIntent);
         if (confirmPayment.status !== 'succeeded') {
             throw new Error('Payment not successful');
         }
-        const eventDetails = await this.eventDatabase.findTotalTicketCountAndticketPurchased(ticket.eventId!)
+
+        console.log('Payment confirmed successfully');
+
+        // Calculate total ticket count and amount
+        const totalTicketCount = tickets.length; // Each ticket entity represents 1 ticket
+        const totalAmount = tickets.reduce((sum, ticket) => sum + ticket.totalAmount, 0);
+
+        console.log(`Total tickets: ${totalTicketCount}, Total amount: ₹${totalAmount}`);
+
+        // Get event details and validate availability
+        const eventDetails = await this.eventDatabase.findTotalTicketCountAndticketPurchased(tickets[0].eventId!);
         if (eventDetails.ticketPurchased > eventDetails.totalTicket) {
-            throw new Error('Ticket full Sold out')
-        } else if (eventDetails.ticketPurchased + ticket.ticketCount > eventDetails.totalTicket) {
-            throw new Error('Not enough ticket available')
+            throw new Error('Ticket full Sold out');
+        } else if (eventDetails.ticketPurchased + totalTicketCount > eventDetails.totalTicket) {
+            throw new Error(`Not enough tickets available. Available: ${eventDetails.totalTicket - eventDetails.ticketPurchased}, Requested: ${totalTicketCount}`);
         }
-        const newTicketPurchasedCount = eventDetails.ticketPurchased + ticket.ticketCount
-        const updateTicketCount = await this.eventDatabase.updateTicketPurchaseCount(ticket.eventId!, newTicketPurchasedCount)
-        const updatedTicket = await this.ticketDatabase.updatePaymentstatus(ticket._id!)
-        if (!updatedTicket) throw new Error("No ticket found in this ID")
-        const adminId = process.env.ADMIN_ID
-        if (!adminId) throw new Error('NO admin id found')
-        const adminCommision = ticket.totalAmount * 0.01
-        const vendorPrice = ticket.totalAmount - adminCommision
-        const adminWallet = await this.walletDatabase.findWalletByUserId(adminId!)
-        if (!adminWallet) throw new Error("No admin Wallet found in this ID")
+
+        // Update event ticket purchase count
+        const newTicketPurchasedCount = eventDetails.ticketPurchased + totalTicketCount;
+        await this.eventDatabase.updateTicketPurchaseCount(tickets[0].eventId!, newTicketPurchasedCount);
+
+        console.log(`Updated event ticket count from ${eventDetails.ticketPurchased} to ${newTicketPurchasedCount}`);
+
+        // Update payment status for all tickets
+        const updatedTickets: TicketEntity[] = [];
+        for (const ticket of tickets) {
+            console.log(`Updating payment status for ticket: ${ticket.ticketId}`);
+            const updatedTicket = await this.ticketDatabase.updatePaymentstatus(ticket._id!);
+            if (!updatedTicket) {
+                throw new Error(`No ticket found with ID: ${ticket._id}`);
+            }
+            updatedTickets.push(updatedTicket);
+        }
+
+        console.log(`Successfully updated payment status for ${updatedTickets.length} tickets`);
+
+        // Process wallet transactions
+        const adminId = process.env.ADMIN_ID;
+        if (!adminId) throw new Error('NO admin id found');
+
+        // Calculate commission and vendor payment
+        const adminCommission = totalAmount * 0.01; // 1% commission
+        const vendorPrice = totalAmount - adminCommission;
+
+        console.log(`Admin commission: ₹${adminCommission}, Vendor payment: ₹${vendorPrice}`);
+
+        // Process admin wallet transaction
+        const adminWallet = await this.walletDatabase.findWalletByUserId(adminId);
+        if (!adminWallet) throw new Error("No admin Wallet found");
+
         const adminTransaction: TransactionsEntity = {
-            amount: adminCommision,
+            amount: adminCommission,
             currency: 'inr',
             paymentStatus: "credit",
             paymentType: "adminCommission",
             walletId: adminWallet._id!,
-        }
+        };
 
-        const transaction = await this.transactionDatabase.createTransaction(adminTransaction)
-        const adminWalletMoneyAdding = await this.walletDatabase.addMoney(adminId, adminCommision)
-        const vendorWallet = await this.walletDatabase.findWalletByUserId(vendorId)
+        await this.transactionDatabase.createTransaction(adminTransaction);
+        await this.walletDatabase.addMoney(adminId, adminCommission);
 
+        console.log('Admin commission processed successfully');
+
+        // Process vendor wallet transaction
         let vendorWalletId: string | ObjectId;
+        const vendorWallet = await this.walletDatabase.findWalletByUserId(vendorId);
 
         if (vendorWallet) {
             vendorWalletId = vendorWallet._id!;
+            console.log('Using existing vendor wallet');
         } else {
+            console.log('Creating new vendor wallet');
             const generatedWalletId = generateRandomUuid();
             const newVendorWallet: WalletEntity = {
                 walletId: generatedWalletId,
@@ -86,8 +151,21 @@ export class ConfirmTicketAndPaymentUseCase implements IconfirmTicketAndPaymentU
             paymentType: "ticketBooking",
             walletId: vendorWalletId,
         };
-        const vendorTransaction = await this.transactionDatabase.createTransaction(vendorTransactionData)
-        const addMoneyToVendorWallet = await this.walletDatabase.addMoney(vendorId, vendorPrice)
-        return updatedTicket
+
+        await this.transactionDatabase.createTransaction(vendorTransactionData);
+        await this.walletDatabase.addMoney(vendorId, vendorPrice);
+
+        console.log('Vendor payment processed successfully');
+
+        console.log('=== CONFIRMATION COMPLETED ===');
+        console.log(`Confirmed ${updatedTickets.length} tickets successfully`);
+        console.log('Updated tickets:', updatedTickets.map(t => ({
+            ticketId: t.ticketId,
+            variant: t.ticketVariant,
+            paymentStatus: t.paymentStatus
+        })));
+        console.log('=====================================');
+
+        return updatedTickets;
     }
 }

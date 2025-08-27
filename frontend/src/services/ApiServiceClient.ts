@@ -173,15 +173,28 @@ export const createTicket = async (ticket: TicketEntity, totalCount: number, tot
 
 }
 
-export const confirmTicketAndPayment = async (ticket: TicketEntity, paymentIntent: string, vendorId: string) => {
-    try {
-        const response = await axios.post('/confirmTicket', { ticket, paymentIntent, vendorId })
-        return response.data
-    } catch (error) {
-        console.log('error while confirming ticket and payment', error)
-        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while confirming ticket and payment')
-    }
+export const confirmTicketAndPayment = async (
+  tickets: TicketEntity[], 
+  paymentIntent: string, 
+  vendorId: string,
+  totalTickets?: number
+) => {
+  try {
+    const response = await axios.post('/confirmTicket', { 
+      tickets,           // Primary field - array of tickets
+      allTickets: tickets, // Backup field for controller compatibility
+      ticket: tickets[0], // Fallback single ticket for old controller compatibility
+      paymentIntent, 
+      vendorId,
+      totalTickets: totalTickets || tickets.length
+    })
+    return response.data
+  } catch (error) {
+    console.log('error while confirming ticket and payment', error)
+    throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while confirming ticket and payment')
+  }
 }
+
 
 export const searchEvents = async (query: string) => {
     try {

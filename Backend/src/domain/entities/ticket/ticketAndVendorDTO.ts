@@ -7,7 +7,7 @@ export interface TicketAndVendorDTO {
     ticketCount: number
     phone: string;
     email: string;
-    paymentStatus: 'pending' | 'successful' | 'failed';
+    paymentStatus: 'pending' | 'successful' | 'failed' | "refunded";
     qrCodeLink: string;
     eventId: {
         _id: ObjectId
@@ -15,5 +15,5 @@ export interface TicketAndVendorDTO {
     }
     clientId: ObjectId | string;
     ticketStatus: 'used' | 'refunded' | 'unused'
-    paymentTransactionId: ObjectId
+    paymentTransactionId: ObjectId | string
 }

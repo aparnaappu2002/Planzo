@@ -17,5 +17,6 @@ export interface IeventRepository{
     findEventsNearToClient(latitude: number, longitude: number, totalPages: number, range: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
     findEventsBaseOnCategory(category: string, pageNo: number, sortBy: string): Promise<{ events: EventEntity[] | [], totalPages: number }>
     findEventsNearLocation(locationQuery: string, options?: SearchLocationOptions): Promise<SearchEventsResult>;
+    updateVariantTicketsSold(eventId: string | ObjectId, variantType: string, ticketCount: number): Promise<EventEntity | null>;
 
 }

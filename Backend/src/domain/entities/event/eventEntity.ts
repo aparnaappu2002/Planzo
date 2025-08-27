@@ -1,5 +1,15 @@
 import { ObjectId } from "mongoose";
 
+export interface TicketVariant {
+    type: 'standard' | 'premium' | 'vip';
+    price: number;
+    totalTickets: number;
+    ticketsSold: number;
+    maxPerUser: number;
+    description?: string;
+    benefits?: string[];
+}
+
 export interface EventEntity {
     _id?: ObjectId;
     title: string;
@@ -12,17 +22,14 @@ export interface EventEntity {
     startTime: Date;
     endTime: Date;
     posterImage: string[];
-    pricePerTicket: number;
-    maxTicketsPerUser: number;
-    totalTicket: number;
+    ticketVariants: TicketVariant[];
     date: Date[];
     createdAt: Date;
     attendees: ObjectId[]
-    ticketPurchased: number
     address?: string
     venueName?: string
     category: string
     status: "upcoming" | "completed" | "cancelled"
     attendeesCount: number
-    isActive:boolean
+    isActive: boolean
 }

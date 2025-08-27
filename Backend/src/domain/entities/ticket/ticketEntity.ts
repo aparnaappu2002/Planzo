@@ -7,11 +7,12 @@ export interface TicketEntity {
     ticketCount: number
     phone: string;
     email: string;
-    paymentStatus: 'pending' | 'successful' | 'failed';
+    paymentStatus: 'pending' | 'successful' | 'failed' | 'refunded';
     qrCodeLink: string;
     eventId: ObjectId | string;
     clientId: ObjectId | string;
+    ticketVariant: string
     ticketStatus: 'used' | 'refunded' | 'unused'
-    paymentTransactionId: ObjectId
+    paymentTransactionId: ObjectId | string
     checkInHistory?: Date[]
 }

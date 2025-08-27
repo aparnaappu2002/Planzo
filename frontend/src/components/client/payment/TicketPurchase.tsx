@@ -29,9 +29,11 @@ import {
   CheckCircle,
   User,
   Mail,
-  Phone
+  Phone,
+  Crown,
+  Gem,
+  Shield
 } from "lucide-react";
-// Import PaymentMethodModal component
 import PaymentMethodModal from './PaymentMethod';
 import { RootState } from '@/redux/Store';
 import { useSelector } from 'react-redux';
@@ -59,10 +61,12 @@ const validateContactInfo = (email, phone) => {
   return errors;
 };
 
-
 const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
   const navigate = useNavigate();
-  const [ticketQuantity, setTicketQuantity] = useState(1);
+  
+  // Store selected variants by type: variantType -> quantity
+  const [selectedTicketVariants, setSelectedTicketVariants] = useState<{[key: string]: number}>({});
+  
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     email: '',
@@ -73,16 +77,81 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseComplete, setPurchaseComplete] = useState(false);
   const [showChoosePaymentModal, setShowChoosePaymentModal] = useState(false);
-  const clientId = useSelector((state: RootState) => state.clientSlice.client?._id)
+  
+  const clientId = useSelector((state: RootState) => state.clientSlice.client?._id);
 
-  const availableTickets = event.totalTicket - event.ticketPurchased;
-  const totalAmount = (event.pricePerTicket || 0) * ticketQuantity;
-  const serviceFee = totalAmount > 0 ? Math.max(10, totalAmount * 0.02) : 0;
-  const finalAmount = totalAmount + serviceFee;
+  // Helper functions for ticket variants
+  const getTicketTypeIcon = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'vip': return <Crown className="w-4 h-4" />;
+      case 'premium': return <Gem className="w-4 h-4" />;
+      case 'standard': return <Shield className="w-4 h-4" />;
+      default: return <Ticket className="w-4 h-4" />;
+    }
+  };
 
-  const handleQuantityChange = (change) => {
-    const newQuantity = Math.max(1, Math.min(ticketQuantity + change, Math.min(availableTickets, event.maxTicketsPerUser)));
-    setTicketQuantity(newQuantity);
+  const getTicketTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'vip': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'premium': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'standard': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Calculate totals - REMOVED SERVICE FEE
+  const calculateTotals = () => {
+    let totalQuantity = 0;
+    let totalAmount = 0;
+    
+    // Iterate through selected variants using variant types
+    Object.entries(selectedTicketVariants).forEach(([variantType, quantity]) => {
+      const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
+      if (variant && quantity > 0) {
+        totalQuantity += quantity;
+        totalAmount += variant.price * quantity;
+      }
+    });
+    
+    // REMOVED: Service fee calculation
+    // const serviceFee = totalAmount > 0 ? Math.max(10, totalAmount * 0.02) : 0;
+    // const finalAmount = totalAmount + serviceFee;
+    
+    // Final amount is now just the total amount without any additional fees
+    const finalAmount = totalAmount;
+    
+    return { totalQuantity, totalAmount, finalAmount };
+  };
+
+  const { totalQuantity, totalAmount, finalAmount } = calculateTotals();
+
+  const handleVariantQuantityChange = (variantType: string, change: number) => {
+    const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
+    if (!variant) {
+      console.error('Variant not found:', variantType);
+      return;
+    }
+
+    const currentQuantity = selectedTicketVariants[variantType] || 0;
+    const availableForVariant = variant.totalTickets - variant.ticketsSold;
+    const maxForVariant = Math.min(availableForVariant, variant.maxPerUser);
+    
+    const newQuantity = Math.max(0, Math.min(currentQuantity + change, maxForVariant));
+    
+    setSelectedTicketVariants(prev => {
+      if (newQuantity === 0) {
+        // Remove the variant if quantity is 0
+        const { [variantType]: removed, ...rest } = prev;
+        return rest;
+      } else {
+        return {
+          ...prev,
+          [variantType]: newQuantity
+        };
+      }
+    });
+
+    console.log(`Updated variant ${variantType} quantity to:`, newQuantity);
   };
 
   const handleInputChange = (field, value) => {
@@ -111,29 +180,61 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     }
   };
 
+  // Prepare ticket data for backend (using variant types as keys)
+  const prepareTicketData = () => {
+    console.log('=== PREPARING TICKET DATA FOR BACKEND ===');
+    console.log('selectedTicketVariants:', selectedTicketVariants);
+    console.log('event.ticketVariants:', event.ticketVariants);
+    
+    // Validate that we have selections
+    const hasSelections = Object.values(selectedTicketVariants).some(quantity => quantity > 0);
+    if (!hasSelections) {
+      console.error('No ticket variants selected');
+      return null;
+    }
+
+    // Prepare the ticket data structure expected by backend
+    const ticketData = {
+      clientId: clientId!,
+      email: customerInfo.email,
+      phone: customerInfo.phone,
+      eventId: event._id!,
+      ticketVariants: selectedTicketVariants // This is already in the format: { variantType: quantity }
+    };
+
+    console.log('Final prepared ticket data:', ticketData);
+    console.log('==========================================');
+    
+    return ticketData;
+  };
+
   const handleWalletPayment = () => {
     const validationErrors = validateContactInfo(customerInfo.email, customerInfo.phone);
     setErrors(validationErrors);
     
     if (Object.keys(validationErrors).length > 0) {
-      return; // ❌ Stop if there are validation errors
+      return;
     }
 
-    const ticketPaymentData = {
-      clientId: clientId!,
-      email: customerInfo.email,
-      phone: customerInfo.phone,
-      eventId: event._id!,
+    const ticketData = prepareTicketData();
+    
+    if (!ticketData) {
+      console.error('No valid ticket data prepared');
+      return;
+    }
+
+    const navigationData = {
+      amount: finalAmount, // No service fee included
+      ticketData: ticketData,
+      type: 'ticketBooking',
+      totalTicketCount: totalQuantity,
+      vendorId: event.hostedBy,
     };
 
+    console.log('Wallet payment navigation data:', navigationData);
+
     navigate('/ticketPaymentWallet', {
-      state: {
-        amount: event.pricePerTicket * ticketQuantity,
-        ticketData: ticketPaymentData,
-        type: 'ticketBooking',
-        totalTicketCount: ticketQuantity,
-        vendorId: event.hostedBy,
-      }
+      state: navigationData
     });
   };
 
@@ -145,21 +246,25 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
       return; 
     }
 
-    const ticketPaymentData = {
-      clientId: clientId,
-      email: customerInfo.email,
-      phone: customerInfo.phone,
-      eventId: event._id,
+    const ticketData = prepareTicketData();
+    
+    if (!ticketData) {
+      console.error('No valid ticket data prepared');
+      return;
+    }
+
+    const navigationData = {
+      amount: finalAmount, // No service fee included
+      ticketData: ticketData,
+      type: 'ticketBooking',
+      totalTicketCount: totalQuantity,
+      vendorId: event.hostedBy
     };
 
+    console.log('Stripe payment navigation data:', navigationData);
+
     navigate('/ticketPayment', {
-      state: {
-        amount: event.pricePerTicket * ticketQuantity,
-        ticketData: ticketPaymentData,
-        type: 'ticketBooking',
-        totalTicketCount: ticketQuantity,
-        vendorId: event.hostedBy
-      }
+      state: navigationData
     });
     
     onOpenChange(false);
@@ -180,7 +285,7 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     setErrors(validationErrors);
     
     if (Object.keys(validationErrors).length > 0) {
-      return; // ❌ Stop if there are validation errors
+      return;
     }
 
     setIsProcessing(true);
@@ -192,7 +297,8 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     }, 2000);
   };
 
-  const isFormValid = customerInfo.name && customerInfo.email && customerInfo.phone && Object.keys(errors).length === 0;
+  const isFormValid = customerInfo.name && customerInfo.email && customerInfo.phone && 
+                     Object.keys(errors).length === 0 && totalQuantity > 0;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date TBA';
@@ -225,7 +331,7 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
             </p>
             <div className="bg-green-50 p-4 rounded-lg mb-4">
               <p className="text-sm text-green-700">
-                <strong>{ticketQuantity} ticket{ticketQuantity > 1 ? 's' : ''}</strong> for <strong>{event.title}</strong>
+                <strong>{totalQuantity} ticket{totalQuantity > 1 ? 's' : ''}</strong> for <strong>{event.title}</strong>
               </p>
               <p className="text-xs text-green-600 mt-1">
                 Confirmation sent to {customerInfo.email}
@@ -235,6 +341,7 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
               onClick={() => {
                 setPurchaseComplete(false);
                 onOpenChange(false);
+                setSelectedTicketVariants({});
               }}
               className="w-full"
             >
@@ -251,7 +358,7 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         {children && <DialogTrigger asChild>{children}</DialogTrigger>}
         
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-gray-900">
               Purchase Tickets
@@ -289,54 +396,132 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
               </CardHeader>
             </Card>
 
-            {/* Ticket Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Ticket className="w-5 h-5" />
-                  Select Tickets
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="font-medium">
-                      {event.pricePerTicket ? `₹${event.pricePerTicket}` : 'Free'} per ticket
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {availableTickets} tickets available • Max {event.maxTicketsPerUser} per person
-                    </p>
+            {/* Ticket Variants Selection */}
+            {event.ticketVariants && event.ticketVariants.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="w-5 h-5" />
+                    Select Ticket Types
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    You can select multiple ticket types and quantities
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {event.ticketVariants.map((variant, index) => {
+                      const availableForVariant = variant.totalTickets - variant.ticketsSold;
+                      const selectedQuantity = selectedTicketVariants[variant.type] || 0;
+                      const maxSelectable = Math.min(availableForVariant, variant.maxPerUser);
+                      
+                      return (
+                        <Card key={variant._id || index} className={`border-2 ${getTicketTypeColor(variant.type)}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  {getTicketTypeIcon(variant.type)}
+                                  <h4 className="font-semibold capitalize">{variant.type}</h4>
+                                  <Badge variant="outline" className="text-xs ml-2">
+                                    {availableForVariant}/{variant.totalTickets} available
+                                  </Badge>
+                                </div>
+                                
+                                <p className="text-sm text-gray-600 mb-2">{variant.description}</p>
+                                
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-lg font-bold text-gray-900">₹{variant.price}</span>
+                                  <span className="text-sm text-gray-500">Max {variant.maxPerUser} per person</span>
+                                </div>
+                                
+                                {variant.benefits && variant.benefits.length > 0 && (
+                                  <div className="mb-3">
+                                    <p className="text-xs font-medium text-gray-700 mb-1">Benefits:</p>
+                                    <ul className="text-xs text-gray-600 space-y-1">
+                                      {variant.benefits.map((benefit, idx) => (
+                                        <li key={idx} className="flex items-center gap-1">
+                                          <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                                          {benefit}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                
+                                {availableForVariant < 10 && availableForVariant > 0 && (
+                                  <div className="flex items-center gap-2 p-2 bg-orange-50 text-orange-700 rounded text-xs">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>Only {availableForVariant} left!</span>
+                                  </div>
+                                )}
+                                
+                                {availableForVariant === 0 && (
+                                  <Badge className="w-full justify-center bg-red-100 text-red-800">
+                                    Sold Out
+                                  </Badge>
+                                )}
+                                
+                                {selectedQuantity > 0 && (
+                                  <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                                    Selected: {selectedQuantity} × ₹{variant.price} = ₹{selectedQuantity * variant.price}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {availableForVariant > 0 && (
+                                <div className="flex items-center gap-3 ml-4">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleVariantQuantityChange(variant.type, -1)}
+                                    disabled={selectedQuantity <= 0}
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </Button>
+                                  <span className="w-8 text-center font-medium">{selectedQuantity}</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleVariantQuantityChange(variant.type, 1)}
+                                    disabled={selectedQuantity >= maxSelectable}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuantityChange(-1)}
-                      disabled={ticketQuantity <= 1}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">{ticketQuantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuantityChange(1)}
-                      disabled={ticketQuantity >= Math.min(availableTickets, event.maxTicketsPerUser)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                  
+                  {totalQuantity === 0 && (
+                    <div className="text-center py-4 text-gray-500">
+                      <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>Please select at least one ticket to continue</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              // Fallback for events without ticket variants
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="w-5 h-5" />
+                    Select Tickets
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-4 text-gray-500">
+                    <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                    <p>No ticket variants available for this event</p>
                   </div>
-                </div>
-
-                {/* Availability Warning */}
-                {availableTickets < 10 && (
-                  <div className="flex items-center gap-2 p-3 bg-orange-50 text-orange-700 rounded-lg text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Only {availableTickets} tickets left!</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Customer Information */}
             <Card>
@@ -399,45 +584,61 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
             </Card>
 
             {/* Order Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Order Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span>{ticketQuantity} × Ticket{ticketQuantity > 1 ? 's' : ''}</span>
-                  <span>₹{totalAmount.toFixed(2)}</span>
-                </div>
-                {serviceFee > 0 && (
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Service Fee</span>
-                    <span>₹{serviceFee.toFixed(2)}</span>
+            {totalQuantity > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Order Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Selected tickets breakdown */}
+                  {Object.entries(selectedTicketVariants)
+                    .filter(([_, quantity]) => quantity > 0)
+                    .map(([variantType, quantity]) => {
+                      const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
+                      if (!variant) return null;
+                      
+                      return (
+                        <div key={variantType} className="flex justify-between">
+                          <span className="flex items-center gap-2">
+                            {getTicketTypeIcon(variant.type)}
+                            {quantity} × {variant.type.charAt(0).toUpperCase() + variant.type.slice(1)} Ticket{quantity > 1 ? 's' : ''}
+                          </span>
+                          <span>₹{(variant.price * quantity).toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                  
+                  <Separator />
+                  
+                  {/* REMOVED: Service fee display */}
+                  
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total ({totalQuantity} ticket{totalQuantity > 1 ? 's' : ''})</span>
+                    <span className="flex items-center">
+                      <IndianRupee className="w-4 h-4 mr-1" />
+                      {finalAmount.toFixed(2)}
+                    </span>
                   </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span className="flex items-center">
-                    <IndianRupee className="w-4 h-4 mr-1" />
-                    {finalAmount.toFixed(2)}
-                  </span>
-                </div>
-                {totalAmount === 0 && (
-                  <p className="text-sm text-green-600 text-center">
-                    This is a free event!
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                  {totalAmount === 0 && (
+                    <p className="text-sm text-green-600 text-center">
+                      This is a free event!
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-3">
             <Button 
               variant="outline" 
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                onOpenChange(false);
+                setSelectedTicketVariants({});
+              }}
               className="w-full sm:w-auto"
             >
               Cancel

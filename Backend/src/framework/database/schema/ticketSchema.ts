@@ -11,7 +11,6 @@ export const ticketSchema = new Schema<TicketEntity>({
         ref: "client",
         required: true
     },
-
     email: {
         type: String,
         required: true
@@ -19,6 +18,11 @@ export const ticketSchema = new Schema<TicketEntity>({
     eventId: {
         type: Schema.Types.ObjectId,
         ref: 'event',
+        required: true
+    },
+    ticketVariant: {
+        type: String,
+        enum: ['standard', 'premium', 'vip'],
         required: true
     },
     ticketCount: {
@@ -53,8 +57,7 @@ export const ticketSchema = new Schema<TicketEntity>({
     checkInHistory: {
         type: [Date],
         default: []
-      }
-
+    }
 }, {
     timestamps: true
 })

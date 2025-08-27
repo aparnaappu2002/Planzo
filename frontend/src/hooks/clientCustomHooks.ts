@@ -140,16 +140,37 @@ export const useCreateTicket = () => {
 export const useConfirmTicketAndPayment = () => {
   return useMutation({
     mutationFn: ({
-      ticket,
+      tickets,
+      allTickets, // Backup field
+      ticket,     // Fallback field
       paymentIntent,
       vendorId,
+      totalTickets
     }: {
-      ticket: TicketEntity;
+      tickets?: TicketEntity[];      // Primary - array of tickets
+      allTickets?: TicketEntity[];   // Backup field
+      ticket?: TicketEntity;         // Fallback single ticket
       paymentIntent: string;
       vendorId: string;
-    }) => confirmTicketAndPayment(ticket, paymentIntent, vendorId),
+      totalTickets?: number;
+    }) => {
+      // Determine which tickets to use with fallback logic
+      const ticketsToConfirm = tickets || allTickets || (ticket ? [ticket] : []);
+      
+      if (ticketsToConfirm.length === 0) {
+        throw new Error('No tickets provided for confirmation');
+      }
+      
+      return confirmTicketAndPayment(
+        ticketsToConfirm, 
+        paymentIntent, 
+        vendorId, 
+        totalTickets
+      );
+    },
   });
 };
+
 
 export const useFindEventsOnQuery = () => {
   return useMutation({

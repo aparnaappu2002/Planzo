@@ -6,7 +6,7 @@ export interface TicketAndEventDTO {
     ticketCount: number
     phone: string;
     email: string;
-    paymentStatus: 'pending' | 'successful' | 'failed';
+    paymentStatus: 'pending' | 'successful' | 'failed' | 'refunded';
     qrCodeLink: string;
     ticketStatus: 'used' | 'refunded' | 'unused'
     event: {

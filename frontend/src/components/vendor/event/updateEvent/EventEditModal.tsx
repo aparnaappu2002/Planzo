@@ -21,16 +21,34 @@ import { useForm } from 'react-hook-form';
 import { useUpdateEvent, useUploadImageMutation } from '@/hooks/vendorCustomHooks';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
-import { CalendarDays, Save, X, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { CalendarDays, Save, X, Image as ImageIcon, Trash2, Plus, Minus } from 'lucide-react';
 import React, { useState, useCallback } from 'react';
+
+interface TicketVariant {
+  type: string;
+  price: number;
+  totalTickets: number;
+  ticketsSold?: number;
+  maxPerUser: number;
+  description?: string;
+  benefits?: string[];
+}
 
 interface EventEditModalProps {
   event: EventType | null;
   isOpen: boolean;
   onClose: () => void;
+  onEventUpdated?: (updatedEvent: EventType) => void; 
 }
 
-export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) => {
+const TICKET_TYPES = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'premium', label: 'Premium' },
+  { value: 'vip', label: 'VIP' },
+  
+];
+
+export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: EventEditModalProps) => {
   const { 
     register, 
     handleSubmit, 
@@ -48,6 +66,8 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
   const [newImages, setNewImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(event?.posterImage || []);
+  const [ticketVariants, setTicketVariants] = useState<TicketVariant[]>([]);
+  const [useTicketVariants, setUseTicketVariants] = useState(false);
 
   const watchedStatus = watch('status');
 
@@ -59,9 +79,29 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
     return format(date, "yyyy-MM-dd'T'HH:mm");
   };
 
-  // Reset form when event changes
   React.useEffect(() => {
     if (event) {
+      const hasTicketVariants = event.ticketVariants && event.ticketVariants.length > 0;
+      setUseTicketVariants(hasTicketVariants);
+      
+      if (hasTicketVariants) {
+        setTicketVariants(event.ticketVariants.map(variant => ({
+          type: variant.type || 'standard',
+          price: variant.price || 0,
+          totalTickets: variant.totalTickets || 0,
+          ticketsSold: variant.ticketsSold || 0,
+          maxPerUser: variant.maxPerUser || 2,
+          description: variant.description || '',
+          benefits: variant.benefits || []
+        })));
+      }
+
+      let eventDate = '';
+      if (event.date) {
+        const dateValue = Array.isArray(event.date) ? event.date[0] : event.date;
+        eventDate = format(new Date(dateValue), 'yyyy-MM-dd');
+      }
+
       reset({
         title: event.title,
         description: event.description,
@@ -69,22 +109,24 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
         startTime: formatDateForInput(event.startTime),
         endTime: formatDateForInput(event.endTime),
         posterImage: event.posterImage,
-        pricePerTicket: event.pricePerTicket,
-        maxTicketsPerUser: event.maxTicketsPerUser,
-        totalTicket: event.totalTicket,
-        date: event.date ? format(new Date(event.date), 'yyyy-MM-dd') : '',
+        pricePerTicket: hasTicketVariants ? 0 : (event.pricePerTicket || 0),
+        maxTicketsPerUser: hasTicketVariants ? 
+          (event.ticketVariants?.[0]?.maxPerUser || 2) : 
+          (event.maxTicketsPerUser || 1),
+        totalTicket: hasTicketVariants ? 0 : (event.totalTicket || 0),
+        date: eventDate,
         createdAt: event.createdAt,
-        ticketPurchased: event.ticketPurchased,
+        ticketPurchased: event.ticketPurchased || 0,
         address: event.address,
         venueName: event.venueName,
         category: event.category,
         status: event.status,
+        ticketVariants: event.ticketVariants || []
       });
       
-      // Explicitly set the datetime values using setValue to ensure they populate
       setValue('startTime', formatDateForInput(event.startTime));
       setValue('endTime', formatDateForInput(event.endTime));
-      setValue('date', event.date ? format(new Date(event.date), 'yyyy-MM-dd') : '');
+      setValue('date', eventDate);
       
       setExistingImages(event.posterImage || []);
       setNewImages([]);
@@ -138,6 +180,28 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const addTicketVariant = () => {
+    setTicketVariants(prev => [...prev, { 
+      type: 'standard', 
+      price: 0, 
+      totalTickets: 0, 
+      ticketsSold: 0,
+      maxPerUser: 2,
+      description: '',
+      benefits: []
+    }]);
+  };
+
+  const removeTicketVariant = (index: number) => {
+    setTicketVariants(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateTicketVariant = (index: number, field: keyof TicketVariant, value: string | number | string[]) => {
+    setTicketVariants(prev => prev.map((variant, i) => 
+      i === index ? { ...variant, [field]: value } : variant
+    ));
+  };
+
   const uploadImages = async (images: File[]): Promise<string[]> => {
     const uploadPromises = images.map(async (image) => {
       const formData = new FormData();
@@ -156,7 +220,6 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
     return Promise.all(uploadPromises);
   };
 
-  // Custom validation functions
   const validateDateTime = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -170,9 +233,8 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
       return 'End time must be after start time';
     }
     
-    // Check if the time difference is reasonable (at least 30 minutes)
     const timeDiff = end.getTime() - start.getTime();
-    const minDuration = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const minDuration = 30 * 60 * 1000; 
     
     if (timeDiff < minDuration) {
       return 'Event must be at least 30 minutes long';
@@ -193,13 +255,43 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
     return true;
   };
 
+  const validateTicketVariants = (variants: TicketVariant[]) => {
+    const usedTypes = new Set<string>();
+    
+    for (let i = 0; i < variants.length; i++) {
+      const variant = variants[i];
+      
+      if (usedTypes.has(variant.type)) {
+        const typeLabel = TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type;
+        return `Duplicate ticket type: ${typeLabel}. Each type can only be used once.`;
+      }
+      usedTypes.add(variant.type);
+      
+      if (variant.price < 0) {
+        const typeLabel = TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type;
+        return `${typeLabel}: Price cannot be negative`;
+      }
+      if (variant.totalTickets <= 0) {
+        const typeLabel = TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type;
+        return `${typeLabel}: Total tickets must be greater than 0`;
+      }
+      if (variant.totalTickets < (variant.ticketsSold || 0)) {
+        const typeLabel = TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type;
+        return `${typeLabel}: Total tickets cannot be less than already sold tickets (${variant.ticketsSold || 0})`;
+      }
+      if (variant.maxPerUser > variant.totalTickets) {
+        const typeLabel = TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type;
+        return `${typeLabel}: Max per user cannot exceed total tickets`;
+      }
+    }
+    return true;
+  };
+
   const onSubmit = async (data: EventUpdateEntity) => {
     if (!event) return;
     
-    // Additional validation before submission
     const startTime = data.startTime;
     const endTime = data.endTime;
-    const soldTickets = event.ticketPurchased || 0;
     
     if (startTime && endTime) {
       const dateValidation = validateDateTime(startTime, endTime);
@@ -209,38 +301,53 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
       }
     }
     
-    const ticketValidation = validateTickets(data.maxTicketsPerUser!, data.totalTicket!, soldTickets);
-    if (ticketValidation !== true) {
-      toast.error(ticketValidation);
-      return;
+    if (useTicketVariants) {
+      if (ticketVariants.length === 0) {
+        toast.error('At least one ticket variant is required');
+        return;
+      }
+      
+      const variantValidation = validateTicketVariants(ticketVariants);
+      if (variantValidation !== true) {
+        toast.error(variantValidation);
+        return;
+      }
+    } else {
+      const soldTickets = event.ticketPurchased || 0;
+      const ticketValidation = validateTickets(data.maxTicketsPerUser!, data.totalTicket!, soldTickets);
+      if (ticketValidation !== true) {
+        toast.error(ticketValidation);
+        return;
+      }
     }
     
     setIsSubmitting(true);
     try {
-      // Upload new images first if any
       let uploadedImageUrls: string[] = [];
       if (newImages.length > 0) {
         uploadedImageUrls = await uploadImages(newImages);
       }
 
-      // Combine existing images (minus any removed) with new uploaded images
       const allImages = [...existingImages, ...uploadedImageUrls];
 
-      // Fix the location object structure before sending
-      const updateData = { 
+      const updateData: any = { 
         ...data,
         posterImage: allImages
       };
+
+      if (useTicketVariants) {
+        updateData.ticketVariants = ticketVariants;
+        delete updateData.pricePerTicket;
+        delete updateData.totalTicket;
+      } else {
+        updateData.ticketVariants = [];
+      }
       
-      // If location exists but is incomplete, fix it
       if (updateData.location && updateData.location.type === 'Point') {
-        // If coordinates are missing or invalid, provide default coordinates
         if (!updateData.location.coordinates || !Array.isArray(updateData.location.coordinates)) {
-          // Default coordinates (0, 0) - you might want to use actual coordinates
-          // Or remove the location field entirely if not needed
           updateData.location = {
             type: 'Point',
-            coordinates: [0, 0] // [longitude, latitude]
+            coordinates: [0, 0] 
           };
         }
       }
@@ -250,8 +357,34 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
         update: updateData,
       });
       
-      toast.success(response.message);
-      onClose();
+      toast.success(response.message || 'Event updated successfully');
+      
+      const updatedEvent: EventType = {
+        ...event,
+        ...updateData,
+        _id: event._id, 
+        
+        startTime: updateData.startTime,
+        endTime: updateData.endTime,
+        date: updateData.date,
+        updatedAt: new Date().toISOString(), 
+        posterImage: allImages,
+        ticketVariants: useTicketVariants ? ticketVariants : [],
+        ticketPurchased: event.ticketPurchased
+      };
+      
+      
+      if (onEventUpdated) {
+        try {
+          await onEventUpdated(updatedEvent);
+        } catch (error) {
+        }
+      } else {
+      }
+      
+      setTimeout(() => {
+        onClose();
+      }, 200);
     } catch (error: any) {
       let errorMessage;
             
@@ -269,7 +402,26 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
     }
   };
 
+  const getTicketVariantStats = () => {
+    if (!useTicketVariants || ticketVariants.length === 0) return null;
+    
+    const totalQuantity = ticketVariants.reduce((sum, variant) => sum + variant.totalTickets, 0);
+    const totalSold = ticketVariants.reduce((sum, variant) => sum + (variant.ticketsSold || 0), 0);
+    
+    return { totalQuantity, totalSold };
+  };
+
+  const getAvailableTicketTypes = (currentIndex: number) => {
+    const usedTypes = ticketVariants
+      .map((variant, index) => index !== currentIndex ? variant.type : null)
+      .filter(Boolean);
+    
+    return TICKET_TYPES.filter(type => !usedTypes.includes(type.value));
+  };
+
   if (!event) return null;
+
+  const variantStats = getTicketVariantStats();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -466,90 +618,243 @@ export const EventEditModal = ({ event, isOpen, onClose }: EventEditModalProps) 
 
           {/* Ticket Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Ticket Information</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="pricePerTicket">Price per Ticket ($) *</Label>
-                <Input
-                  id="pricePerTicket"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register('pricePerTicket', { 
-                    required: 'Price per ticket is required',
-                    min: { value: 0, message: 'Price cannot be negative' },
-                    max: { value: 10000, message: 'Price cannot exceed $10,000' },
-                    valueAsNumber: true 
-                  })}
-                  placeholder="0.00"
-                  className={errors.pricePerTicket ? 'border-red-500' : ''}
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Ticket Information</h3>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="useTicketVariants"
+                  checked={useTicketVariants}
+                  onChange={(e) => setUseTicketVariants(e.target.checked)}
+                  className="rounded"
                 />
-                {errors.pricePerTicket && (
-                  <p className="text-sm text-red-500">{errors.pricePerTicket.message}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="totalTicket">Total Tickets *</Label>
-                <Input
-                  id="totalTicket"
-                  type="number"
-                  min={event.ticketPurchased || 1}
-                  {...register('totalTicket', { 
-                    required: 'Total tickets is required',
-                    min: { value: event.ticketPurchased || 1, message: `Cannot be less than already sold tickets (${event.ticketPurchased || 0})` },
-                    max: { value: 100000, message: 'Cannot exceed 100,000 tickets' },
-                    valueAsNumber: true,
-                    validate: (value) => {
-                      const soldTickets = event.ticketPurchased || 0;
-                      if (value < soldTickets) {
-                        return `Total tickets cannot be less than already sold tickets (${soldTickets})`;
-                      }
-                      return true;
-                    }
-                  })}
-                  placeholder="100"
-                  className={errors.totalTicket ? 'border-red-500' : ''}
-                />
-                {errors.totalTicket && (
-                  <p className="text-sm text-red-500">{errors.totalTicket.message}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="maxTicketsPerUser">Max Tickets per User *</Label>
-                <Input
-                  id="maxTicketsPerUser"
-                  type="number"
-                  min="1"
-                  {...register('maxTicketsPerUser', { 
-                    required: 'Max tickets per user is required',
-                    min: { value: 1, message: 'Must allow at least 1 ticket per user' },
-                    max: { value: 100, message: 'Cannot exceed 100 tickets per user' },
-                    valueAsNumber: true 
-                  })}
-                  placeholder="4"
-                  className={errors.maxTicketsPerUser ? 'border-red-500' : ''}
-                />
-                {errors.maxTicketsPerUser && (
-                  <p className="text-sm text-red-500">{errors.maxTicketsPerUser.message}</p>
-                )}
+                <Label htmlFor="useTicketVariants" className="text-sm">
+                  Use Multiple Ticket Types
+                </Label>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Current Sales</Label>
-              <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <strong>{event.ticketPurchased || 0}</strong> tickets sold out of{' '}
-                <strong>{event.totalTicket}</strong> total tickets
-                {event.totalTicket && event.ticketPurchased && (
-                  <span className="ml-2">
-                    ({Math.round((event.ticketPurchased / event.totalTicket) * 100)}% sold)
-                  </span>
+            {!useTicketVariants ? (
+              // Single pricing model
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pricePerTicket">Price per Ticket ($) *</Label>
+                    <Input
+                      id="pricePerTicket"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      {...register('pricePerTicket', { 
+                        required: !useTicketVariants ? 'Price per ticket is required' : false,
+                        min: { value: 0, message: 'Price cannot be negative' },
+                        max: { value: 10000, message: 'Price cannot exceed $10,000' },
+                        valueAsNumber: true 
+                      })}
+                      placeholder="0.00"
+                      className={errors.pricePerTicket ? 'border-red-500' : ''}
+                    />
+                    {errors.pricePerTicket && (
+                      <p className="text-sm text-red-500">{errors.pricePerTicket.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="totalTicket">Total Tickets *</Label>
+                    <Input
+                      id="totalTicket"
+                      type="number"
+                      min={event.ticketPurchased || 1}
+                      {...register('totalTicket', { 
+                        required: !useTicketVariants ? 'Total tickets is required' : false,
+                        min: { value: event.ticketPurchased || 1, message: `Cannot be less than already sold tickets (${event.ticketPurchased || 0})` },
+                        max: { value: 100000, message: 'Cannot exceed 100,000 tickets' },
+                        valueAsNumber: true,
+                        validate: (value) => {
+                          if (useTicketVariants) return true;
+                          const soldTickets = event.ticketPurchased || 0;
+                          if (value < soldTickets) {
+                            return `Total tickets cannot be less than already sold tickets (${soldTickets})`;
+                          }
+                          return true;
+                        }
+                      })}
+                      placeholder="100"
+                      className={errors.totalTicket ? 'border-red-500' : ''}
+                    />
+                    {errors.totalTicket && (
+                      <p className="text-sm text-red-500">{errors.totalTicket.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="maxTicketsPerUser">Max Tickets per User *</Label>
+                    <Input
+                      id="maxTicketsPerUser"
+                      type="number"
+                      min="1"
+                      {...register('maxTicketsPerUser', { 
+                        required: 'Max tickets per user is required',
+                        min: { value: 1, message: 'Must allow at least 1 ticket per user' },
+                        max: { value: 100, message: 'Cannot exceed 100 tickets per user' },
+                        valueAsNumber: true 
+                      })}
+                      placeholder="4"
+                      className={errors.maxTicketsPerUser ? 'border-red-500' : ''}
+                    />
+                    {errors.maxTicketsPerUser && (
+                      <p className="text-sm text-red-500">{errors.maxTicketsPerUser.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Current Sales</Label>
+                  <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                    <strong>{event.ticketPurchased || 0}</strong> tickets sold out of{' '}
+                    <strong>{event.totalTicket}</strong> total tickets
+                    {event.totalTicket && event.ticketPurchased && (
+                      <span className="ml-2">
+                        ({Math.round((event.ticketPurchased / event.totalTicket) * 100)}% sold)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              // Ticket variants model
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Ticket Types</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTicketVariant}
+                    className="flex items-center gap-2"
+                    disabled={ticketVariants.length >= TICKET_TYPES.length}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Ticket Type
+                  </Button>
+                </div>
+
+                {ticketVariants.map((variant, index) => {
+                  const availableTypes = getAvailableTicketTypes(index);
+                  const currentTypeLabel = TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type;
+                  
+                  return (
+                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{currentTypeLabel}</h4>
+                        {ticketVariants.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeTicketVariant(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                          <Label>Ticket Type *</Label>
+                          <Select
+                            value={variant.type}
+                            onValueChange={(value) => updateTicketVariant(index, 'type', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ticket type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={variant.type}>
+                                {TICKET_TYPES.find(t => t.value === variant.type)?.label || variant.type}
+                              </SelectItem>
+                              {availableTypes.map(type => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label>Price ($) *</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={variant.price}
+                            onChange={(e) => updateTicketVariant(index, 'price', parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label>Total Tickets *</Label>
+                          <Input
+                            type="number"
+                            min={variant.ticketsSold || 0}
+                            value={variant.totalTickets}
+                            onChange={(e) => updateTicketVariant(index, 'totalTickets', parseInt(e.target.value) || 0)}
+                            placeholder="100"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label>Max per User *</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={variant.totalTickets}
+                            value={variant.maxPerUser}
+                            onChange={(e) => updateTicketVariant(index, 'maxPerUser', parseInt(e.target.value) || 1)}
+                            placeholder="2"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label>Description (Optional)</Label>
+                        <Textarea
+                          value={variant.description}
+                          onChange={(e) => updateTicketVariant(index, 'description', e.target.value)}
+                          placeholder="Brief description of this ticket type"
+                          rows={2}
+                        />
+                      </div>
+                      
+                      {variant.ticketsSold && variant.ticketsSold > 0 && (
+                        <div className="text-sm text-muted-foreground bg-muted/50 rounded p-2">
+                          <strong>{variant.ticketsSold}</strong> of <strong>{variant.totalTickets}</strong> sold
+                          ({variant.totalTickets > 0 ? Math.round((variant.ticketsSold / variant.totalTickets) * 100) : 0}% sold)
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {variantStats && (
+                  <div className="space-y-2">
+                    <Label>Total Sales Summary</Label>
+                    <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                      <strong>{variantStats.totalSold}</strong> tickets sold out of{' '}
+                      <strong>{variantStats.totalQuantity}</strong> total tickets across all variants
+                      {variantStats.totalQuantity > 0 && (
+                        <span className="ml-2">
+                          ({Math.round((variantStats.totalSold / variantStats.totalQuantity) * 100)}% sold)
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Poster Images */}
