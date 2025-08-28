@@ -12,6 +12,7 @@ interface EventCardProps {
 }
 
 export const EventCard = ({ event, isSearchResult = false }: EventCardProps) => {
+  
   const navigate = useNavigate();
   
   

@@ -24,7 +24,7 @@ import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 const Events = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const queryClient = useQueryClient(); // Initialize query client
-  console.log(vendorId)
+  
   const [pageNo] = useState(1);
   const [localEvents, setLocalEvents] = useState<EventType[]>([]); // NEW: Local state for events
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
@@ -37,19 +37,19 @@ const Events = () => {
   const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId, pageNo);
   
   const events = localEvents.length > 0 ? localEvents : (apiResponse?.events || []);
-  console.log('Current events from API:', events);
   
-  // Update local events when API data changes
+  
+  
   React.useEffect(() => {
     if (apiResponse?.events && Array.isArray(apiResponse.events)) {
       setLocalEvents(apiResponse.events);
-      console.log('Local events updated from API:', apiResponse.events.length);
+      
     }
   }, [apiResponse?.events]);
   
   // DEBUG: Log when data changes
   React.useEffect(() => {
-    console.log('Events data updated:', events.length, 'events');
+    
   }, [events]);
   
 

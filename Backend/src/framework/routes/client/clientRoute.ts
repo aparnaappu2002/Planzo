@@ -70,7 +70,7 @@ export class clientRoute{
         this.clientRoute.get('/wallet/:userId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedWalletClientController.handleFindClientWallet(req, res)
         })
-        this.clientRoute.get('/events/:category/:pageNo/:sortBy', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+        this.clientRoute.get('/events/:category/:pageNo/:sortBy',  (req: Request, res: Response) => {
             injectedEventClientController.handleFindEventsBasedOnCategory(req, res)
         })
         this.clientRoute.post('/events/searchNearby', (req: Request, res: Response) => {

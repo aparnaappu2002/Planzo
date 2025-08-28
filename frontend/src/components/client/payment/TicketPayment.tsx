@@ -32,14 +32,7 @@ const handleCreatePaymentIntent = async (paymentMethodId: string) => {
             throw new Error('Invalid ticket variants data');
         }
 
-        // Log the structure we're sending to backend
-        console.log('Sending to backend:', {
-            ticket: data.ticketData,
-            paymentIntentId: paymentMethodId,
-            totalAmount: data.amount,
-            totalCount: data.totalTicketCount,
-            vendorId: data.vendorId,
-        });
+        
 
         const response = await createTicket.mutateAsync({
             ticket: data.ticketData,
@@ -98,7 +91,8 @@ const handleCreatePaymentIntent = async (paymentMethodId: string) => {
             errorMessage = error.message;
         }
         
-        throw error; // Re-throw to prevent payment form from proceeding
+        
+        throw error; 
     }
 };
 
