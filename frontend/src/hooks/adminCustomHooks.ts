@@ -1,6 +1,6 @@
 import { adminLogin,unblockClient,blockClient,fetchClientsAdmin,
     fetchVendorsAdmin,blockVendor,unblockVendor,fetchPendingVendorsAdmin,approvePendingVendor,rejectPendingVendor,searchClients,searchVendors,
-    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory
+    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory,findEventsInAdminSide
  } from "@/services/ApiServiceAdmin";
 import { useMutation,useQuery } from "@tanstack/react-query";
 import { CategoryUpdate } from "@/types/CategoryUpdate";
@@ -151,3 +151,11 @@ export const useUpdateCategory = () => {
         mutationFn: ({ categoryId, updates }: { categoryId: string, updates: CategoryUpdate }) => updateCategory(categoryId, updates)
     })
 }
+
+export const useFindEventsInAdmin = (pageNo: number) => {
+    return useQuery({
+        queryKey: ['eventsInAdmin', pageNo],
+        queryFn: () => findEventsInAdminSide(pageNo)
+    })
+}
+

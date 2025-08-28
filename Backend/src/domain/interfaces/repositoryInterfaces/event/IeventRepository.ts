@@ -18,5 +18,5 @@ export interface IeventRepository{
     findEventsBaseOnCategory(category: string, pageNo: number, sortBy: string): Promise<{ events: EventEntity[] | [], totalPages: number }>
     findEventsNearLocation(locationQuery: string, options?: SearchLocationOptions): Promise<SearchEventsResult>;
     updateVariantTicketsSold(eventId: string | ObjectId, variantType: string, ticketCount: number): Promise<EventEntity | null>;
-
+    listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
 }

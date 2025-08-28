@@ -157,5 +157,13 @@ export class EventRepository implements IeventRepository{
         { new: true }
     );
 }
+async listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }> {
+        const limit = 3
+        const page = Math.max(pageNo, 1)
+        const skip = (page - 1) * limit
+        const events = await eventModal.find().select('-__v').skip(skip).limit(limit).lean()
+        const totalPages = Math.ceil(await eventModal.countDocuments() / limit)
+        return { events, totalPages }
+    }
 
 }

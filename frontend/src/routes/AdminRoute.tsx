@@ -8,6 +8,7 @@ import PendingVendors from "@/components/admin/pendingVendors/PendingVendors";
 import ProtectedRouteAdmin from "@/protectRoute/protectRouteAdmin";
 import AdminWallet from "@/components/admin/wallet/AdminWallet";
 import CategoryManagement from "@/components/admin/category/CategoryManagement";
+import { EventListingPage } from "@/components/admin/eventManagement/EventListingPage";
 const AdminRoute=()=>{
     return(
         <Routes>
@@ -19,6 +20,7 @@ const AdminRoute=()=>{
             <Route path="pending" element={ <ProtectedRouteAdmin>  <PendingVendors/> </ProtectedRouteAdmin> } ></Route>
             <Route path="wallet" element={ <ProtectedRouteAdmin>  <AdminWallet/> </ProtectedRouteAdmin> } ></Route>
             <Route path="category" element={ <ProtectedRouteAdmin>  <CategoryManagement/> </ProtectedRouteAdmin> } ></Route>
+            <Route path="events" element={ <ProtectedRouteAdmin>  <EventListingPage/> </ProtectedRouteAdmin> } ></Route>
             </Route>
         </Routes>
     )

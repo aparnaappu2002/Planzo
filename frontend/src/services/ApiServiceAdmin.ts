@@ -213,3 +213,14 @@ export const updateCategory = async (categoryId: string, updates: CategoryUpdate
         throw new Error('error while changning titlle and image of category')
     }
 }
+
+export const findEventsInAdminSide = async (pageNo: number) => {
+    try {
+        const response = await axios.get('/eventDetails', { params: { pageNo } })
+        return response.data
+    } catch (error) {
+        console.log('error while finding events in admin', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error whiel finding events in admin')
+    }
+}
+

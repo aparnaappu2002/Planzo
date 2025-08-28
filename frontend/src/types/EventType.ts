@@ -1,24 +1,33 @@
-export interface EventType {
-    _id?: string
+export interface TicketVariant {
+    type: 'standard' | 'premium' | 'vip';
+    price: number;
+    totalTickets: number;
+    ticketsSold: number;
+    maxPerUser: number;
+    description?: string;
+    benefits?: string[];
+}
+
+export interface EventEntity {
+    _id?: string;
     title: string;
     description: string;
     location: {
         type: string,
         coordinates: [number, number];
     },
+    hostedBy:  string,
     startTime: Date;
     endTime: Date;
-    posterImage: File[] | string[] | null;
-    pricePerTicket: number;
-    maxTicketsPerUser: number;
-    totalTicket: number;
+    posterImage: string[];
+    ticketVariants: TicketVariant[];
     date: Date[];
     createdAt: Date;
-    ticketPurchased: number
+    attendees: string
     address?: string
     venueName?: string
     category: string
-    hostedBy?: string
     status: "upcoming" | "completed" | "cancelled"
+    attendeesCount: number
+    isActive: boolean
 }
-
