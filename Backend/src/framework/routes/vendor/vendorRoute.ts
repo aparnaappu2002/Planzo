@@ -1,6 +1,6 @@
 import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
-    injectedVendorLoginController,
+    injectedVendorLoginLogoutController,
     injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
     injectedEventController,injectedTicketAndUserDetailsOfEventController
  } from "../../inject/vendorInject";
@@ -21,7 +21,7 @@ export class VendorRoute{
             injectedVendorAuthenticationController.registerVendor(req,res)
         })
         this.vendorRoute.post('/login',(req:Request,res:Response)=>{
-            injectedVendorLoginController.handleLoginVendor(req,res)
+            injectedVendorLoginLogoutController.handleLoginVendor(req,res)
         })
         this.vendorRoute.post('/resendOtp',(req:Request,res:Response)=>{
             injectedVendorAuthenticationController.handleResendOtp(req,res)
@@ -52,6 +52,9 @@ export class VendorRoute{
         })
         this.vendorRoute.get('/ticketDetailsWithUser', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedTicketAndUserDetailsOfEventController.handleTicketAndUserDetails(req, res)
+        })
+        this.vendorRoute.post('/logout', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedVendorLoginLogoutController.handleVendorLogout(req, res)
         })
     }
 }

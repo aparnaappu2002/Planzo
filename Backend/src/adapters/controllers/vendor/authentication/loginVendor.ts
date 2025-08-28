@@ -4,19 +4,23 @@ import { IjwtInterface } from "../../../../domain/interfaces/serviceInterface/Ij
 import { IredisService } from "../../../../domain/interfaces/serviceInterface/IredisService";
 import { setCookie } from "../../../../framework/services/tokenCookieSetting";
 import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { IvendorLogoutUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IvendorLogoutUseCase";
 
-export class LoginVendorController {
+export class LoginLogoutVendorController {
   private vendorLoginUseCase: IloginVendorUseCase;
   private jwtService: IjwtInterface;
   private redisService: IredisService;
+  private vendorLogoutUseCase:IvendorLogoutUseCase
   constructor(
     vendorLoginUseCase: IloginVendorUseCase,
     jwtService: IjwtInterface,
-    redisService: IredisService
+    redisService: IredisService,
+    vendorLogoutUseCase:IvendorLogoutUseCase
   ) {
     this.vendorLoginUseCase = vendorLoginUseCase;
     this.jwtService = jwtService;
     this.redisService = redisService;
+    this.vendorLogoutUseCase=vendorLogoutUseCase
   }
 
   async handleLoginVendor(req: Request, res: Response): Promise<void> {
@@ -78,4 +82,28 @@ export class LoginVendorController {
       return;
     }
   }
+
+  async handleVendorLogout(req: Request, res: Response): Promise<void> {
+        try {
+                const authHeader=req.headers.authorization
+                
+                if(!authHeader || !authHeader.startsWith('Bearer ')){
+                    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Authorization header missing' });
+                    return;
+                }
+                const token = authHeader.split(' ')[1];
+                
+                await this.vendorLogoutUseCase.vendorLogout(token);
+
+                res.status(HttpStatus.OK).json({ message: "Logout successful" });
+
+        } catch (error) {
+            console.log('error while handling logout client', error)
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: 'error while handling logout client',
+                error: error instanceof Error ? error.message : 'error while handling logout client'
+            })
+        }
+    }
+
 }

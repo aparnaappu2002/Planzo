@@ -185,3 +185,13 @@ export const ticketDetailsWithUser = async ( vendorId: string, pageNo: number) =
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding the ticket details with user')
     }
 }
+export const vendorLogout = async () => {
+    try {
+        const response = await axios.post('/logout')
+        return response.data
+    } catch (error) {
+        console.log('error while logout', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while logout')
+    }
+}

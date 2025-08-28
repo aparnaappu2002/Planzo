@@ -1,6 +1,6 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
-,findWalletDetailsVendor,ticketDetailsWithUser } from "@/services/ApiServiceVendor";
+,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout} from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
 import { EventType } from "@/types/EventType";
@@ -115,5 +115,11 @@ export const useTicketDetailsWithUser = ( vendorId: string, pageNo: number) => {
     return useQuery({
         queryKey: ['ticketDetailsWithUser', pageNo],
         queryFn: () => ticketDetailsWithUser( vendorId, pageNo)
+    })
+}
+
+export const useVendorLogout = () => {
+    return useMutation({
+        mutationFn: () => vendorLogout()
     })
 }

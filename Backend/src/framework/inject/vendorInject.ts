@@ -9,7 +9,7 @@ import { JwtService } from "../services/jwtService";
 import { RedisService } from "../services/redisService";
 import { VendorRegisterUseCase } from "../../useCases/vendor/authentication/vendorRegisterUseCase";
 import { LoginVendorUseCase } from "../../useCases/vendor/authentication/loginVendorUseCase";
-import { LoginVendorController } from "../../adapters/controllers/vendor/authentication/loginVendor";
+import { LoginLogoutVendorController } from "../../adapters/controllers/vendor/authentication/loginVendor";
 import { sendEmailForgetPasswordVendor } from "../../useCases/vendor/authentication/sendEmailForgetPasswordVendor";
 import { ForgotPasswordVendorController } from "../../adapters/controllers/vendor/authentication/forgotPasswordVendorController";
 import { ResetPasswordVendorUseCase } from "../../useCases/vendor/authentication/forgotPasswordVendorUseCase";
@@ -31,6 +31,7 @@ import { TransactionRepository } from "../../adapters/repository/transaction/tra
 import { TicketAndUserDetailsController } from "../../adapters/controllers/vendor/ticket/ticketAndUserDetailsVendorController";
 import { TicketAndUserDetailsOfEventUseCase } from "../../useCases/vendor/ticket/ticketAndUserDetailsofEventUseCase";
 import { TicketRepository } from "../../adapters/repository/ticket/ticketRepository";
+import { VendorLogoutUseCase } from "../../useCases/vendor/authentication/vendorLogoutUseCase";
 
 
 const EmailService  = new emailService()
@@ -48,7 +49,8 @@ export const injectedVendorAuthenticationController=new VendorAuthenticationCont
 const vendorLoginUseCase=new LoginVendorUseCase(vendorRepository)
 const jwtService=new JwtService()
 const redisService=new RedisService()
-export const injectedVendorLoginController=new LoginVendorController(vendorLoginUseCase,jwtService,redisService)
+const vendorLogoutUseCase=new VendorLogoutUseCase(redisService,jwtService)
+export const injectedVendorLoginLogoutController=new LoginLogoutVendorController(vendorLoginUseCase,jwtService,redisService,vendorLogoutUseCase)
 
 // forgot password
 const SendEmailForgetPasswordVendor=new sendEmailForgetPasswordVendor(EmailService,jwtService,vendorRepository)
