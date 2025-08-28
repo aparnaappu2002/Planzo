@@ -22,6 +22,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useDispatch } from "react-redux";
+import { removeAdminToken } from "@/redux/slices/admin/adminToken";
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -30,17 +32,21 @@ const navigationItems = [
   { title: "Pending Vendors", url: "/admin/pending", icon: Users },
   { title: "Wallet", url: "/admin/wallet", icon: Store },
   { title: "Category", url: "/admin/category", icon: Store },
+  { title: "Events", url: "/admin/events", icon: Store },
 ];
 
 export function AdminSidebar() {
   const { state } = useSidebar();
   const navigate = useNavigate();
+  const dispatch=useDispatch()
 
   const handleLogout = () => {
     // Add your logout logic here
     console.log("User logged out");
-    // You can redirect to login page or clear authentication
-    navigate("/");
+    dispatch(removeAdminToken())
+    localStorage.removeItem('adminId')
+    
+    navigate("/admin/login");
   };
 
   const getNavClass = ({ isActive }: { isActive: boolean }) =>

@@ -31,6 +31,9 @@ import { UpdateCategoryUseCase } from "../../useCases/admin/categoryManagement/u
 import { FindCategoryUseCase } from "../../useCases/admin/categoryManagement/findCategoryUseCase";
 import { ChangeCategoryStatusUseCase } from "../../useCases/admin/categoryManagement/changeCategoryStatusUseCase";
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
+import { FindEventsInAdminSideUseCase } from "../../useCases/admin/eventManagement/findEventsInAdminSide";
+import { FindEventsInAdminSideController } from "../../adapters/controllers/admin/eventManagement/FindEventsInAdminController";
+import { EventRepository } from "../../adapters/repository/event/eventRepository";
 
 
 
@@ -85,3 +88,8 @@ const findCategoryUseCase = new FindCategoryUseCase(categoryRepository)
 const updateCategoryUseCase = new UpdateCategoryUseCase(categoryRepository)
 const changeCategoryStatusUseCase=new ChangeCategoryStatusUseCase(categoryRepository)
 export const injectedCategoryController=new CategoryController(createCategoryUseCase,findCategoryUseCase,updateCategoryUseCase,changeCategoryStatusUseCase)
+
+//events
+const eventRepository=new EventRepository()
+const findEventsInAdminSideUseCase=new FindEventsInAdminSideUseCase(eventRepository)
+export const injectedFindEventsInAdminSideController = new FindEventsInAdminSideController(findEventsInAdminSideUseCase)

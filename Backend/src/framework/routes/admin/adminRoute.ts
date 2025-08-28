@@ -1,6 +1,6 @@
 import { Request,Response, Router } from "express";
 import { injectedAdminLoginController,injectedUserManagementController,injectedBlockUnblockController,injectedVendorStatusController,injectedAdminWalletController,
-    injectedFindVendorsController,injectedCategoryController
+    injectedFindVendorsController,injectedCategoryController,injectedFindEventsInAdminSideController
  } from "../../inject/adminInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,checkAdminMiddleWare } from "../../inject/serviceInject";
 
@@ -62,6 +62,9 @@ export class AdminRoute{
         })
         this.adminRoute.patch('/updateCategory', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
             injectedCategoryController.handleUpdateCategory(req, res)
+        })
+        this.adminRoute.get('/eventDetails', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedFindEventsInAdminSideController.handleListingEventsInAdminSide(req, res)
         })
     }
 }
