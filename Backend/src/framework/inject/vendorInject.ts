@@ -32,7 +32,10 @@ import { TicketAndUserDetailsController } from "../../adapters/controllers/vendo
 import { TicketAndUserDetailsOfEventUseCase } from "../../useCases/vendor/ticket/ticketAndUserDetailsofEventUseCase";
 import { TicketRepository } from "../../adapters/repository/ticket/ticketRepository";
 import { VendorLogoutUseCase } from "../../useCases/vendor/authentication/vendorLogoutUseCase";
-
+import { WorkSampleRepository } from "../../adapters/repository/workSamples/workSampleRepository";
+import { WorkSampleCreationUseCase } from "../../useCases/vendor/workSample/workSampleCreationUseCase";
+import { FindWorkSamplesOfAVendorUseCase } from "../../useCases/vendor/workSample/findWorkSampleofVendor";
+import { WorkSampleController } from "../../adapters/controllers/vendor/workSample/workSampleController";
 
 const EmailService  = new emailService()
 const otpService = new OtpService()
@@ -84,3 +87,9 @@ export const injectedWalletVendorController = new WalletVendorController(findWal
 const ticketRepository=new TicketRepository()
 const ticketAndUserDetailsOfEventUseCase=new TicketAndUserDetailsOfEventUseCase(ticketRepository)
 export const injectedTicketAndUserDetailsOfEventController= new TicketAndUserDetailsController(ticketAndUserDetailsOfEventUseCase)
+
+//workSample
+const workSampleRepository=new WorkSampleRepository()
+const workSampleCreationUseCase=new WorkSampleCreationUseCase(workSampleRepository)
+const findWorkSampleofVendorUseCase=new FindWorkSamplesOfAVendorUseCase(workSampleRepository)
+export const injectedWorkSampleController= new WorkSampleController(workSampleCreationUseCase,findWorkSampleofVendorUseCase)

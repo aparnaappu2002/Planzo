@@ -1,10 +1,11 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
-,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout} from "@/services/ApiServiceVendor";
+,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples} from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
-import { EventType } from "@/types/EventType";
+import { EventEntity } from "@/types/EventType";
 import { EventUpdateEntity } from "@/types/EventUpdateEntity";
+import { WorkSamplesEntity } from "@/types/WorkSampleEntity";
 
 
 
@@ -87,7 +88,7 @@ export const useVendorChangePassword = () => {
 
 export const useCreateEvent = () => {
     return useMutation({
-        mutationFn: ({ event, vendorId }: { event: EventType, vendorId: string }) => createEvent(event, vendorId)
+        mutationFn: ({ event, vendorId }: { event: EventEntity, vendorId: string }) => createEvent(event, vendorId)
     })
 }
 
@@ -121,5 +122,18 @@ export const useTicketDetailsWithUser = ( vendorId: string, pageNo: number) => {
 export const useVendorLogout = () => {
     return useMutation({
         mutationFn: () => vendorLogout()
+    })
+}
+
+export const useCreateWorkSample = () => {
+    return useMutation({
+        mutationFn: (workSample: WorkSamplesEntity) => createWorkSamples(workSample)
+    })
+}
+
+export const useFindWorkSamples = (vendorId: string, pageNo: number) => {
+    return useQuery({
+        queryKey: ['workSamples', vendorId, pageNo],
+        queryFn: () => findWorkSamples(vendorId, pageNo)
     })
 }

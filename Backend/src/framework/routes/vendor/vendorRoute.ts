@@ -2,7 +2,7 @@ import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
     injectedVendorLoginLogoutController,
     injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
-    injectedEventController,injectedTicketAndUserDetailsOfEventController
+    injectedEventController,injectedTicketAndUserDetailsOfEventController,injectedWorkSampleController
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -55,6 +55,12 @@ export class VendorRoute{
         })
         this.vendorRoute.post('/logout', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedVendorLoginLogoutController.handleVendorLogout(req, res)
+        })
+        this.vendorRoute.post('/createWorkSample', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedWorkSampleController.handleAddWorkSample(req, res)
+        })
+        this.vendorRoute.get('/workSamples', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedWorkSampleController.handleFindWorkSampleOfVendor(req, res)
         })
     }
 }
