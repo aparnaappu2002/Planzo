@@ -1,5 +1,6 @@
 import { Schema } from "mongoose";
 import { TicketEntity } from "../../../domain/entities/ticket/ticketEntity";
+import { ticketVariantSchema } from "./ticketVariantSchema";
 
 export const ticketSchema = new Schema<TicketEntity>({
     ticketId: {
@@ -20,9 +21,8 @@ export const ticketSchema = new Schema<TicketEntity>({
         ref: 'event',
         required: true
     },
-    ticketVariant: {
-        type: String,
-        enum: ['standard', 'premium', 'vip'],
+    ticketVariants: {
+        type: [ticketVariantSchema],
         required: true
     },
     ticketCount: {

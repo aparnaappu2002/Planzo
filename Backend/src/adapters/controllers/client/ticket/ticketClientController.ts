@@ -22,175 +22,230 @@ export class TicketClientController {
         this.checkTicketLimitUseCase=checkTicketLimitUseCase
     }
 async handleCreateUseCase(req: Request, res: Response): Promise<void> {
-        try {
-            const { ticket, totalCount, totalAmount, paymentIntentId, vendorId } = req.body;
+    try {
+        const { ticket, totalCount, totalAmount, paymentIntentId, vendorId } = req.body;
 
-            if (!ticket) {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Ticket data is required"
-                });
-                return;
-            }
-
-            if (!ticket.clientId || !ticket.email || !ticket.phone || !ticket.eventId) {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Missing required ticket fields: clientId, email, phone, or eventId"
-                });
-                return;
-            }
-
-            if (!ticket.ticketVariants || typeof ticket.ticketVariants !== 'object') {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Invalid ticketVariants format. Expected object with variant types as keys and quantities as values"
-                });
-                return;
-            }
-
-            const hasSelections = Object.values(ticket.ticketVariants).some((quantity: any) => 
-                typeof quantity === 'number' && quantity > 0
-            );
-
-            if (!hasSelections) {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "No ticket variants selected"
-                });
-                return;
-            }
-
-            if (typeof totalCount !== 'number' || totalCount <= 0) {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Invalid total count"
-                });
-                return;
-            }
-
-            if (typeof totalAmount !== 'number' || totalAmount < 0) {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Invalid total amount"
-                });
-                return;
-            }
-
-            if (!paymentIntentId || !vendorId) {
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Missing paymentIntentId or vendorId"
-                });
-                return;
-            }
-
-            // Check ticket limits for each variant
-            const selectedVariants = Object.entries(ticket.ticketVariants)
-                .filter(([variant, quantity]) => typeof quantity === 'number' && quantity > 0);
-
-            const limitCheckPromises = selectedVariants.map(([variant, quantity]) => 
-                this.checkTicketLimitUseCase.checkTicketLimit(
-                    ticket.clientId,
-                    ticket.eventId,
-                    variant as 'standard' | 'premium' | 'vip',
-                    quantity as number
-                )
-            );
-
-            const limitCheckResults = await Promise.all(limitCheckPromises);
-            
-            // Check if any variant exceeds the limit
-            const failedChecks = limitCheckResults
-                .map((result, index) => ({ result, variant: selectedVariants[index][0], requested: selectedVariants[index][1] }))
-                .filter(({ result }) => !result.canBook);
-            
-            if (failedChecks.length > 0) {
-                console.log("Ticket limit exceeded")
-                res.status(HttpStatus.BAD_REQUEST).json({
-                    message: "Ticket booking limit exceeded",
-                    details: failedChecks.map(({ result, variant, requested }) => ({
-                        variant,
-                        maxPerUser: result.maxPerUser,
-                        remainingLimit: result.remainingLimit,
-                        requested
-                    }))
-                });
-                return;
-            }
-
-            const { stripeClientId, createdTickets } = await this.createTicketUseCase.createTicket(
-                ticket,
-                totalCount,
-                totalAmount,
-                paymentIntentId,
-                vendorId
-            );
-
-            res.status(HttpStatus.CREATED).json({ 
-                message: "Tickets and payment created and initiated successfully", 
-                stripeClientId, 
-                createdTickets,
-                summary: {
-                    totalTickets: createdTickets.length,
-                    totalCount: totalCount,
-                    totalAmount: totalAmount,
-                    variants: createdTickets.map(ticket => ({
-                        type: ticket.ticketVariant,
-                        quantity: ticket.ticketCount,
-                        amount: ticket.totalAmount
-                    }))
-                }
-            });
-
-        } catch (error) {
+        if (!ticket) {
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Error while creating tickets",
-                error: error instanceof Error ? error.message : "Unknown error occurred while creating tickets",
-                timestamp: new Date().toISOString()
+                message: "Ticket data is required"
             });
+            return;
         }
+
+        if (!ticket.clientId || !ticket.email || !ticket.phone || !ticket.eventId) {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Missing required ticket fields: clientId, email, phone, or eventId"
+            });
+            return;
+        }
+
+        if (!ticket.ticketVariants || typeof ticket.ticketVariants !== 'object') {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Invalid ticketVariants format. Expected object with variant types as keys and quantities as values"
+            });
+            return;
+        }
+
+        const hasSelections = Object.values(ticket.ticketVariants).some((quantity: any) => 
+            typeof quantity === 'number' && quantity > 0
+        );
+
+        if (!hasSelections) {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "No ticket variants selected"
+            });
+            return;
+        }
+
+        if (typeof totalCount !== 'number' || totalCount <= 0) {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Invalid total count"
+            });
+            return;
+        }
+
+        if (typeof totalAmount !== 'number' || totalAmount < 0) {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Invalid total amount"
+            });
+            return;
+        }
+
+        if (!paymentIntentId || !vendorId) {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Missing paymentIntentId or vendorId"
+            });
+            return;
+        }
+
+        // Check ticket limits for each variant
+        const selectedVariants = Object.entries(ticket.ticketVariants)
+            .filter(([variant, quantity]) => typeof quantity === 'number' && quantity > 0);
+
+        const limitCheckPromises = selectedVariants.map(([variant, quantity]) => 
+            this.checkTicketLimitUseCase.checkTicketLimit(
+                ticket.clientId,
+                ticket.eventId,
+                variant as 'standard' | 'premium' | 'vip',
+                quantity as number
+            )
+        );
+
+        const limitCheckResults = await Promise.all(limitCheckPromises);
+        
+        // Check if any variant exceeds the limit
+        const failedChecks = limitCheckResults
+            .map((result, index) => ({ result, variant: selectedVariants[index][0], requested: selectedVariants[index][1] }))
+            .filter(({ result }) => !result.canBook);
+        
+        if (failedChecks.length > 0) {
+            console.log("Ticket limit exceeded")
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Ticket booking limit exceeded",
+                details: failedChecks.map(({ result, variant, requested }) => ({
+                    variant,
+                    maxPerUser: result.maxPerUser,
+                    remainingLimit: result.remainingLimit,
+                    requested
+                }))
+            });
+            return;
+        }
+
+        const { stripeClientId, createdTicket } = await this.createTicketUseCase.createTicket(
+            ticket,
+            totalCount,
+            totalAmount,
+            paymentIntentId,
+            vendorId
+        );
+
+        // Calculate summary from the single consolidated ticket
+        const variantsSummary = createdTicket.ticketVariants.map(variant => ({
+            type: variant.variant,
+            quantity: variant.count,
+            pricePerTicket: variant.pricePerTicket,
+            subtotal: variant.subtotal,
+            qrCodesCount: variant.qrCodes.length
+        }));
+
+        const totalQRCodes = createdTicket.ticketVariants.reduce((sum, variant) => 
+            sum + variant.qrCodes.length, 0
+        );
+
+        res.status(HttpStatus.CREATED).json({ 
+            message: "Consolidated ticket and payment created successfully", 
+            stripeClientId, 
+            createdTicket,
+            summary: {
+                ticketId: createdTicket.ticketId,
+                totalVariants: createdTicket.ticketVariants.length,
+                totalTickets: createdTicket.ticketCount,
+                totalQRCodes: totalQRCodes,
+                totalAmount: createdTicket.totalAmount,
+                variants: variantsSummary,
+                paymentStatus: createdTicket.paymentStatus,
+                ticketStatus: createdTicket.ticketStatus
+            }
+        });
+
+    } catch (error) {
+        console.error('Error in handleCreateUseCase:', error);
+        res.status(HttpStatus.BAD_REQUEST).json({
+            message: "Error while creating ticket",
+            error: error instanceof Error ? error.message : "Unknown error occurred while creating ticket",
+            timestamp: new Date().toISOString()
+        });
     }
+}
 
     async handleConfirmTicketAndPayment(req: Request, res: Response): Promise<void> {
     try {
-        const { ticket, tickets, paymentIntent, vendorId, totalTickets, allTickets } = req.body;
+        const { ticket, paymentIntent, vendorId } = req.body;
 
-        
-        let ticketsToConfirm = [];
-        
-        if (tickets && Array.isArray(tickets)) {
-            ticketsToConfirm = tickets;
-        } else if (allTickets && Array.isArray(allTickets)) {
-            ticketsToConfirm = allTickets;
-        } else if (ticket) {
-            ticketsToConfirm = [ticket];
-        } else {
+        console.log('=== CONTROLLER: CONFIRM TICKET AND PAYMENT ===');
+        console.log('Request body keys:', Object.keys(req.body));
+        console.log('Vendor ID:', vendorId);
+        console.log('Payment Intent:', paymentIntent);
+
+        // Validate required fields
+        if (!ticket) {
             throw new Error('No ticket data provided');
         }
 
-        console.log(`Processing ${ticketsToConfirm.length} tickets for confirmation`);
-
-        if (!ticketsToConfirm.length) {
-            throw new Error('No tickets to confirm');
+        if (!paymentIntent) {
+            throw new Error('Payment intent is required');
         }
 
-        const invalidTickets = ticketsToConfirm.filter(t => !t || !t.eventId);
-        if (invalidTickets.length > 0) {
-            throw new Error('Some tickets are missing required fields (eventId)');
+        if (!vendorId) {
+            throw new Error('Vendor ID is required');
         }
 
-        const confirmTicketAndPayment = await this.confirmTicketAndPaymentUseCase.confirmTicketAndPayment(
-            ticketsToConfirm, 
+        // Validate ticket structure
+        if (!ticket.eventId) {
+            throw new Error('Ticket is missing required eventId field');
+        }
+
+        if (!ticket.ticketVariants || !Array.isArray(ticket.ticketVariants) || ticket.ticketVariants.length === 0) {
+            throw new Error('Ticket must contain valid ticket variants');
+        }
+
+        if (!ticket.ticketId) {
+            throw new Error('Ticket is missing required ticketId field');
+        }
+
+        console.log('Processing consolidated ticket for confirmation:', {
+            ticketId: ticket.ticketId,
+            eventId: ticket.eventId,
+            variants: ticket.ticketVariants.map((v: any) => ({ 
+                variant: v.variant, 
+                count: v.count, 
+                subtotal: v.subtotal 
+            })),
+            totalAmount: ticket.totalAmount,
+            totalCount: ticket.ticketCount
+        });
+
+        // Call the use case with the single consolidated ticket
+        const confirmedTicket = await this.confirmTicketAndPaymentUseCase.confirmTicketAndPayment(
+            ticket, 
             paymentIntent, 
             vendorId
         );
 
-        console.log(`Successfully confirmed ${confirmTicketAndPayment.length} tickets`);
+        console.log('Successfully confirmed consolidated ticket:', {
+            ticketId: confirmedTicket.ticketId,
+            paymentStatus: confirmedTicket.paymentStatus,
+            ticketStatus: confirmedTicket.ticketStatus,
+            variantCount: confirmedTicket.ticketVariants.length,
+            totalQrCodes: confirmedTicket.ticketVariants.reduce((sum: number, v: any) => sum + v.qrCodes.length, 0)
+        });
 
         res.status(HttpStatus.OK).json({ 
-            message: `${confirmTicketAndPayment.length} ticket(s) confirmed successfully`,
-            confirmedTickets: confirmTicketAndPayment, 
-            confirmTicketAndPayment: confirmTicketAndPayment[0] 
+            message: 'Ticket confirmed successfully',
+            confirmedTicket: confirmedTicket,
+            ticketDetails: {
+                ticketId: confirmedTicket.ticketId,
+                totalAmount: confirmedTicket.totalAmount,
+                totalTickets: confirmedTicket.ticketCount,
+                variants: confirmedTicket.ticketVariants.map((v: any) => ({
+                    type: v.variant,
+                    count: v.count,
+                    subtotal: v.subtotal,
+                    qrCodes: v.qrCodes.length
+                })),
+                paymentStatus: confirmedTicket.paymentStatus,
+                ticketStatus: confirmedTicket.ticketStatus
+            }
         });
+
+        console.log('=== CONTROLLER: CONFIRMATION COMPLETED ===');
+
     } catch (error) {
-        console.log('error while confirming ticket and payment', error);
+        console.error('Error while confirming ticket and payment:', error);
         res.status(HttpStatus.BAD_REQUEST).json({
-            message: 'error while confirming ticket and payment',
-            error: error instanceof Error ? error.message : 'error while confirming ticket and payment'
+            message: 'Error while confirming ticket and payment',
+            error: error instanceof Error ? error.message : 'Unknown error occurred during ticket confirmation'
         });
     }
 }

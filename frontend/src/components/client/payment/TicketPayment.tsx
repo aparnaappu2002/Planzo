@@ -10,243 +10,282 @@ import { toast } from 'react-toastify'
 function TicketPaymentForm() {
     const [updatedTicket, setUpdatedTicket] = useState<TicketBackendEntity>()
     const [isOpen, setIsOpen] = useState<boolean>(false)
-    const [createdTickets, setCreatedTickets] = useState<TicketBackendEntity[]>([]) // Store created tickets
-    const [confirmedTickets, setConfirmedTickets] = useState<TicketBackendEntity[]>([]) // Store confirmed tickets
+    // Changed from array to single ticket
+    const [createdTicket, setCreatedTicket] = useState<TicketBackendEntity | null>(null) 
+    const [confirmedTicket, setConfirmedTicket] = useState<TicketBackendEntity | null>(null) 
     
-    // Use ref to store tickets immediately after creation to avoid React state timing issues
-    const createdTicketsRef = useRef<TicketBackendEntity[]>([])
+    // Keep ref for single ticket
+    const createdTicketRef = useRef<TicketBackendEntity | null>(null)
     
     const location = useLocation()
     const data = location.state
     const createTicket = useCreateTicket()
     const confirmTicket = useConfirmTicketAndPayment()
 
-    // In TicketPaymentForm.tsx - Update the handleCreatePaymentIntent function
+    const handleCreatePaymentIntent = async (paymentMethodId: string) => {
+        try {
+            if (!data.ticketData.ticketVariants || typeof data.ticketData.ticketVariants !== 'object') {
+                throw new Error('Invalid ticket variants data');
+            }
 
-const handleCreatePaymentIntent = async (paymentMethodId: string) => {
-    try {
-        console.log('Creating payment intent with data:', data);
-        
-        // Validate that we have ticketVariants data in correct format
-        if (!data.ticketData.ticketVariants || typeof data.ticketData.ticketVariants !== 'object') {
-            throw new Error('Invalid ticket variants data');
-        }
-
-        
-
-        const response = await createTicket.mutateAsync({
-            ticket: data.ticketData,
-            paymentIntentId: paymentMethodId,
-            totalAmount: data.amount,
-            totalCount: data.totalTicketCount,
-            vendorId: data.vendorId,
-        });
-        
-        console.log('Create ticket response:', response);
-        
-        // CRITICAL FIX: Check for stripeClientId instead of clientSecret
-        if (response.error || !response.stripeClientId) {
-            // Handle specific limit exceeded error with enhanced formatting
-            if (response.message === "Ticket booking limit exceeded" && response.details) {
-                // Format the limit exceeded message for better readability
-                const limitDetails = response.details.map(detail => 
-                    `• ${detail.variant.toUpperCase()}: You requested ${detail.requested} ticket${detail.requested > 1 ? 's' : ''}, but only ${detail.remainingLimit} remaining (limit: ${detail.maxPerUser} per user)`
-                ).join('\n');
+            const response = await createTicket.mutateAsync({
+                ticket: data.ticketData,
+                paymentIntentId: paymentMethodId,
+                totalAmount: data.amount,
+                totalCount: data.totalTicketCount,
+                vendorId: data.vendorId,
+            });
+            
+            console.log('Create ticket response:', response);
+            
+            if (response.error || !response.stripeClientId) {
+                if (response.message === "Ticket booking limit exceeded" && response.details) {
+                    const limitDetails = response.details.map(detail => 
+                        `• ${detail.variant.toUpperCase()}: You requested ${detail.requested} ticket${detail.requested > 1 ? 's' : ''}, but only ${detail.remainingLimit} remaining (limit: ${detail.maxPerUser} per user)`
+                    ).join('\n');
+                    
+                    const formattedMessage = `Booking Limit Exceeded:\n\n${limitDetails}\n\nPlease adjust your ticket selection and try again.`;
+                    throw new Error(formattedMessage);
+                }
                 
-                const formattedMessage = `Booking Limit Exceeded:\n\n${limitDetails}\n\nPlease adjust your ticket selection and try again.`;
-                throw new Error(formattedMessage);
+                throw new Error(response.message || 'Failed to create ticket - no client secret received');
             }
             
-            throw new Error(response.message || 'Failed to create ticket - no client secret received');
-        }
-        
-        console.log('✅ Tickets created successfully, got stripeClientId:', response.stripeClientId);
-        
-        // Store the created tickets for later use
-        let tickets = [];
-        if (response.createdTickets && Array.isArray(response.createdTickets)) {
-            tickets = response.createdTickets;
-        } else if (response.createdTicket) {
-            // If single ticket response (fallback)
-            tickets = [response.createdTicket];
-        } else {
-            throw new Error('No tickets found in response');
-        }
-        
-        // Store in both state and ref for immediate access
-        setCreatedTickets(tickets);
-        createdTicketsRef.current = tickets;
-        console.log('Setting createdTickets to:', tickets);
+            console.log('✅ Consolidated ticket created successfully, got stripeClientId:', response.stripeClientId);
+            
+            // Handle single consolidated ticket
+            let ticket = null;
+            if (response.createdTicket) {
+                ticket = response.createdTicket;
+            } else {
+                throw new Error('No ticket found in response');
+            }
+            
+            setCreatedTicket(ticket);
+            createdTicketRef.current = ticket;
 
-        return {
-            clientSecret: response.stripeClientId, // Map stripeClientId to clientSecret
-            payload: tickets.length > 0 ? tickets[0] : null,
-            tickets: tickets, // Return all tickets
-        };
-    } catch (error) {
-        console.error('Error creating ticket:', error);
-        let errorMessage = "Error creating ticket";
-        
-        if (error instanceof Error) {
-            errorMessage = error.message;
+            // Calculate total QR codes across all variants
+            const totalQRCodes = ticket.ticketVariants?.reduce((sum, variant) => 
+                sum + (variant.qrCodes?.length || 0), 0) || 0;
+
+            console.log(`✅ Ticket created with ${ticket.ticketVariants?.length || 0} variants and ${totalQRCodes} total QR codes`);
+
+            return {
+                clientSecret: response.stripeClientId, 
+                payload: ticket,
+                tickets: [ticket], // Wrap single ticket in array for compatibility
+            };
+        } catch (error) {
+            console.error('Error creating ticket:', error);
+            let errorMessage = "Error creating ticket";
+            
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            
+            throw error; 
         }
-        
-        
-        throw error; 
-    }
-};
+    };
 
     const handleConfirmSuccess = (ticketData: TicketEntity, paymentIntentId: string, paymentResult?: any) => {
+        console.log('🔍 handleConfirmSuccess called with:', {
+            ticketData,
+            paymentIntentId,
+            paymentResult,
+            createdTicket,
+            createdTicketRef: createdTicketRef.current
+        });
+
+        let ticketToConfirm = null;
         
-        
-        // CRITICAL FIX: Use multiple sources with proper priority
-        let ticketsToConfirm = [];
-        
-        // Priority 1: Use tickets from paymentResult (passed from PaymentForm)
-        if (paymentResult && paymentResult.tickets && Array.isArray(paymentResult.tickets)) {
-            ticketsToConfirm = paymentResult.tickets;
-            console.log('✓ Using tickets from paymentResult:', ticketsToConfirm.length, 'tickets');
+        // Handle single ticket confirmation
+        if (paymentResult && paymentResult.payload) {
+            ticketToConfirm = paymentResult.payload;
         }
-        // Priority 2: Use tickets from ref (immediate access, no state timing issues)
-        else if (createdTicketsRef.current.length > 0) {
-            ticketsToConfirm = createdTicketsRef.current;
-            console.log('✓ Using tickets from createdTicketsRef:', ticketsToConfirm.length, 'tickets');
+        else if (createdTicketRef.current) {
+            ticketToConfirm = createdTicketRef.current;
         }
-        // Priority 3: Use tickets from state
-        else if (createdTickets.length > 0) {
-            ticketsToConfirm = createdTickets;
-            console.log('✓ Using tickets from createdTickets state:', ticketsToConfirm.length, 'tickets');
+        else if (createdTicket) {
+            ticketToConfirm = createdTicket;
         }
-        // Priority 4: Check if paymentResult has payload
-        else if (paymentResult && paymentResult.payload) {
-            console.log('Found payload in paymentResult, attempting to use it');
-            ticketsToConfirm = [paymentResult.payload];
-            console.log('✓ Using payload from paymentResult:', ticketsToConfirm.length, 'tickets');
-        }
-        // Priority 5: Fallback to single ticket data
         else if (ticketData && ticketData.eventId) {
-            console.warn('⚠️ Only single ticket data available. This may cause incomplete confirmation for multiple tickets.');
-            ticketsToConfirm = [ticketData];
-            console.log('Using ticketData as fallback:', ticketsToConfirm.length, 'tickets');
+            ticketToConfirm = ticketData;
         }
         
-        // Final validation
-        if (ticketsToConfirm.length === 0) {
-            console.error('❌ No tickets found to confirm');
-            toast.error('No tickets found to confirm. Please try again.');
+        if (!ticketToConfirm) {
+            toast.error('No ticket found to confirm. Please try again.');
             return;
         }
 
-        // Check if we have the expected number of tickets
-        if (ticketsToConfirm.length !== data.totalTicketCount) {
-            console.error(`❌ CRITICAL: Ticket count mismatch! Expected: ${data.totalTicketCount}, Found: ${ticketsToConfirm.length}`);
-            console.error('This means not all tickets will be confirmed!');
-            console.error('Tickets found:', ticketsToConfirm.map(t => ({ id: t.ticketId, variant: t.ticketVariant })));
-            
-            // Show warning but continue - this is a serious issue
-            toast.error(`Critical Error: Expected ${data.totalTicketCount} tickets but only found ${ticketsToConfirm.length}. Some tickets may not be confirmed.`);
-        }
-
-        // Validate that all tickets have required fields
-        const invalidTickets = ticketsToConfirm.filter(ticket => !ticket || !ticket.eventId || !ticket.ticketId);
-        if (invalidTickets.length > 0) {
-            console.error('❌ Tickets missing required fields:', invalidTickets);
+        // Validate ticket has required fields
+        if (!ticketToConfirm.eventId || !ticketToConfirm.ticketId) {
             toast.error('Invalid ticket data. Please try again.');
             return;
         }
 
-        console.log(`✅ Confirming ${ticketsToConfirm.length} tickets:`, ticketsToConfirm.map(t => ({
-            ticketId: t.ticketId,
-            variant: t.ticketVariant,
-            eventId: t.eventId
-        })));
+        // Calculate total QR codes for validation
+        const totalQRCodes = ticketToConfirm.ticketVariants?.reduce((sum, variant) => 
+            sum + (variant.qrCodes?.length || 0), 0) || ticketToConfirm.ticketCount || 1;
 
-        // Send tickets to backend - use the format expected by the updated controller
+        if (totalQRCodes !== data.totalTicketCount) {
+            console.warn(`QR codes count (${totalQRCodes}) doesn't match expected total (${data.totalTicketCount})`);
+        }
+
+        console.log('✅ Confirming consolidated ticket:', {
+            ticketId: ticketToConfirm.ticketId,
+            variants: ticketToConfirm.ticketVariants?.map(v => ({
+                variant: v.variant,
+                count: v.count,
+                qrCodes: v.qrCodes?.length || 0
+            })) || [],
+            totalQRCodes,
+            eventId: ticketToConfirm.eventId
+        });
+
         confirmTicket.mutate({
-            tickets: ticketsToConfirm,        // Primary field - array of tickets
-            allTickets: ticketsToConfirm,     // Backup field for controller compatibility
-            ticket: ticketsToConfirm[0],      // Fallback single ticket for old controller compatibility
+            tickets: [ticketToConfirm], // Send as array for API compatibility
+            allTickets: [ticketToConfirm],
+            ticket: ticketToConfirm,
             paymentIntent: paymentIntentId,
             vendorId: data.vendorId,
-            totalTickets: ticketsToConfirm.length,
+            totalTickets: totalQRCodes, // Use total QR codes count
         }, {
             onSuccess: (responseData) => {
-                console.log('✅ Ticket confirmation successful:', responseData);
+                console.log('🔍 Confirm ticket response:', responseData);
                 
-                // Handle the response based on the updated controller format
-                let confirmedTickets = [];
+                // Extract the actual ticket data from the API response
+                let finalConfirmedTicket = null;
                 
-                // Updated controller returns confirmedTickets array
-                if (responseData.confirmedTickets && Array.isArray(responseData.confirmedTickets)) {
-                    confirmedTickets = responseData.confirmedTickets;
-                    console.log(`✅ Found ${confirmedTickets.length} confirmed tickets in response`);
-                }
-                // Fallback for single ticket format (confirmTicketAndPayment)
-                else if (responseData.confirmTicketAndPayment) {
-                    confirmedTickets = [responseData.confirmTicketAndPayment];
-                    console.log('✅ Using single ticket from confirmTicketAndPayment field');
-                }
-                // Direct array response
-                else if (Array.isArray(responseData)) {
-                    confirmedTickets = responseData;
-                    console.log('✅ Response is direct array of tickets');
-                }
-                // Single ticket response
-                else {
-                    confirmedTickets = [responseData];
-                    console.log('✅ Using single ticket response');
+                // Handle the actual API response structure based on your logs
+                if (responseData.confirmedTicket) {
+                    finalConfirmedTicket = responseData.confirmedTicket;
+                } else if (responseData.confirmTicketAndPayment) {
+                    finalConfirmedTicket = responseData.confirmTicketAndPayment;
+                } else if (Array.isArray(responseData)) {
+                    finalConfirmedTicket = responseData[0];
+                } else {
+                    finalConfirmedTicket = responseData;
                 }
 
-                if (confirmedTickets.length === 0) {
-                    console.error('❌ No confirmed tickets found in response');
-                    toast.error('No confirmed tickets found. Please contact support.');
+                if (!finalConfirmedTicket) {
+                    toast.error('No confirmed ticket found. Please contact support.');
                     return;
                 }
 
-                // Verify all tickets were confirmed
-                if (confirmedTickets.length !== data.totalTicketCount) {
-                    console.warn(`⚠️ Not all tickets confirmed! Expected: ${data.totalTicketCount}, Confirmed: ${confirmedTickets.length}`);
-                }
+                console.log('🔍 Final confirmed ticket:', finalConfirmedTicket);
 
-                // Store all confirmed tickets and use the first ticket for the modal display
-                const primaryTicket = confirmedTickets[0];
-                setUpdatedTicket(primaryTicket);
-                setConfirmedTickets(confirmedTickets); // Store all confirmed tickets
-                setIsOpen(true);
+                // Set the states
+                setUpdatedTicket(finalConfirmedTicket);
+                setConfirmedTicket(finalConfirmedTicket);
                 
-                // Show appropriate success message
-                const ticketCount = confirmedTickets.length;
-                if (ticketCount === 1) {
+                // Calculate total tickets from variants or use ticketCount
+                const totalTickets = finalConfirmedTicket.ticketVariants?.reduce((sum, variant) => 
+                    sum + variant.count, 0) || finalConfirmedTicket.ticketCount || 1;
+                
+                // Show success message
+                if (totalTickets === 1) {
                     toast.success('Ticket confirmed successfully!');
                 } else {
-                    toast.success(`${ticketCount} tickets confirmed successfully!`);
+                    toast.success(`${totalTickets} tickets confirmed successfully!`);
                 }
 
-                console.log(`✅ Confirmation completed for ${ticketCount} tickets`);
+                // Open modal after a brief delay to ensure state is updated
+                setTimeout(() => {
+                    console.log('🔍 Opening modal with ticket:', finalConfirmedTicket);
+                    setIsOpen(true);
+                }, 100);
             },
             onError: (err) => {
-                console.error('❌ Ticket confirmation error:', err);
-                const errorMessage = err?.response?.data?.message || err?.message || 'Failed to confirm tickets';
+                console.error('❌ Confirm ticket error:', err);
+                const errorMessage = err?.response?.data?.message || err?.message || 'Failed to confirm ticket';
                 toast.error(errorMessage);
             }
         });
     };
 
     const handleCloseModal = () => {
+        console.log('🔍 Closing modal');
         setIsOpen(false);
-        // Optional: Navigate to a success page or tickets page
-        // navigate('/my-tickets');
     };
+
+    // Calculate total tickets for modal
+    const getTotalTicketsForModal = () => {
+        if (confirmedTicket?.ticketVariants) {
+            return confirmedTicket.ticketVariants.reduce((sum, variant) => sum + variant.count, 0);
+        }
+        return confirmedTicket?.ticketCount || createdTicket?.ticketCount || data.totalTicketCount || 1;
+    };
+
+    // Create confirmation data structure that matches modal expectations
+    const createConfirmationData = () => {
+        const ticket = updatedTicket || confirmedTicket;
+        if (!ticket) {
+            console.log('❌ No ticket data available for modal');
+            return null;
+        }
+
+        console.log('🔍 Creating confirmation data from ticket:', ticket);
+
+        // Calculate total QR codes
+        const totalQRCodes = ticket.ticketVariants?.reduce((sum, variant) => 
+            sum + (variant.qrCodes?.length || 0), 0) || ticket.ticketCount || 1;
+
+        const confirmationData = {
+            message: "Payment successful",
+            confirmedTicket: {
+                _id: ticket._id || ticket.ticketId,
+                ticketId: ticket.ticketId,
+                clientId: ticket.clientId || "",
+                email: ticket.email || data.email || "",
+                eventId: ticket.eventId,
+                phone: ticket.phone,
+                qrCodeLink: ticket.qrCodeLink,
+                ticketVariants: ticket.ticketVariants || [],
+                totalAmount: ticket.totalAmount || data.amount,
+                ticketCount: ticket.ticketCount || data.totalTicketCount,
+                paymentStatus: ticket.paymentStatus || "confirmed",
+                ticketStatus: ticket.ticketStatus || "confirmed"
+            },
+            ticketDetails: {
+                ticketId: ticket.ticketId,
+                totalAmount: ticket.totalAmount || data.amount,
+                totalTickets: getTotalTicketsForModal(),
+                variants: ticket.ticketVariants?.map(variant => ({
+                    type: variant.variant,
+                    count: variant.count,
+                    subtotal: variant.subtotal || (variant.count * (data.amount / data.totalTicketCount)),
+                    qrCodes: variant.qrCodes?.length || 0
+                })) || [{
+                    type: "general",
+                    count: ticket.ticketCount || data.totalTicketCount,
+                    subtotal: ticket.totalAmount || data.amount,
+                    qrCodes: ticket.ticketCount || data.totalTicketCount
+                }],
+                paymentStatus: ticket.paymentStatus || "confirmed",
+                ticketStatus: ticket.ticketStatus || "confirmed"
+            }
+        };
+
+        console.log('🔍 Created confirmation data:', confirmationData);
+        return confirmationData;
+    };
+
+    const confirmationData = createConfirmationData();
+
+    console.log('🔍 Render state:', { 
+        isOpen, 
+        hasUpdatedTicket: !!updatedTicket, 
+        hasConfirmedTicket: !!confirmedTicket,
+        hasConfirmationData: !!confirmationData
+    });
 
     return (
         <div className='h-screen'>
-            {isOpen && updatedTicket && (
+            {isOpen && confirmationData && (
                 <TicketConfirmationModal 
                     isOpen={isOpen} 
                     setIsOpen={handleCloseModal} 
-                    ticket={updatedTicket} 
-                    totalTickets={confirmedTickets.length || data.totalTicketCount || createdTicketsRef.current.length || createdTickets.length}
-                    allTickets={confirmedTickets.length > 0 ? confirmedTickets : createdTicketsRef.current}
+                    confirmationData={confirmationData}
                 />
             )}
             <PaymentForm 

@@ -1,5 +1,6 @@
 import { PaymentEntity } from "../../../domain/entities/payment/paymentEntity";
 import { TicketEntity } from "../../../domain/entities/ticket/ticketEntity";
+import { TicketVariant } from "../../../domain/entities/ticket/ticketVariantEntity";
 import { TicketFromFrontend } from "../../../domain/entities/ticket/ticketFromFrontend";
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IticketRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/ticket/IticketRepository";
@@ -36,10 +37,8 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
         totalAmount: number, 
         paymentIntentId: string, 
         vendorId: string
-    ): Promise<{ createdTickets: TicketEntity[], stripeClientId: string }> {
+    ): Promise<{ createdTicket: TicketEntity, stripeClientId: string }> {
         
-        
-
         // Validate input data
         if (!ticketData.ticketVariants || typeof ticketData.ticketVariants !== 'object') {
             throw new Error('Invalid ticket variants data structure');
@@ -51,6 +50,14 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
 
         if (selectedVariants.length === 0) {
             throw new Error('No ticket variants selected');
+        }
+
+        // Validate variant types
+        const validVariants: ('standard' | 'premium' | 'vip')[] = ['standard', 'premium', 'vip'];
+        for (const [variantType] of selectedVariants) {
+            if (!validVariants.includes(variantType as any)) {
+                throw new Error(`Invalid variant type: ${variantType}. Valid types are: ${validVariants.join(', ')}`);
+            }
         }
 
         // Get event details with ticket variants
@@ -67,7 +74,7 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
             throw new Error('No ticket variants available for this event');
         }
 
-        const ticketsToCreate: TicketEntity[] = [];
+        const ticketVariantsToCreate: TicketVariant[] = [];
         let calculatedAmount = 0;
         let totalTicketCount = 0;
 
@@ -102,56 +109,45 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
             }
 
             // Calculate amounts for this variant
-            const variantTotalAmount = selectedVariant.price * quantity;
-            calculatedAmount += variantTotalAmount;
+            const variantSubtotal = selectedVariant.price * quantity;
+            calculatedAmount += variantSubtotal;
             totalTicketCount += quantity;
 
-            // CREATE INDIVIDUAL TICKETS FOR EACH QUANTITY
-            // Instead of creating one ticket with ticketCount, create separate ticket entities
+            // Create QR codes for this variant
+            const qrCodes = [];
             for (let i = 0; i < quantity; i++) {
-                // Generate unique ticket ID for each individual ticket
-                const ticketId = generateRandomUuid();
-                if (!ticketId) throw new Error('Error while creating ticket ID');
-
+                const qrId = `${variantType}_${generateRandomUuid()}_${i + 1}`;
                 const hostName = process.env.HOSTNAME;
                 if (!hostName) throw new Error("No hostname found");
 
-                // Create unique QR code link for each ticket
-                const qrLink = `${hostName}/verifyTicket/${ticketId}/${ticketData.eventId}`;
+                const qrLink = `${hostName}/verifyTicket/${qrId}/${ticketData.eventId}`;
                 const qrCodeLink = await this.genQr.createQrLink(qrLink);
                 if (!qrCodeLink) throw new Error('Error while creating QR code link');
 
-                // Create individual ticket entity
-                const ticket: TicketEntity = {
-                    clientId: ticketData.clientId,
-                    email: ticketData.email,
-                    phone: ticketData.phone,
-                    eventId: ticketData.eventId,
-                    ticketId: ticketId, // Unique ID for each ticket
-                    ticketVariant: variantType,
-                    qrCodeLink: qrCodeLink, // Unique QR code for each ticket
-                    paymentStatus: "pending",
-                    ticketStatus: "unused",
-                    ticketCount: 1, // Each ticket entity represents 1 ticket
-                    totalAmount: selectedVariant.price, // Price for 1 ticket of this variant
-                    paymentTransactionId: '', // Will be updated after payment creation
-                };
-
-                ticketsToCreate.push(ticket);
-                console.log(`Created individual ticket entity ${i + 1}/${quantity} for ${variantType}:`, {
-                    ticketId: ticket.ticketId,
-                    variant: ticket.ticketVariant,
-                    price: ticket.totalAmount
+                qrCodes.push({
+                    qrId: qrId,
+                    qrCodeLink: qrCodeLink,
+                    status: 'unused' as 'used' | 'unused' | 'refunded',
+                    checkInHistory: []
                 });
             }
 
-            console.log(`Completed processing ${quantity} ${variantType} tickets`);
+            // Add variant to ticket with proper type casting
+            ticketVariantsToCreate.push({
+                variant: variantType as 'standard' | 'premium' | 'vip',
+                count: quantity,
+                pricePerTicket: selectedVariant.price,
+                subtotal: variantSubtotal,
+                qrCodes: qrCodes
+            });
+
+            console.log(`Completed processing ${quantity} ${variantType} tickets with ${qrCodes.length} QR codes`);
         }
 
         console.log('=== VALIDATION ===');
         console.log(`Calculated amount: ${calculatedAmount}, Received amount: ${totalAmount}`);
         console.log(`Calculated count: ${totalTicketCount}, Received count: ${totalCount}`);
-        console.log(`Total tickets to create: ${ticketsToCreate.length}`);
+        console.log(`Total ticket variants: ${ticketVariantsToCreate.length}`);
         console.log('==================');
 
         // Validate total amount (allow small floating point differences)
@@ -164,26 +160,31 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
             throw new Error(`Ticket count mismatch. Expected: ${totalTicketCount}, Received: ${totalCount}`);
         }
 
-        // Validate that we created the right number of tickets
-        if (ticketsToCreate.length !== totalCount) {
-            throw new Error(`Ticket creation count mismatch. Expected to create: ${totalCount}, Actually created: ${ticketsToCreate.length}`);
+        if (ticketVariantsToCreate.length === 0) {
+            throw new Error('No ticket variants to create');
         }
 
-        if (ticketsToCreate.length === 0) {
-            throw new Error('No tickets to create');
-        }
+        // Generate main ticket ID
+        const mainTicketId = generateRandomUuid();
+        if (!mainTicketId) throw new Error('Error while creating ticket ID');
 
-        // Create Stripe payment intent
-        const clientStripeId = await this.stripe.createPaymentIntent(totalAmount, 'ticket', { 
-            tickets: ticketsToCreate.map(ticket => ({
-                ticketId: ticket.ticketId,
-                variant: ticket.ticketVariant,
-                amount: ticket.totalAmount
-            })),
-            totalTickets: ticketsToCreate.length,
+        // Create a single main QR code for the ticket (optional, since variants have their own QR codes)
+        const hostName = process.env.HOSTNAME;
+        if (!hostName) throw new Error("No hostname found");
+        const mainQrLink = `${hostName}/verifyTicket/${mainTicketId}/${ticketData.eventId}`;
+        const mainQrCodeLink = await this.genQr.createQrLink(mainQrLink);
+        if (!mainQrCodeLink) throw new Error('Error while creating main QR code link');
+
+        // Create Stripe payment intent with simplified metadata
+        const stripeMetadata = {
+            ticketId: mainTicketId,
             eventId: ticketData.eventId,
-            clientId: ticketData.clientId
-        });
+            clientId: ticketData.clientId,
+            totalTickets: totalTicketCount,
+            totalAmount: totalAmount
+        };
+
+        const clientStripeId = await this.stripe.createPaymentIntent(totalAmount, 'ticket', stripeMetadata);
         if (!clientStripeId) throw new Error("Error while creating Stripe client ID");
 
         // Create payment document
@@ -195,53 +196,55 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
             purpose: 'ticketBooking',
             status: "pending",
             userId: ticketData.clientId,
-            ticketId: ticketsToCreate[0].ticketId, // Primary ticket ID for reference
+            ticketId: mainTicketId,
         };
 
         const paymentDocumentCreation = await this.paymentDatabase.createPayment(paymentDetails);
         if (!paymentDocumentCreation) throw new Error('Error while creating payment document');
 
-        // Update all tickets with payment transaction ID
-        ticketsToCreate.forEach(ticket => {
-            ticket.paymentTransactionId = paymentDocumentCreation._id!;
+        // Create single ticket entity with multiple variants
+        const ticket: TicketEntity = {
+            clientId: ticketData.clientId,
+            email: ticketData.email,
+            phone: ticketData.phone,
+            eventId: ticketData.eventId,
+            ticketId: mainTicketId,
+            ticketVariants: ticketVariantsToCreate,
+            qrCodeLink: mainQrCodeLink, // Main QR code (optional)
+            paymentStatus: "pending",
+            ticketStatus: "unused",
+            ticketCount: totalTicketCount,
+            totalAmount: totalAmount,
+            paymentTransactionId: paymentDocumentCreation._id!,
+        };
+
+        console.log(`Creating consolidated ticket in database:`, {
+            ticketId: ticket.ticketId,
+            variants: ticket.ticketVariants.map(v => ({ variant: v.variant, count: v.count, subtotal: v.subtotal })),
+            totalAmount: ticket.totalAmount,
+            totalCount: ticket.ticketCount
         });
+        
+        const createdTicket = await this.ticketDatabase.createTicket(ticket);
+        if (!createdTicket) throw new Error(`Error while creating ticket ${ticket.ticketId}`);
 
-        // Create all individual tickets in database
-        const createdTickets: TicketEntity[] = [];
-        for (const ticket of ticketsToCreate) {
-            console.log(`Creating individual ticket in database:`, {
-                ticketId: ticket.ticketId,
-                variant: ticket.ticketVariant,
-                amount: ticket.totalAmount
-            });
-            
-            const createdTicket = await this.ticketDatabase.createTicket(ticket);
-            if (!createdTicket) throw new Error(`Error while creating ticket ${ticket.ticketId}`);
-            
-            createdTickets.push(createdTicket);
-        }
-
-        // Update event's ticket variants sold count (aggregate by variant type)
-        const variantUpdates: { [key: string]: number } = {};
+        // Update event's ticket variants sold count
         for (const [variantType, quantity] of selectedVariants) {
-            variantUpdates[variantType] = quantity;
-        }
-
-        for (const [variantType, quantity] of Object.entries(variantUpdates)) {
             console.log(`Updating variant ${variantType} sold count by ${quantity}`);
             await this.eventDatabase.updateVariantTicketsSold(ticketData.eventId, variantType, quantity);
         }
 
         console.log('=== FINAL RESULT ===');
-        console.log(`Created ${createdTickets.length} individual tickets`);
-        console.log('Tickets breakdown:', createdTickets.map(t => ({
-            ticketId: t.ticketId,
-            variant: t.ticketVariant,
-            amount: t.totalAmount
+        console.log(`Created consolidated ticket with ID: ${createdTicket.ticketId}`);
+        console.log('Variants breakdown:', createdTicket.ticketVariants.map(v => ({
+            variant: v.variant,
+            count: v.count,
+            subtotal: v.subtotal,
+            qrCodesCount: v.qrCodes.length
         })));
         console.log('Stripe client ID:', clientStripeId);
         console.log('====================');
 
-        return { createdTickets, stripeClientId: clientStripeId };
+        return { createdTicket, stripeClientId: clientStripeId };
     }
 }

@@ -164,14 +164,27 @@ export const findEventById = async (eventId: string) => {
 
 export const createTicket = async (ticket: TicketEntity, totalCount: number, totalAmount: number, paymentIntentId: string, vendorId: string) => {
     try {
-        const response = await axios.post('/createTicket', { ticket, totalCount, totalAmount, paymentIntentId, vendorId })
-        return response.data
+        const response = await axios.post('/createTicket', { 
+            ticket, 
+            totalCount, 
+            totalAmount, 
+            paymentIntentId, 
+            vendorId 
+        });
+        
+        // The response now contains a single createdTicket instead of createdTickets array
+        return {
+            message: response.data.message,
+            stripeClientId: response.data.stripeClientId,
+            createdTicket: response.data.createdTicket, // Single ticket object
+            summary: response.data.summary // Enhanced summary with variant details
+        };
     } catch (error) {
-        console.log('error while creating ticket', error)
-        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while creating ticket')
+        console.log('error while creating ticket', error);
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while creating ticket');
     }
+};
 
-}
 
 export const confirmTicketAndPayment = async (
   tickets: TicketEntity[], 

@@ -1,4 +1,5 @@
 import { ObjectId } from "mongoose";
+import { TicketVariant } from "./ticketVariantEntity";
 
 export interface TicketEntity {
     _id?: ObjectId | string
@@ -7,11 +8,11 @@ export interface TicketEntity {
     ticketCount: number
     phone: string;
     email: string;
+    ticketVariants: TicketVariant[];
     paymentStatus: 'pending' | 'successful' | 'failed' | 'refunded';
     qrCodeLink: string;
     eventId: ObjectId | string;
     clientId: ObjectId | string;
-    ticketVariant: string
     ticketStatus: 'used' | 'refunded' | 'unused'
     paymentTransactionId: ObjectId | string
     checkInHistory?: Date[]

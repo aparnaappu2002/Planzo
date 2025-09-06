@@ -8,5 +8,5 @@ export interface IcreateTicketUseCase {
         totalAmount: number, 
         paymentIntentId: string, 
         vendorId: string
-    ): Promise<{ createdTickets: TicketEntity[]; stripeClientId: string }>;
+    ): Promise<{ createdTicket: TicketEntity; stripeClientId: string }>;
 }

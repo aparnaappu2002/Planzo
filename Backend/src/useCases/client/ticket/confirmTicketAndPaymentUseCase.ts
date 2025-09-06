@@ -33,22 +33,27 @@ export class ConfirmTicketAndPaymentUseCase implements IconfirmTicketAndPaymentU
     }
 
     async confirmTicketAndPayment(
-        tickets: TicketEntity[], 
+        ticket: TicketEntity, 
         paymentIntent: string, 
         vendorId: string
-    ): Promise<TicketEntity[]> {
+    ): Promise<TicketEntity> {
         console.log('=== CONFIRM TICKET AND PAYMENT DEBUG ===');
         console.log('Vendor ID:', vendorId);
         console.log('Payment Intent:', paymentIntent);
-        console.log('Tickets to confirm:', tickets.length);
-        console.log('Tickets details:', tickets.map(t => ({
-            ticketId: t.ticketId,
-            variant: t.ticketVariant,
-            amount: t.totalAmount
-        })));
+        console.log('Ticket to confirm:', {
+            ticketId: ticket.ticketId,
+            variants: ticket.ticketVariants.map(v => ({ variant: v.variant, count: v.count, subtotal: v.subtotal })),
+            totalAmount: ticket.totalAmount,
+            ticketCount: ticket.ticketCount
+        });
 
-        if (!tickets || tickets.length === 0) {
-            throw new Error('No tickets provided for confirmation');
+        if (!ticket) {
+            throw new Error('No ticket provided for confirmation');
+        }
+
+        // Validate ticket variants
+        if (!ticket.ticketVariants || ticket.ticketVariants.length === 0) {
+            throw new Error('No ticket variants found in the ticket');
         }
 
         // Confirm the payment with Stripe
@@ -59,38 +64,63 @@ export class ConfirmTicketAndPaymentUseCase implements IconfirmTicketAndPaymentU
 
         console.log('Payment confirmed successfully');
 
-        // Calculate total ticket count and amount
-        const totalTicketCount = tickets.length; // Each ticket entity represents 1 ticket
-        const totalAmount = tickets.reduce((sum, ticket) => sum + ticket.totalAmount, 0);
+        // Get total ticket count from the consolidated ticket
+        const totalTicketCount = ticket.ticketCount;
+        const totalAmount = ticket.totalAmount;
 
         console.log(`Total tickets: ${totalTicketCount}, Total amount: ₹${totalAmount}`);
 
-        // Get event details and validate availability
-        const eventDetails = await this.eventDatabase.findTotalTicketCountAndticketPurchased(tickets[0].eventId!);
-        if (eventDetails.ticketPurchased > eventDetails.totalTicket) {
-            throw new Error('Ticket full Sold out');
-        } else if (eventDetails.ticketPurchased + totalTicketCount > eventDetails.totalTicket) {
-            throw new Error(`Not enough tickets available. Available: ${eventDetails.totalTicket - eventDetails.ticketPurchased}, Requested: ${totalTicketCount}`);
+        // Get event details and validate availability for each variant
+        const eventId = typeof ticket.eventId === 'string' ? ticket.eventId : ticket.eventId!.toString();
+        const eventDetails = await this.eventDatabase.findTotalTicketAndBookedTicket(eventId);
+        if (!eventDetails) {
+            throw new Error('Event not found');
         }
 
-        // Update event ticket purchase count
-        const newTicketPurchasedCount = eventDetails.ticketPurchased + totalTicketCount;
-        await this.eventDatabase.updateTicketPurchaseCount(tickets[0].eventId!, newTicketPurchasedCount);
+        // Check overall event availability
+        const totalBookedTickets = eventDetails.ticketVariants.reduce((sum, variant) => sum + variant.ticketsSold, 0);
+        const totalAvailableTickets = eventDetails.ticketVariants.reduce((sum, variant) => sum + variant.totalTickets, 0);
 
-        console.log(`Updated event ticket count from ${eventDetails.ticketPurchased} to ${newTicketPurchasedCount}`);
+        if (totalBookedTickets > totalAvailableTickets) {
+            throw new Error('Event tickets are sold out');
+        } else if (totalBookedTickets + totalTicketCount > totalAvailableTickets) {
+            throw new Error(`Not enough tickets available. Available: ${totalAvailableTickets - totalBookedTickets}, Requested: ${totalTicketCount}`);
+        }
 
-        // Update payment status for all tickets
-        const updatedTickets: TicketEntity[] = [];
-        for (const ticket of tickets) {
-            console.log(`Updating payment status for ticket: ${ticket.ticketId}`);
-            const updatedTicket = await this.ticketDatabase.updatePaymentstatus(ticket._id!);
-            if (!updatedTicket) {
-                throw new Error(`No ticket found with ID: ${ticket._id}`);
+        // Validate each variant availability (this should have been checked during creation, but double-check)
+        for (const ticketVariant of ticket.ticketVariants) {
+            const eventVariant = eventDetails.ticketVariants.find(ev => 
+                ev.type.toLowerCase() === ticketVariant.variant.toLowerCase()
+            );
+            
+            if (!eventVariant) {
+                throw new Error(`Variant ${ticketVariant.variant} not found in event`);
             }
-            updatedTickets.push(updatedTicket);
+            
+            const availableForVariant = eventVariant.totalTickets - eventVariant.ticketsSold;
+            if (ticketVariant.count > availableForVariant) {
+                throw new Error(`Not enough ${ticketVariant.variant} tickets available. Available: ${availableForVariant}, Requested: ${ticketVariant.count}`);
+            }
         }
 
-        console.log(`Successfully updated payment status for ${updatedTickets.length} tickets`);
+        console.log('Ticket availability validated successfully');
+
+        // Update payment status for the consolidated ticket
+        console.log(`Updating payment status for ticket: ${ticket.ticketId}`);
+        const updatedTicket = await this.ticketDatabase.updatePaymentstatus(ticket._id!);
+        if (!updatedTicket) {
+            throw new Error(`No ticket found with ID: ${ticket._id}`);
+        }
+
+        console.log('Successfully updated payment status for consolidated ticket');
+
+        // Update variant-specific sold counts in the event
+        for (const ticketVariant of ticket.ticketVariants) {
+            console.log(`Updating variant ${ticketVariant.variant} sold count by ${ticketVariant.count}`);
+            await this.eventDatabase.updateVariantTicketsSold(eventId, ticketVariant.variant, ticketVariant.count);
+        }
+
+        console.log('Updated all variant sold counts');
 
         // Process wallet transactions
         const adminId = process.env.ADMIN_ID;
@@ -100,7 +130,7 @@ export class ConfirmTicketAndPaymentUseCase implements IconfirmTicketAndPaymentU
         const adminCommission = totalAmount * 0.01; // 1% commission
         const vendorPrice = totalAmount - adminCommission;
 
-        console.log(`Admin commission: ₹${adminCommission}, Vendor payment: ₹${vendorPrice}`);
+        console.log(`Admin commission: ₹${adminCommission.toFixed(2)}, Vendor payment: ₹${vendorPrice.toFixed(2)}`);
 
         // Process admin wallet transaction
         const adminWallet = await this.walletDatabase.findWalletByUserId(adminId);
@@ -158,14 +188,21 @@ export class ConfirmTicketAndPaymentUseCase implements IconfirmTicketAndPaymentU
         console.log('Vendor payment processed successfully');
 
         console.log('=== CONFIRMATION COMPLETED ===');
-        console.log(`Confirmed ${updatedTickets.length} tickets successfully`);
-        console.log('Updated tickets:', updatedTickets.map(t => ({
-            ticketId: t.ticketId,
-            variant: t.ticketVariant,
-            paymentStatus: t.paymentStatus
-        })));
+        console.log('Confirmed consolidated ticket successfully');
+        console.log('Updated ticket:', {
+            ticketId: updatedTicket.ticketId,
+            variants: updatedTicket.ticketVariants.map(v => ({ 
+                variant: v.variant, 
+                count: v.count, 
+                qrCodesCount: v.qrCodes.length 
+            })),
+            paymentStatus: updatedTicket.paymentStatus,
+            ticketStatus: updatedTicket.ticketStatus,
+            totalAmount: updatedTicket.totalAmount,
+            totalCount: updatedTicket.ticketCount
+        });
         console.log('=====================================');
 
-        return updatedTickets;
+        return updatedTicket;
     }
 }
