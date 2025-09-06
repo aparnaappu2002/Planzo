@@ -1,7 +1,7 @@
 import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
-    injectedWalletClientController,injectedCategoryClientController
+    injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -75,6 +75,12 @@ export class clientRoute{
         })
         this.clientRoute.post('/events/searchNearby', (req: Request, res: Response) => {
             injectedEventClientController.handleEventsNearLocation(req, res)
+        })
+        this.clientRoute.get('/vendors', (req: Request, res: Response) => {
+            injectedVendorForClientController.handleFindVendorForClient(req, res)
+        })
+        this.clientRoute.get('/vendors/:vendorId/:PageNo', (req: Request, res: Response) => {
+            injectedVendorForClientController.handleFindVendorProfile(req, res)
         })
     }
 }

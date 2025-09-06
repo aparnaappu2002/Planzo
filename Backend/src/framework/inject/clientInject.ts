@@ -46,6 +46,12 @@ import { CategoryClientController } from "../../adapters/controllers/client/cate
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
 import { SearchEventsOnLocationUseCase } from "../../useCases/client/events/searchEventsOnLocationUseCase";
 import { CheckTicketLimitUseCase } from "../../useCases/client/ticket/checkTicketLimitUseCase";
+import { VendorForClientController } from "../../adapters/controllers/client/vendor/VendorsInClientController";
+import { FindVendorForClientUseCase } from "../../useCases/client/vendors/FindVendorForClientUseCase";
+import { FindVendorProfileUseCase } from "../../useCases/client/vendors/FindVendorProfileUseCase";
+import { WorkSampleRepository } from "../../adapters/repository/workSamples/workSampleRepository";
+import { ServiceRepository } from "../../adapters/repository/service/serviceRepository";
+
 
 
 const otpService=new OtpService()
@@ -111,3 +117,10 @@ export const injectedWalletClientController= new ClientWalletController(findWall
 const categoryRepository=new CategoryDatabaseRepository()
 const findCategoryClientUSeCase=new FindCategoryClientUseCase(categoryRepository)
 export const injectedCategoryClientController = new CategoryClientController(findCategoryClientUSeCase) 
+
+//vendors in client side
+const findVendorForClientUseCase=new FindVendorForClientUseCase(VendorRepository)
+const workSampleRepository=new WorkSampleRepository()
+const serviceRepository=new ServiceRepository()
+const findVendorProfileUseCase=new FindVendorProfileUseCase(workSampleRepository,serviceRepository)
+export const injectedVendorForClientController = new VendorForClientController(findVendorForClientUseCase,findVendorProfileUseCase)
