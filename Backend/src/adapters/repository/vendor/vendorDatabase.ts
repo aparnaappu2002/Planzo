@@ -104,4 +104,7 @@ export class VendorDatabase implements IvendorDatabaseRepositoryInterface{
    
     return vendors;
 }
+async findVendorsForCarousal(): Promise<VendorEntity[] | []> {
+        return await VendorModel.find({ status: 'active', vendorStatus: 'approved' }).select('name profileImage idProof')
+    }
 }   

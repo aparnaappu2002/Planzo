@@ -16,7 +16,7 @@ export class WorkSampleRepository implements IworkSampleRepository {
         const totalPages = Math.ceil(await workSampleModel.countDocuments({ vendorId: new Types.ObjectId(vendorId) }) / limit) || 1
         return { workSamples, totalPages }
     }
-    async vendorProfileIWithWorkSample(vendorId: string): Promise<VendorProfileEntityInClient | null> {
-        return await workSampleModel.findOne({ vendorId }).populate('vendorId', '_id name profileImage').lean<VendorProfileEntityInClient>()
+    async vendorProfileWithWorkSample(vendorId: string): Promise<VendorProfileEntityInClient | null> {
+        return await workSampleModel.find({ vendorId }).populate('vendorId', '_id name profileImage').lean<VendorProfileEntityInClient>()
     }
 }

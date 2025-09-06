@@ -12,6 +12,8 @@ import TicketPaymentForm from '@/components/client/payment/TicketPayment'
 import ClientLayout from '@/components/client/clientLayout/ClientLayout'
 import BookedEvents from '@/components/client/bookings/BookedEvents'
 import ClientWallet from '@/components/client/wallet/ClientWallet'
+import VendorCarousel from '@/components/client/vendor/VendorFetching'
+import VendorProfilePage from '@/components/client/vendor/VendorProfileWithSamples'
 
 
 
@@ -32,6 +34,8 @@ const UserRoute=()=>{
              <Route path='/ticketPayment' element={<ProtectedRouteClient> <TicketPaymentForm/> </ProtectedRouteClient> }></Route>
              <Route path='/bookings' element={<ProtectedRouteClient> <BookedEvents/> </ProtectedRouteClient> }></Route>
              <Route path='/wallet' element={<ProtectedRouteClient> <ClientWallet/> </ProtectedRouteClient> }></Route>
+             <Route path='/vendors' element={ <VendorCarousel/>  }></Route>
+             <Route path='/vendors/:vendorId' element={ <VendorProfilePage/>  }></Route>
              </Route>
 
             

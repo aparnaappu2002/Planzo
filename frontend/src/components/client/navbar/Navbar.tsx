@@ -68,6 +68,9 @@ export const Navbar: React.FC = () => {
   const handleMyTicketsClick = () => {
     navigate('/my-tickets') // or whatever your tickets route is
   }
+  const handleVendorClick = () => {
+    navigate('/vendors') 
+  }
 
   const handleLogoutClick = () => {
     setIsLogoutDialogOpen(true)
@@ -176,7 +179,7 @@ export const Navbar: React.FC = () => {
                 <DropdownMenuItem onClick={handleBookingsClick}>Bookings</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleWalletClick}>Wallet</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleChatClick}>Chat</DropdownMenuItem>
-                <DropdownMenuItem>Sports</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleVendorClick}>Vendors</DropdownMenuItem>
                 <DropdownMenuItem>Theater</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>View All Events</DropdownMenuItem>
@@ -258,8 +261,8 @@ export const Navbar: React.FC = () => {
                   <button onClick={handleChatClick} className="block py-1 text-left w-full">
                     Chat
                   </button>
-                  <a href="#" className="block py-1">
-                    Sports
+                  <a onClick={handleVendorClick} className="block py-1">
+                    Vendors
                   </a>
                   <a href="#" className="block py-1">
                     Theater

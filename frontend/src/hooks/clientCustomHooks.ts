@@ -3,7 +3,8 @@ import {
   clientSignup,
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
-  findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation
+  findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
+  fetchVendorForCarousal,findVendorProfileWithSample
 
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
@@ -250,4 +251,23 @@ export const useSearchEventsOnLocation = (
         queryFn: () => searchEventsOnLocation(locationQuery, pageNo, limit, range),
         enabled: !!locationQuery,
     });
+};
+
+export const useFindVendorForCarousal = () => {
+  return useQuery({
+    queryKey: ["vendorForCarousal"],
+    queryFn: fetchVendorForCarousal,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useFindVendorProfileWithSample = (
+  vendorId: string,
+  pageNo: number
+) => {
+  return useQuery({
+    queryKey: ["vendorProfileWithSample", vendorId, pageNo],
+    queryFn: () => findVendorProfileWithSample(vendorId, pageNo),
+  });
 };

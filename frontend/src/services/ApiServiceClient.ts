@@ -300,3 +300,23 @@ export const searchEventsOnLocation = async (locationQuery: string, pageNo: numb
 }
 
 
+export const fetchVendorForCarousal = async () => {
+    try {
+        const response = await axios.get('/vendors')
+        return response.data
+    } catch (error) {
+        console.log('error while fetching vendors for carousal', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while fetching vendor for carousal')
+    }
+}
+
+export const findVendorProfileWithSample = async (vendorId: string, pageNo: number) => {
+    try {
+        const response = await axios.get(`/vendors/${vendorId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while finding the vendor profile', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding vendor profile')
+    }
+}
