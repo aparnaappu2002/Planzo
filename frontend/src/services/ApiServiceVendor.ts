@@ -217,3 +217,82 @@ export const findWorkSamples = async (vendorId: string, pageNo: number) => {
     }
 }
 
+interface Service {
+    _id?: string;
+    serviceTitle: string;
+    yearsOfExperience: number;
+    serviceDescription: string;
+    cancellationPolicy: string;
+    termsAndCondition: string;
+    serviceDuration: string;
+    servicePrice: number;
+    additionalHourFee: number;
+    status: string;
+    vendorId?: string;
+    categoryId: string;
+}
+
+export const fetchCategoryCategoryForService = async () => {
+    try {
+        const response = await axios.get('/categories')
+        return response.data
+    } catch (error) {
+        console.log('error while fetching category', error)
+        if (isAxiosError(error)) {
+            throw new Error(error?.response?.data?.error)
+        }
+        throw new Error('error while fetching category for service')
+    }
+}
+export const createServiceVendor = async (service: Service) => {
+    try {
+        const response = await axios.post('/createService', { service })
+        return response.data
+    } catch (error) {
+        console.log('error while creating service', error)
+        if (isAxiosError(error)) {
+            throw new Error(error?.response?.data?.error)
+        }
+        throw new Error('error while creating service')
+    }
+}
+
+export const findServiceForVendor = async ({ vendorId, pageNo }: { vendorId: string, pageNo: number }) => {
+    try {
+
+        const response = await axios.get('/services', { params: { vendorId, pageNo } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching service', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data.error)
+        }
+        throw new Error('error while fetching service')
+    }
+}
+
+export const editServiceVendor = async (service: Service, serviceId: string) => {
+    try {
+        const response = await axios.put('/editService', { service, serviceId })
+        return response.data
+    } catch (error) {
+        console.log('error while editing service', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data.error)
+        }
+        throw new Error('error while editing service')
+    }
+}
+
+export const changeStatusService = async (serviceId: string) => {
+    try {
+        const response = await axios.patch('/changeStatusService', { serviceId })
+        return response.data
+    } catch (error) {
+        console.log('error while changing the status of the service', error)
+        if (isAxiosError(error)) {
+            throw new Error(error?.response?.data.error)
+        }
+        throw new Error('error while changing the status of the service')
+    }
+}

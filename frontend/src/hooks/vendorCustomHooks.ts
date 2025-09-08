@@ -1,6 +1,7 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
-,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples} from "@/services/ApiServiceVendor";
+,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
+findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService} from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
 import { EventEntity } from "@/types/EventType";
@@ -135,5 +136,55 @@ export const useFindWorkSamples = (vendorId: string, pageNo: number) => {
     return useQuery({
         queryKey: ['workSamples', vendorId, pageNo],
         queryFn: () => findWorkSamples(vendorId, pageNo)
+    })
+}
+
+interface Service {
+    _id?: string;
+    serviceTitle: string;
+    yearsOfExperience: number;
+    serviceDescription: string;
+    cancellationPolicy: string;
+    termsAndCondition: string;
+    serviceDuration: string;
+    servicePrice: number;
+    additionalHourFee: number;
+    status: string;
+    vendorId?: string;
+    categoryId: string;
+}
+export const useFetchCategoryForServiceQuery = () => {
+    return useQuery({
+        queryKey: ['categories-for-addService'],
+        queryFn: () => fetchCategoryCategoryForService(),
+        refetchOnWindowFocus: false,
+
+    },
+    )
+}
+
+export const useCreateServiceMutation = () => {
+    return useMutation({
+        mutationFn: (service: Service) => createServiceVendor(service)
+    })
+}
+
+export const useFetchServiceVendor = ({ vendorId, pageNo }: { vendorId: string, pageNo: number }) => {
+    return useQuery({
+        queryKey: ['services-in-vendor', vendorId, pageNo],
+        queryFn: () => findServiceForVendor({ vendorId, pageNo }),
+        staleTime: 1000 * 60 * 5,
+    })
+}
+
+export const useEditServiceVendor = () => {
+    return useMutation({
+        mutationFn: ({ service, serviceId }: { service: Service, serviceId: string }) => editServiceVendor(service, serviceId)
+    })
+}
+
+export const useChangeStatusServiceVendor = () => {
+    return useMutation({
+        mutationFn: (serviceId: string) => changeStatusService(serviceId)
     })
 }

@@ -47,7 +47,7 @@ const vendorItems = [
   { title: "Wallet", url: "/vendor/wallet", icon: Store },
   { title: "Tickets", url: "/vendor/tickets", icon: TrendingUp },
   { title: "Work Samples", url: "/vendor/workSamples", icon: MessageSquare },
-  // { title: "Settings", url: "/vendor/settings", icon: Settings },
+   { title: "Services", url: "/vendor/services", icon: Settings },
 ]
 
 export function VendorSidebar() {

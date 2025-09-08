@@ -8,5 +8,6 @@ export interface IcategoryRepository {
     changeNameAndImage(categoryId: string, updates: CategoryUpdate): Promise<boolean | null>
     changeStatusOfCategory(categoryId: string): Promise<categoryEntity | null>
     findCategoryForClient(): Promise<categoryEntity[] | []>
+    findCategoryForCreatingService(): Promise<categoryEntity[] | []>
 }
 

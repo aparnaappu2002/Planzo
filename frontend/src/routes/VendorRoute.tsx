@@ -12,6 +12,7 @@ import ProfileNotApproved from "@/components/vendor/VendorDashboard";
 import VendorWallet from "@/components/vendor/wallet/VendorWallet";
 import TicketAndUserDetails from "@/components/vendor/ticket/TicketAndUserDetail";
 import WorkSamplesPage from "@/components/vendor/workSample/WorkSample";
+import VendorServicesPage from "@/components/vendor/service/VendorServicePage";
 
 
 
@@ -31,6 +32,7 @@ const VendorRoute=()=>{
             <Route path="/wallet" element={<ProtectedRouteVendor>  < VendorWallet/> </ProtectedRouteVendor> }></Route>
             <Route path="/tickets" element={<ProtectedRouteVendor>  < TicketAndUserDetails/> </ProtectedRouteVendor> }></Route>
             <Route path="/workSamples" element={<ProtectedRouteVendor>  < WorkSamplesPage/> </ProtectedRouteVendor> }></Route>
+            <Route path="/services" element={<ProtectedRouteVendor>  < VendorServicesPage/> </ProtectedRouteVendor> }></Route>
             </Route>
         </Routes>
     )

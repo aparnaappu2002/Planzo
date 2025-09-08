@@ -52,5 +52,9 @@ export class CategoryDatabaseRepository implements IcategoryRepository {
     async findCategoryForClient(): Promise<categoryEntity[] | []> {
         return await categoryModel.find({ status: 'active' }).select('_id image title').limit(5)
     }
+    async findCategoryForCreatingService(): Promise<categoryEntity[] | []> {
+        return await categoryModel.find({ status: 'active' }).select('title _id')
+    }
+    
 }   
 

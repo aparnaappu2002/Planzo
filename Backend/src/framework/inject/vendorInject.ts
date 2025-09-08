@@ -36,6 +36,15 @@ import { WorkSampleRepository } from "../../adapters/repository/workSamples/work
 import { WorkSampleCreationUseCase } from "../../useCases/vendor/workSample/workSampleCreationUseCase";
 import { FindWorkSamplesOfAVendorUseCase } from "../../useCases/vendor/workSample/findWorkSampleofVendor";
 import { WorkSampleController } from "../../adapters/controllers/vendor/workSample/workSampleController";
+import { CreateServiceUseCase } from "../../useCases/vendor/service/createServiceUseCase";
+import { EditServiceUseCase } from "../../useCases/vendor/service/editServiceUseCase";
+import { ChangeStatusServiceUseCase } from "../../useCases/vendor/service/changeStatusServiceUseCase";
+import { FindServiceUseCase } from "../../useCases/vendor/service/findServiceUseCase";
+import { ServiceRepository } from "../../adapters/repository/service/serviceRepository";
+import { ServiceVendorController } from "../../adapters/controllers/vendor/services/serviceVendorController";
+import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
+import { FindCategoryForServiceUseCase } from "../../useCases/vendor/service/findCategoryUseCase";
+
 
 const EmailService  = new emailService()
 const otpService = new OtpService()
@@ -93,3 +102,13 @@ const workSampleRepository=new WorkSampleRepository()
 const workSampleCreationUseCase=new WorkSampleCreationUseCase(workSampleRepository)
 const findWorkSampleofVendorUseCase=new FindWorkSamplesOfAVendorUseCase(workSampleRepository)
 export const injectedWorkSampleController= new WorkSampleController(workSampleCreationUseCase,findWorkSampleofVendorUseCase)
+
+//service
+const categoryRepository=new CategoryDatabaseRepository()
+const serviceRepository=new ServiceRepository()
+const findCategoryForCreatingService=new FindCategoryForServiceUseCase(categoryRepository)
+const createServiceUseCase=new CreateServiceUseCase(serviceRepository)
+const editServiceUseCase=new EditServiceUseCase(serviceRepository)
+const changeStatusServiceUseCase=new ChangeStatusServiceUseCase(serviceRepository)
+const findServiceUseCase=new FindServiceUseCase(serviceRepository)
+export const injectedServiceVendorControllerUseCase=new ServiceVendorController(findCategoryForCreatingService,createServiceUseCase,editServiceUseCase,changeStatusServiceUseCase,findServiceUseCase)

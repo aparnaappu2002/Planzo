@@ -2,7 +2,7 @@ import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
     injectedVendorLoginLogoutController,
     injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
-    injectedEventController,injectedTicketAndUserDetailsOfEventController,injectedWorkSampleController
+    injectedEventController,injectedTicketAndUserDetailsOfEventController,injectedWorkSampleController,injectedServiceVendorControllerUseCase
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -62,5 +62,21 @@ export class VendorRoute{
         this.vendorRoute.get('/workSamples', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedWorkSampleController.handleFindWorkSampleOfVendor(req, res)
         })
+        this.vendorRoute.get('/categories', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedServiceVendorControllerUseCase.handleFindCategoryForServiceUseCase(req, res)
+        })
+        this.vendorRoute.post('/createService', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedServiceVendorControllerUseCase.handleCreateService(req, res)
+        })
+        this.vendorRoute.get('/services', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedServiceVendorControllerUseCase.handleFindService(req, res)
+        })
+        this.vendorRoute.put('/editService', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedServiceVendorControllerUseCase.handleEditService(req, res)
+        })
+        this.vendorRoute.patch('/changeStatusService', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedServiceVendorControllerUseCase.handleChangeStatusUseCase(req, res)
+        })
+        
     }
 }
