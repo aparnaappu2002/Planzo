@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useQueryClient } from '@tanstack/react-query';
 import { RootState } from '@/redux/Store';
 import { 
   useFetchCategoryForServiceQuery, 
@@ -42,6 +41,9 @@ const VendorServicesPage: React.FC = () => {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
+  const [confirmServiceId, setConfirmServiceId] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'activate' | 'deactivate' | null>(null);
 
   // Fetch services and categories
   const { data: servicesData, isLoading: isLoadingServices, error: servicesError } = useFetchServiceVendor({ vendorId: vendorId ?? '', pageNo });
@@ -49,7 +51,7 @@ const VendorServicesPage: React.FC = () => {
   const createServiceMutation = useCreateServiceMutation();
   const editServiceMutation = useEditServiceVendor();
   const changeStatusMutation = useChangeStatusServiceVendor();
-  const queryClient = useQueryClient(); // Initialize queryClient for invalidation
+  const queryClient = useQueryClient();
 
   // Log data for debugging
   console.log('Services Data:', servicesData);
@@ -169,7 +171,6 @@ const VendorServicesPage: React.FC = () => {
         await createServiceMutation.mutateAsync({ ...formData, vendorId });
         toast.success('Service created successfully');
       }
-      // Invalidate services query to refetch data
       await queryClient.invalidateQueries(['vendorServices', vendorId, pageNo]);
       console.log('Invalidated services query after mutation');
       setIsModalOpen(false);
@@ -202,17 +203,29 @@ const VendorServicesPage: React.FC = () => {
     }
   };
 
-  // Handle status change
-  const handleStatusChange = async (serviceId: string) => {
+  // Open confirmation modal before status change
+  const openConfirmModal = (serviceId: string, action: 'activate' | 'deactivate') => {
+    setConfirmServiceId(serviceId);
+    setConfirmAction(action);
+    setIsConfirmModalOpen(true);
+  };
+
+  // Handle status change after confirmation
+  const handleStatusChange = async () => {
+    if (!confirmServiceId) return;
+
     try {
-      await changeStatusMutation.mutateAsync(serviceId);
+      await changeStatusMutation.mutateAsync(confirmServiceId);
       toast.success('Service status updated successfully');
-      // Invalidate services query to refetch data
       await queryClient.invalidateQueries(['vendorServices', vendorId, pageNo]);
       console.log('Invalidated services query after status change');
     } catch (err) {
       console.error('Error changing service status:', err);
       toast.error('Failed to update service status');
+    } finally {
+      setIsConfirmModalOpen(false);
+      setConfirmServiceId(null);
+      setConfirmAction(null);
     }
   };
 
@@ -226,7 +239,6 @@ const VendorServicesPage: React.FC = () => {
 
   // Render main content
   const renderContent = () => {
-    // If servicesData is undefined, show loading state to avoid premature "no services" message
     if (servicesData === undefined) {
       return (
         <div className="flex justify-center items-center py-4">
@@ -292,7 +304,7 @@ const VendorServicesPage: React.FC = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleStatusChange(service._id!)}
+                    onClick={() => openConfirmModal(service._id!, service.status === 'active' ? 'deactivate' : 'activate')}
                     className="px-3 py-1 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
                   >
                     {service.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -527,7 +539,7 @@ const VendorServicesPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="servicePrice" className="block text-gray-700 font-medium mb-2">
-                    Service Price ($)
+                    Service Price (₹)
                   </label>
                   <input
                     id="servicePrice"
@@ -548,7 +560,7 @@ const VendorServicesPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="additionalHourFee" className="block text-gray-700 font-medium mb-2">
-                    Additional Hour Fee ($)
+                    Additional Hour Fee (₹)
                   </label>
                   <input
                     id="additionalHourFee"
@@ -584,6 +596,45 @@ const VendorServicesPage: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal for Status Change */}
+        {isConfirmModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="relative bg-white rounded-lg p-6 w-full max-w-sm mx-4 border-2 border-yellow-400">
+              <button
+                type="button"
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                aria-label="Close confirmation modal"
+              >
+                &times;
+              </button>
+              <h2 className="text-xl font-bold text-yellow-600 mb-4">
+                Confirm {confirmAction === 'activate' ? 'Activation' : 'Deactivation'}
+              </h2>
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to {confirmAction === 'activate' ? 'activate' : 'deactivate'} this service?
+              </p>
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStatusChange}
+                  className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
+                  disabled={changeStatusMutation.isLoading}
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
         )}
