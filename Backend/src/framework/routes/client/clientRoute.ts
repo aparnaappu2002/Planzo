@@ -1,7 +1,7 @@
 import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
-    injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController
+    injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController,injectedServiceClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -81,6 +81,18 @@ export class clientRoute{
         })
         this.clientRoute.get('/vendors/:vendorId/:PageNo', (req: Request, res: Response) => {
             injectedVendorForClientController.handleFindVendorProfile(req, res)
+        })
+        this.clientRoute.get('/services', (req: Request, res: Response) => {
+            injectedServiceClientController.handleFindServiceForClient(req, res)
+        })
+        this.clientRoute.get('/servicesFiltering', (req: Request, res: Response) => {
+            injectedServiceClientController.handleFindServiceOnCategorybasis(req, res)
+        })
+        this.clientRoute.get('/service/search', (req: Request, res: Response) => {
+            injectedServiceClientController.handleSearchService(req, res)
+        })
+        this.clientRoute.get('/categories', (req: Request, res: Response) => {
+            injectedCategoryClientController.handleFindCategoryClient(req, res)
         })
     }
 }

@@ -320,3 +320,34 @@ export const findVendorProfileWithSample = async (vendorId: string, pageNo: numb
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding vendor profile')
     }
 }
+
+export const fetchServiceForClient = async (currentPage: number) => {
+    try {
+        const response = await axios.get('/services', { params: { pageNo: currentPage } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching service in client side', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while fetching services in client side')
+    }
+}
+export const clientFindServiceOnCategoryBasis = async (categoryId: string, pageNo: number, sortBy: string) => {
+    try {
+        const response = await axios.get(`/servicesFiltering`, { params: { categoryId, pageNo, sortBy } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching services on the basis of category', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while fetching services on the basis of category')
+    }
+}
+export const searchService = async (query: string) => {
+    try {
+        const response = await axios.get('/service/search', { params: { query } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching service based on query', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching service based on query')
+    }
+}
+

@@ -14,6 +14,7 @@ import BookedEvents from '@/components/client/bookings/BookedEvents'
 import ClientWallet from '@/components/client/wallet/ClientWallet'
 import VendorCarousel from '@/components/client/vendor/VendorFetching'
 import VendorProfilePage from '@/components/client/vendor/VendorProfileWithSamples'
+import ServicesPage from '@/components/client/service/ServicesPage'
 
 
 
@@ -37,6 +38,7 @@ const UserRoute=()=>{
              <Route path='/wallet' element={<ProtectedRouteClient> <ClientWallet/> </ProtectedRouteClient> }></Route>
              <Route path='/vendors' element={ <VendorCarousel/>  }></Route>
              <Route path='/vendors/:vendorId' element={ <VendorProfilePage/>  }></Route>
+             <Route path='/services' element={ <ServicesPage/>  }></Route>
              </Route>
 
             

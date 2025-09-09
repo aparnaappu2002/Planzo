@@ -158,6 +158,9 @@ export const Navbar: React.FC = () => {
             <a href="/events" className="text-sm font-medium hover:text-primary">
               Events
             </a>
+            <a href="/services" className="text-sm font-medium hover:text-primary">
+              Services
+            </a>
             <a href="/about" className="text-sm font-medium hover:text-primary">
               About
             </a>

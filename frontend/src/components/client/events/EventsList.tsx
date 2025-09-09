@@ -39,7 +39,7 @@ const isEventExpired = (event: any): boolean => {
   if (Array.isArray(event.date) && event.date.length > 0) {
     dateToCheck = event.date[0];
   }
-  
+
   if (!dateToCheck) {
     
     return false; // If no date, don't filter out

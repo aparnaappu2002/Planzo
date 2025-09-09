@@ -51,6 +51,11 @@ import { FindVendorForClientUseCase } from "../../useCases/client/vendors/FindVe
 import { FindVendorProfileUseCase } from "../../useCases/client/vendors/FindVendorProfileUseCase";
 import { WorkSampleRepository } from "../../adapters/repository/workSamples/workSampleRepository";
 import { ServiceRepository } from "../../adapters/repository/service/serviceRepository";
+import { ServiceClientController } from "../../adapters/controllers/client/service/serviceClientController";
+import { FindServiceUseCaseClient } from "../../useCases/client/service/findServiceClientUseCase";
+import { FindServiceOnCategorybasisUseCase } from "../../useCases/client/service/findServiceOnCategoryUseCase";
+import { SearchServiceUseCase } from "../../useCases/client/service/searchServiceUseCase";
+
 
 
 
@@ -124,3 +129,9 @@ const workSampleRepository=new WorkSampleRepository()
 const serviceRepository=new ServiceRepository()
 const findVendorProfileUseCase=new FindVendorProfileUseCase(workSampleRepository,serviceRepository)
 export const injectedVendorForClientController = new VendorForClientController(findVendorForClientUseCase,findVendorProfileUseCase)
+
+//service
+const findServiceClientUseCase=new FindServiceUseCaseClient(serviceRepository)
+const findServiceBasedOnCatagory=new FindServiceOnCategorybasisUseCase(serviceRepository)
+const searchServiceUseCase=new SearchServiceUseCase(serviceRepository)
+export const injectedServiceClientController = new ServiceClientController(findServiceClientUseCase,findServiceBasedOnCatagory,searchServiceUseCase)

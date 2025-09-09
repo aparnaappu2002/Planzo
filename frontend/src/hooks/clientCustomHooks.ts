@@ -4,7 +4,7 @@ import {
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
-  fetchVendorForCarousal,findVendorProfileWithSample
+  fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService
 
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
@@ -269,5 +269,31 @@ export const useFindVendorProfileWithSample = (
   return useQuery({
     queryKey: ["vendorProfileWithSample", vendorId, pageNo],
     queryFn: () => findVendorProfileWithSample(vendorId, pageNo),
+  });
+};
+
+export const useFindServiceForclient = (currentPage: number) => {
+  return useQuery({
+    queryKey: ["services", currentPage],
+    queryFn: () => fetchServiceForClient(currentPage),
+    refetchOnWindowFocus: false,
+  });
+};
+export const useFindServiceOnCategoryBasis = (
+  categoryId: string,
+  pageNo: number,
+  sortBy: string,
+  options?: { enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ["servicesOnCategoryBasis", categoryId, pageNo, sortBy],
+    queryFn: () => clientFindServiceOnCategoryBasis(categoryId, pageNo, sortBy),
+    enabled: options?.enabled,
+    
+  });
+};
+export const useFindServiceUsingSearch = () => {
+  return useMutation({
+    mutationFn: (query: string) => searchService(query),
   });
 };

@@ -1,6 +1,6 @@
 import { ServiceEntity } from "../../../domain/entities/serviceEntity";
 import { IserviceRepository } from "../../../domain/interfaces/repositoryInterfaces/service/IserviceRepository";
-import { IsearchServiceUseCase } from "../../../domain/interface/useCaseInterfaces/client/service/searchServiceUseCaseInterface";
+import { IsearchServiceUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/service/IsearchServiceUseCase";
 
 export class SearchServiceUseCase implements IsearchServiceUseCase {
     private serviceDatabase: IserviceRepository
