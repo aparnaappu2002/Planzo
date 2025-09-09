@@ -76,6 +76,10 @@ export const Navbar: React.FC = () => {
     setIsLogoutDialogOpen(true)
   }
 
+  const handleServiceClick =()=>{
+    navigate('/serviceBookings')
+  }
+
   const confirmLogout = async () => {
     try {
       setIsLoggingOut(true)
@@ -179,11 +183,12 @@ export const Navbar: React.FC = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Event Categories</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleBookingsClick}>Bookings</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleBookingsClick}>Event Bookings</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleServiceClick}>Service Bookings</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleWalletClick}>Wallet</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleChatClick}>Chat</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleVendorClick}>Vendors</DropdownMenuItem>
-                <DropdownMenuItem>Theater</DropdownMenuItem>
+                
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>View All Events</DropdownMenuItem>
               </DropdownMenuContent>
