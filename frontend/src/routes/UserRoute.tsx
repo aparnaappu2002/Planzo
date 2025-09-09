@@ -15,6 +15,7 @@ import ClientWallet from '@/components/client/wallet/ClientWallet'
 import VendorCarousel from '@/components/client/vendor/VendorFetching'
 import VendorProfilePage from '@/components/client/vendor/VendorProfileWithSamples'
 import ServicesPage from '@/components/client/service/ServicesPage'
+import ServiceDetails from '@/components/client/service/serviceDetails'
 
 
 
@@ -39,6 +40,7 @@ const UserRoute=()=>{
              <Route path='/vendors' element={ <VendorCarousel/>  }></Route>
              <Route path='/vendors/:vendorId' element={ <VendorProfilePage/>  }></Route>
              <Route path='/services' element={ <ServicesPage/>  }></Route>
+             <Route path='/services/:serviceId/:vendorId' element={ <ServiceDetails/>  }></Route>
              </Route>
 
             

@@ -1,10 +1,25 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useFindVendorProfileWithSample } from '@/hooks/clientCustomHooks';
 import Slider from 'react-slick';
-// Ensure slick-carousel is installed: npm install slick-carousel
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+
+// Define interfaces for type safety
+interface Service {
+  _id: string;
+  serviceTitle: string;
+  serviceDescription: string;
+  categoryId: string;
+  servicePrice: number;
+  additionalHourFee: number;
+  serviceDuration: string;
+  cancellationPolicy: string;
+  termsAndCondition: string;
+  vendorId: string;
+  yearsOfExperience: number;
+  status: string;
+}
 
 interface VendorProfile {
   _id: string;
@@ -24,14 +39,16 @@ interface VendorProfile {
 interface ApiResponse {
   message: string;
   vendorProfile: VendorProfile[];
-  services: any[];
+  services: Service[];
   totalPages: number;
 }
 
 const VendorProfileWithSamples: React.FC = () => {
   const { vendorId } = useParams<{ vendorId: string }>();
+  const navigate = useNavigate();
   const [pageNo, setPageNo] = useState<number>(1);
   const { data, isLoading, error } = useFindVendorProfileWithSample(vendorId!, pageNo);
+  console.log('Vendor Profile Data:', data);
 
   // Slider settings for react-slick
   const sliderSettings = {
@@ -42,6 +59,11 @@ const VendorProfileWithSamples: React.FC = () => {
     slidesToScroll: 1,
     arrows: true,
     swipe: true,
+  };
+
+  // Handle view details navigation
+  const handleViewDetails = (serviceId: string, vendorId: string) => {
+    navigate(`/services/${serviceId}/${vendorId}`);
   };
 
   if (isLoading) {
@@ -60,7 +82,7 @@ const VendorProfileWithSamples: React.FC = () => {
     );
   }
 
-  const { vendorProfile, totalPages } = data as ApiResponse;
+  const { vendorProfile, services, totalPages } = data as ApiResponse;
 
   // Use the first profile for vendor details (assuming vendor details are consistent)
   const vendor = vendorProfile[0]?.vendorId;
@@ -72,14 +94,9 @@ const VendorProfileWithSamples: React.FC = () => {
         {vendor && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8 border-2 border-yellow-400">
             <h1 className="text-3xl font-bold text-yellow-600 mb-4">{vendor.name}</h1>
-            <p className="text-gray-700 mb-4">{vendorProfile[0]?.description || 'No description available'}</p>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-600">
-                  <span className="font-semibold text-yellow-600">Title:</span>{' '}
-                  {vendorProfile[0]?.title || 'No title available'}
-                </p>
-              </div>
+              
               <div>
                 <p className="text-gray-600">
                   <span className="font-semibold text-yellow-600">Created At:</span>{' '}
@@ -104,8 +121,38 @@ const VendorProfileWithSamples: React.FC = () => {
           </div>
         )}
 
+        {/* Services Section */}
+        <h2 className="text-2xl font-bold text-yellow-600 mb-4">Services</h2>
+        {services.length === 0 ? (
+          <p className="text-gray-600">No services available.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {services.map((service: Service) => (
+              <div
+                key={service._id}
+                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-yellow-200"
+              >
+                <h3 className="text-xl font-semibold text-yellow-800 mb-2">{service.serviceTitle}</h3>
+                <p className="text-gray-600 mb-2 line-clamp-3">Description: {service.serviceDescription}</p>
+                <p className="text-yellow-700 font-bold mb-2">Price: ₹{service.servicePrice}</p>
+                <p className="text-gray-500 text-sm mb-2">Duration: {service.serviceDuration}</p>
+                <p className="text-gray-500 text-sm mb-2">Additional Hour: ₹{service.additionalHourFee}</p>
+                <p className="text-gray-500 text-sm mb-2">Cancellation Policy: {service.cancellationPolicy}</p>
+                <p className="text-gray-500 text-sm mb-2 line-clamp-2">Terms: {service.termsAndCondition}</p>
+                <p className="text-gray-500 text-sm mb-4">Experience: {service.yearsOfExperience} years</p>
+                <button
+                  onClick={() => handleViewDetails(service._id, service.vendorId)}
+                  className="mt-4 w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+                >
+                  View Details
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Work Samples Section */}
-        <h2 className="text-2xl font-bold text-yellow-600 mb-4">Work Samples</h2>
+        <h2 className="text-2xl font-bold text-yellow-600 mb-4 mt-8">Work Samples</h2>
         {vendorProfile.length === 0 || vendorProfile.every(profile => profile.images.length === 0) ? (
           <p className="text-gray-600">No work samples available.</p>
         ) : (

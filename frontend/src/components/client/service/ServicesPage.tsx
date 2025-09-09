@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFindServiceForclient, useFindServiceOnCategoryBasis, useFindServiceUsingSearch, useFindCategoryClient } from '../../../hooks/clientCustomHooks';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 
 // Define interfaces for type safety
 interface Service {
@@ -39,6 +40,7 @@ const ServicesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('serviceTitle');
+  const navigate=useNavigate()
 
   // Fetch categories
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError } = useFindCategoryClient();
@@ -83,6 +85,9 @@ const ServicesPage: React.FC = () => {
       searchServices(searchQuery);
       setSelectedCategory(''); // Reset category filter when searching
     }
+  };
+  const handleViewDetails = (serviceId: string, vendorId: string) => {
+    navigate(`/services/${serviceId}/${vendorId}`);
   };
 
   // Extract services from response objects, default to empty array if undefined
@@ -165,7 +170,7 @@ const ServicesPage: React.FC = () => {
             )}
           </select>
 
-          {/* Sort By */}
+          
           
         </div>
 
@@ -211,7 +216,8 @@ const ServicesPage: React.FC = () => {
               <p className="text-gray-500 text-sm mb-2">Cancellation Policy: {service.cancellationPolicy}</p>
               <p className="text-gray-500 text-sm mb-2 line-clamp-2">Terms: {service.termsAndCondition}</p>
               <p className="text-gray-500 text-sm mb-4">Experience: {service.yearsOfExperience} years</p>
-              <button className="mt-4 w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition-colors">
+              <button className="mt-4 w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+              onClick={() => handleViewDetails(service._id, service.vendorId)}>
                 View Details
               </button>
             </div>

@@ -1,7 +1,8 @@
 import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
-    injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController,injectedServiceClientController
+    injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController,injectedServiceClientController,
+    injectedBookingClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -93,6 +94,15 @@ export class clientRoute{
         })
         this.clientRoute.get('/categories', (req: Request, res: Response) => {
             injectedCategoryClientController.handleFindCategoryClient(req, res)
+        })
+        this.clientRoute.get('/showServiceWithVendor', (req: Request, res: Response) => {
+            injectedBookingClientController.handleShowServiceWithVendor(req, res)
+        })
+        this.clientRoute.post('/createBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingClientController.handleCreateBooking(req, res)
+        })
+        this.clientRoute.get('/showBookings/:clientId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingClientController.handleShowBookingsInClient(req, res)
         })
     }
 }

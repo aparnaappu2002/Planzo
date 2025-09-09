@@ -55,7 +55,12 @@ import { ServiceClientController } from "../../adapters/controllers/client/servi
 import { FindServiceUseCaseClient } from "../../useCases/client/service/findServiceClientUseCase";
 import { FindServiceOnCategorybasisUseCase } from "../../useCases/client/service/findServiceOnCategoryUseCase";
 import { SearchServiceUseCase } from "../../useCases/client/service/searchServiceUseCase";
-
+import { BookingRepository } from "../../adapters/repository/booking/bookingRepository";
+import { ReviewRepository } from "../../adapters/repository/review/reviewRepository";
+import { ServiceWithVendorUseCase } from "../../useCases/client/booking/showServiceWithVendorUseCase";
+import { CreateBookingUseCase } from "../../useCases/client/booking/createBookingUseCase";
+import { ShowBookingsInClientUseCase } from "../../useCases/client/booking/showBookingsInClientUseCase";
+import { BookingClientController } from "../../adapters/controllers/client/booking/BookingClientController";
 
 
 
@@ -135,3 +140,12 @@ const findServiceClientUseCase=new FindServiceUseCaseClient(serviceRepository)
 const findServiceBasedOnCatagory=new FindServiceOnCategorybasisUseCase(serviceRepository)
 const searchServiceUseCase=new SearchServiceUseCase(serviceRepository)
 export const injectedServiceClientController = new ServiceClientController(findServiceClientUseCase,findServiceBasedOnCatagory,searchServiceUseCase)
+
+
+//bookings
+const bookingRepository=new BookingRepository()
+const reviewRepository=new ReviewRepository()
+const serviceWithVendorUseCase=new ServiceWithVendorUseCase(serviceRepository,reviewRepository)
+const createBookingUseCase=new CreateBookingUseCase(bookingRepository)
+const showBookingsInClientUseCase=new ShowBookingsInClientUseCase(bookingRepository)
+export const injectedBookingClientController=new BookingClientController(serviceWithVendorUseCase,createBookingUseCase,showBookingsInClientUseCase)

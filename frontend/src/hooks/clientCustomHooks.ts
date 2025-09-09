@@ -4,7 +4,8 @@ import {
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
-  fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService
+  fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService,fetchServiceDetailsWithVendor,createBooking,
+  fetchBookingInClient
 
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
@@ -295,5 +296,42 @@ export const useFindServiceOnCategoryBasis = (
 export const useFindServiceUsingSearch = () => {
   return useMutation({
     mutationFn: (query: string) => searchService(query),
+  });
+};
+
+export interface Booking {
+  date: Date[];
+  email: string;
+  phone: number;
+  name: string;
+  vendorId: string;
+  serviceId: string;
+  clientId: string;
+}
+
+export const useCreateBooking = () => {
+  return useMutation({
+    mutationFn: (booking: Booking) => createBooking(booking),
+  });
+};
+
+export const useFindServiceDataWithVendor = (
+  serviceId: string,
+  pageNo: number,
+  rating: number
+) => {
+  return useQuery({
+    queryKey: ["serviceDataWithVendor"],
+    queryFn: () => fetchServiceDetailsWithVendor(serviceId, pageNo, rating),
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useFetchBookingsInClient = (clientId: string, pageNo: number) => {
+  return useQuery({
+    queryKey: ["Bookings in client"],
+    queryFn: () => fetchBookingInClient(clientId, pageNo),
+
+    refetchOnWindowFocus: false,
   });
 };

@@ -350,4 +350,49 @@ export const searchService = async (query: string) => {
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching service based on query')
     }
 }
+export interface Booking {
+    date: Date[];
+    email: string;
+    phone: number;
+    name: string;
+    vendorId: string,
+    serviceId: string
+    clientId: string
+}
+export const createBooking = async (booking: Booking) => {
+    try {
+        const response = await axios.post('/createBooking', { booking })
+        return response.data
+    } catch (error) {
+        console.log('error while booking service', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data.error)
+        }
+        throw new Error('error while booking service')
+    }
+}
 
+export const fetchServiceDetailsWithVendor = async (serviceId: string, pageNo: number, rating: number) => {
+    try {
+        const response = await axios.get(`/showServiceWithVendor`, { params: { serviceId, pageNo, rating } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching service details with vendor', error)
+        if (isAxiosError(error)) {
+            throw new Error(error.response?.data.error)
+        }
+        throw new Error('error while fetching service details with vendor')
+    }
+}
+
+
+export const fetchBookingInClient = async (clientId: string, pageNo: number) => {
+    try {
+        const response = await axios.get(`/showBookings/${clientId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while fetch bookings in client', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while fetching booking details in client')
+    }
+}
