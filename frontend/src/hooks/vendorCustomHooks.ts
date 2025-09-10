@@ -1,7 +1,7 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
-findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,
+findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,approveBookingVendor,rejectBooking,updateBookingAsComplete,
 showBookingsInVendor} from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
@@ -194,5 +194,23 @@ export const useFetchBookingsInVendor = (vendorId: string, pageNo: number) => {
     return useQuery({
         queryKey: ['Bookings-in-vendor', vendorId],
         queryFn: () => showBookingsInVendor(vendorId, pageNo)
+    })
+}
+
+export const useApproveBooking = () => {
+    return useMutation({
+        mutationFn: (bookingId: string) => approveBookingVendor(bookingId)
+    })
+}
+
+export const useRejectBooking = () => {
+    return useMutation({
+        mutationFn: ({ bookingId, rejectionReason }: { bookingId: string, rejectionReason: string }) => rejectBooking(bookingId, rejectionReason)
+    })
+}
+
+export const useUpdateBookingAsComplete = () => {
+    return useMutation({
+        mutationFn: ({ bookingId, status }: { bookingId: string, status: string }) => updateBookingAsComplete(bookingId, status)
     })
 }

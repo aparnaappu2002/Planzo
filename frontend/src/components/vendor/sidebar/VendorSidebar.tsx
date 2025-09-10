@@ -48,6 +48,7 @@ const vendorItems = [
   { title: "Tickets", url: "/vendor/tickets", icon: TrendingUp },
   { title: "Work Samples", url: "/vendor/workSamples", icon: MessageSquare },
    { title: "Services", url: "/vendor/services", icon: Settings },
+   { title: "Bookings", url: "/vendor/bookings", icon: Settings },
 ]
 
 export function VendorSidebar() {

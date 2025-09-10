@@ -307,3 +307,35 @@ export const showBookingsInVendor = async (vendorId: string, pageNo: number) => 
         throw new Error('error while fetching bookings in vendor side')
     }
 }
+
+export const approveBookingVendor = async (bookingId: string) => {
+    try {
+        const response = await axios.patch('/approveBooking', { bookingId })
+        return response.data
+    } catch (error) {
+        console.log('error while approving booking in vendor side', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error whilw approving booking in vendor side')
+    }
+}
+
+export const rejectBooking = async (bookingId: string, rejectionReason: string) => {
+    try {
+        const response = await axios.patch('/rejectBooking', { bookingId, rejectionReason })
+        return response.data
+    } catch (error) {
+        console.log('error while rejecting booking', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.error)
+        throw new Error('error while rejecting booking')
+    }
+}
+
+export const updateBookingAsComplete = async (bookingId: string, status: string) => {
+    try {
+        const response = await axios.patch('/completeBooking', { bookingId, status })
+        return response.data
+    } catch (error) {
+        console.log('error while updating booking as complete', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while updating booking as complete')
+    }
+}

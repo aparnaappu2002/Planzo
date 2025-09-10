@@ -4,8 +4,8 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '@/redux/Store';
 import { toast } from 'react-toastify';
-import { useFetchBookingsInClient } from '@/hooks/clientCustomHooks';
-import BookingDetailsModal from './BookingDetailedModal';
+import { useFetchBookingsInVendor } from '@/hooks/vendorCustomHooks';
+import BookingDetailsModal from './VendorBookingDetailModal';
 
 // Define interfaces for type safety
 interface Service {
@@ -14,6 +14,12 @@ interface Service {
   serviceDescription: string;
   serviceDuration: string;
   servicePrice: number;
+}
+
+interface Client {
+  _id: string;
+  email: string;
+  phone: number;
 }
 
 interface Vendor {
@@ -29,10 +35,12 @@ interface Booking {
   email: string;
   phone: number;
   service: Service;
-  vendor: Vendor;
+  client?: Client; // Made optional to handle potential missing data
+  vendor?: Vendor; // Made optional to handle potential missing data
   vendorApproval: string;
   paymentStatus: string;
   status: string;
+  rejectionReason?: string;
 }
 
 interface FetchBookingsResponse {
@@ -41,34 +49,34 @@ interface FetchBookingsResponse {
   totalPages: number;
 }
 
-const BookingsPage: React.FC = () => {
+const VendorBookingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const client = useSelector((state: RootState) => state.clientSlice.client);
+  const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const [pageNo, setPageNo] = useState<number>(1);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  // Validate client in useEffect
+  // Handle vendor validation in useEffect
   useEffect(() => {
-    if (!client || !client._id) {
+    if (!vendorId) {
       toast.error('Please log in to view bookings.');
-      navigate('/login');
+      navigate('/vendor/login');
     }
-  }, [client, navigate]);
+  }, [vendorId, navigate]);
 
   // Fetch bookings
-  const { data, isLoading, error } = useFetchBookingsInClient(client?._id || '', pageNo) as {
+  const { data, isLoading, error } = useFetchBookingsInVendor(vendorId || '', pageNo) as {
     data: FetchBookingsResponse | null;
     isLoading: boolean;
     error: Error | null;
   };
+
+  // Log data for debugging
   console.log('Bookings Data:', data);
 
   // Handle error
-  useEffect(() => {
-    if (error) {
-      toast.error(`Failed to load bookings: ${error.message || 'Unknown error'}`);
-    }
-  }, [error]);
+  if (error) {
+    toast.error(`Failed to load bookings: ${error.message || 'Unknown error'}`);
+  }
 
   // Handle view details
   const handleViewDetails = (booking: Booking) => {
@@ -82,15 +90,15 @@ const BookingsPage: React.FC = () => {
     setSelectedBooking(null);
   };
 
-  // Render nothing until client is validated
-  if (!client || !client._id) {
+  // If vendorId is missing, return null (handled by useEffect)
+  if (!vendorId) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-yellow-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-yellow-600 mb-8">My Bookings</h1>
+        <h1 className="text-3xl font-bold text-yellow-600 mb-8">Vendor Bookings</h1>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -112,7 +120,7 @@ const BookingsPage: React.FC = () => {
                   <tr className="bg-yellow-100">
                     <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Booking ID</th>
                     <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Service</th>
-                    <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Vendor</th>
+                    <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Client</th>
                     <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Booking Date</th>
                     <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Email</th>
                     <th className="px-4 py-2 text-left text-yellow-600 font-semibold">Phone</th>
@@ -125,7 +133,7 @@ const BookingsPage: React.FC = () => {
                     <tr key={booking._id} className="border-b border-yellow-200">
                       <td className="px-4 py-2 text-gray-700">{booking._id}</td>
                       <td className="px-4 py-2 text-gray-700">{booking.service?.serviceTitle ?? 'N/A'}</td>
-                      <td className="px-4 py-2 text-gray-700">{booking.vendor?.name ?? 'N/A'}</td>
+                      <td className="px-4 py-2 text-gray-700">{booking.client?.email ?? 'N/A'}</td>
                       <td className="px-4 py-2 text-gray-700">
                         {booking.date.length > 0
                           ? new Date(booking.date[0]).toLocaleDateString()
@@ -141,7 +149,7 @@ const BookingsPage: React.FC = () => {
                               : 'bg-red-200 text-red-800'
                           }`}
                         >
-                          {booking.vendorApproval ?? 'N/A'}
+                          {booking.vendorApproval}
                         </span>
                       </td>
                       <td className="px-4 py-2">
@@ -190,4 +198,4 @@ const BookingsPage: React.FC = () => {
   );
 };
 
-export default BookingsPage;
+export default VendorBookingsPage;
