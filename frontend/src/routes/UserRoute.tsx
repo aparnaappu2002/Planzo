@@ -16,6 +16,7 @@ import VendorCarousel from '@/components/client/vendor/VendorFetching'
 import VendorProfilePage from '@/components/client/vendor/VendorProfileWithSamples'
 import ServicesPage from '@/components/client/service/ServicesPage'
 import ServiceDetails from '@/components/client/service/serviceDetails'
+import BookingsPage from '@/components/client/serviceBookings/BookingsPage'
 
 
 
@@ -41,6 +42,7 @@ const UserRoute=()=>{
              <Route path='/vendors/:vendorId' element={ <VendorProfilePage/>  }></Route>
              <Route path='/services' element={ <ServicesPage/>  }></Route>
              <Route path='/services/:serviceId/:vendorId' element={ <ServiceDetails/>  }></Route>
+             <Route path='/serviceBookings' element={<ProtectedRouteClient> <BookingsPage/> </ProtectedRouteClient> }></Route>
              </Route>
 
             
