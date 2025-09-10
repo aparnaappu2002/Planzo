@@ -33,7 +33,7 @@ interface Booking {
   serviceId: string;
   vendorId: string;
   clientId: string; // Must be a valid ObjectId
-  bookingDate: string; // ISO date string
+  date: string; // ISO date string
   email: string; // Added for Mongoose schema
   phone: number; // Added for Mongoose schema
 }
@@ -103,7 +103,7 @@ const ServiceDetails: React.FC = () => {
       serviceId: serviceId!,
       vendorId: vendorId!,
       clientId: client._id,
-      bookingDate,
+      date:bookingDate,
       email: client.email,
       phone: client.phone,
     };
