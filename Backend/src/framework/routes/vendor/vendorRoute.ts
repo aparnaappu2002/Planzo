@@ -2,7 +2,7 @@ import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
     injectedVendorLoginLogoutController,
     injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
-    injectedEventController,injectedTicketAndUserDetailsOfEventController,injectedWorkSampleController,injectedServiceVendorControllerUseCase
+    injectedEventController,injectedTicketAndUserDetailsOfEventController,injectedWorkSampleController,injectedServiceVendorControllerUseCase,injectedBookingVendorController
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -77,6 +77,17 @@ export class VendorRoute{
         this.vendorRoute.patch('/changeStatusService', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedServiceVendorControllerUseCase.handleChangeStatusUseCase(req, res)
         })
-        
+        this.vendorRoute.get('/showBookings/:vendorId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingVendorController.handleShowBookingsInVendor(req, res)
+        })
+        this.vendorRoute.patch('/approveBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), (req: Request, res: Response) => {
+            injectedBookingVendorController.handleApproveBooking(req, res)
+        })
+        this.vendorRoute.patch('/rejectBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingVendorController.handleRejectBookingInVendor(req, res)
+        })
+        this.vendorRoute.patch('/completeBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingVendorController.handleUpdateBookingComplete(req, res)
+        })
     }
 }

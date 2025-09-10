@@ -44,6 +44,12 @@ import { ServiceRepository } from "../../adapters/repository/service/serviceRepo
 import { ServiceVendorController } from "../../adapters/controllers/vendor/services/serviceVendorController";
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
 import { FindCategoryForServiceUseCase } from "../../useCases/vendor/service/findCategoryUseCase";
+import { BookingRepository } from "../../adapters/repository/booking/bookingRepository";
+import { ShowBookingsInVendorUseCase } from "../../useCases/vendor/booking/showBookingsInVendor";
+import { ApproveBookingUseCase } from "../../useCases/vendor/booking/approveBookingsInVendor";
+import { RejectBookingInVendorUseCase } from "../../useCases/vendor/booking/rejectBookingVendorUseCase";
+import { UpdateBookingAsCompleteUseCase } from "../../useCases/vendor/booking/updateBookingAsCompletedUseCase";
+import { BookingsVendorController } from "../../adapters/controllers/vendor/booking/bookingVendorController";
 
 
 const EmailService  = new emailService()
@@ -112,3 +118,11 @@ const editServiceUseCase=new EditServiceUseCase(serviceRepository)
 const changeStatusServiceUseCase=new ChangeStatusServiceUseCase(serviceRepository)
 const findServiceUseCase=new FindServiceUseCase(serviceRepository)
 export const injectedServiceVendorControllerUseCase=new ServiceVendorController(findCategoryForCreatingService,createServiceUseCase,editServiceUseCase,changeStatusServiceUseCase,findServiceUseCase)
+
+//bookings
+const bookingRepository=new BookingRepository()
+const showBookingsInVendorUseCase=new ShowBookingsInVendorUseCase(bookingRepository)
+const approveBookingVendorUseCase=new ApproveBookingUseCase(bookingRepository)
+const rejectBookingVendorUseCase=new RejectBookingInVendorUseCase(bookingRepository)
+const updateBookingAsCompleteUseCase=new UpdateBookingAsCompleteUseCase(bookingRepository)
+export const injectedBookingVendorController = new BookingsVendorController(showBookingsInVendorUseCase,approveBookingVendorUseCase,rejectBookingVendorUseCase,updateBookingAsCompleteUseCase)
