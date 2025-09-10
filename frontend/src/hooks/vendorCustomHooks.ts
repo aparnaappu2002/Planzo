@@ -1,7 +1,8 @@
 import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
-findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService} from "@/services/ApiServiceVendor";
+findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,
+showBookingsInVendor} from "@/services/ApiServiceVendor";
 import {useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
 import { EventEntity } from "@/types/EventType";
@@ -186,5 +187,12 @@ export const useEditServiceVendor = () => {
 export const useChangeStatusServiceVendor = () => {
     return useMutation({
         mutationFn: (serviceId: string) => changeStatusService(serviceId)
+    })
+}
+
+export const useFetchBookingsInVendor = (vendorId: string, pageNo: number) => {
+    return useQuery({
+        queryKey: ['Bookings-in-vendor', vendorId],
+        queryFn: () => showBookingsInVendor(vendorId, pageNo)
     })
 }

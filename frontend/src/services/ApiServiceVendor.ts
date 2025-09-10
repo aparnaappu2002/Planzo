@@ -296,3 +296,14 @@ export const changeStatusService = async (serviceId: string) => {
         throw new Error('error while changing the status of the service')
     }
 }
+
+export const showBookingsInVendor = async (vendorId: string, pageNo: number) => {
+    try {
+        const response = await axios.get(`/showBookings/${vendorId}/${pageNo}`)
+        return response.data
+    } catch (error) {
+        console.log('error while fetching bookings in vendor side', error)
+        if (isAxiosError(error)) throw new Error(error.response?.data.message)
+        throw new Error('error while fetching bookings in vendor side')
+    }
+}
