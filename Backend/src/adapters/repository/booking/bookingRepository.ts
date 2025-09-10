@@ -4,6 +4,8 @@ import { BookingsInClientEntity } from "../../../domain/entities/bookingsInClien
 import { IbookingRepository } from "../../../domain/interfaces/repositoryInterfaces/booking/IbookingRepository";
 import { bookingModel } from "../../../framework/database/models/bookingModel";
 import { PopulatedBooking } from "../../../domain/entities/populatedBookingInClient";
+import { BookingListingEntityVendor } from "../../../domain/entities/vendor/bookingListingEntityVendor";
+import { PopulatedBookingEntityVendor } from "../../../domain/entities/vendor/populateBookingEntity";
 
 
 export class BookingRepository implements IbookingRepository {
@@ -52,5 +54,52 @@ export class BookingRepository implements IbookingRepository {
 
 
         return { Bookings, totalPages }
+    }
+    async showBookingsInVendor(vendorId: string, pageNo: number): Promise<{ Bookings: BookingListingEntityVendor[] | [], totalPages: number }> {
+        const page = Math.max(pageNo, 1)
+        const limit = 5
+        const skip = (page - 1) * limit
+        const totalPages = Math.ceil(await bookingModel.countDocuments({ vendorId: new mongoose.Types.ObjectId(vendorId) }) / limit)
+        const bookings = await bookingModel.find({ vendorId }).populate({
+            path: 'clientId',
+            select: '_id name email phone profileImage'
+        }).populate({
+            path: 'serviceId',
+            select: '_id serviceDescription servicePrice serviceTitle serviceDuration'
+        }).lean<PopulatedBookingEntityVendor[] | []>().skip(skip).limit(limit).sort({ createdAt: -1 })
+
+        const Bookings = bookings.map((booking): BookingListingEntityVendor => ({
+            _id: booking._id,
+            date: booking.date,
+            email: booking.email,
+            paymentStatus: booking.paymentStatus,
+            phone: booking.phone,
+            service: booking.serviceId,
+            client: booking.clientId,
+            status: booking.status,
+            vendorApproval: booking.vendorApproval,
+            rejectionReason: booking.rejectionReason
+        }));
+        return { Bookings, totalPages }
+    }
+    async approveBooking(bookingId: string): Promise<BookingEntity | null> {
+        return await bookingModel.findByIdAndUpdate({ _id: bookingId }, { vendorApproval: "Approved" }, { new: true })
+    }
+    async findBookingByIdForDateChecking(bookingId: string): Promise<BookingEntity | null> {
+        return await bookingModel.findById(bookingId).select('_id date vendorId')
+    }
+    async findBookingWithSameDate(bookingId: string, vendorId: string, date: Date[]): Promise<BookingEntity | null> {
+        return await bookingModel.findOne({
+            _id: { $ne: bookingId },
+            vendorId: vendorId,
+            date: { $in: date },
+            vendorApproval: "Approved",
+        });
+    }
+    async rejectBooking(bookingId: string, rejectionReason: string): Promise<BookingEntity | null> {
+        return await bookingModel.findByIdAndUpdate(bookingId, { vendorApproval: "Rejected", rejectionReason: rejectionReason })
+    }
+    async changeStatus(bookingId: string, status: string): Promise<BookingEntity | null> {
+        return await bookingModel.findByIdAndUpdate(bookingId, { status: status }, { new: true })
     }
 }
