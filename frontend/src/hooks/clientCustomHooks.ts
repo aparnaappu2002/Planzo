@@ -5,11 +5,12 @@ import {
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
   fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService,fetchServiceDetailsWithVendor,createBooking,
-  fetchBookingInClient
+  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking
 
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 import { TicketEntity } from "@/types/TicketPaymentType";
+import { BookingType } from "@/types/BookingType";
 
 
 type LoginProps = {
@@ -333,5 +334,34 @@ export const useFetchBookingsInClient = (clientId: string, pageNo: number) => {
     queryFn: () => fetchBookingInClient(clientId, pageNo),
 
     refetchOnWindowFocus: false,
+  });
+};
+
+export const useCreateBookingPayment = () => {
+  return useMutation({
+    mutationFn: ({
+      bookingId,
+      paymentIntentId,
+    }: {
+      bookingId: string;
+      paymentIntentId: string;
+    }) => createBookingPayment(bookingId, paymentIntentId),
+  });
+};
+
+export const useConfirmBookingPayment = () => {
+  return useMutation({
+    mutationFn: ({
+      booking,
+      paymentIntentId,
+    }: {
+      booking: BookingType;
+      paymentIntentId: string;
+    }) => confirmBookingPayment(booking, paymentIntentId),
+  });
+};
+export const useCancelBooking = () => {
+  return useMutation({
+    mutationFn: (bookingId: string) => cancelBooking(bookingId),
   });
 };

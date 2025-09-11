@@ -2,7 +2,7 @@ import { isAxiosError } from "axios";
 import axios from "../axios/clientAxios";
 import { TicketEntity } from "@/types/TicketPaymentType";
 
-
+import { BookingType } from "@/types/BookingType";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 
 interface Login{
@@ -394,5 +394,34 @@ export const fetchBookingInClient = async (clientId: string, pageNo: number) => 
         console.log('error while fetch bookings in client', error)
         if (isAxiosError(error)) throw new Error(error.response?.data.error)
         throw new Error('error while fetching booking details in client')
+    }
+}
+
+export const createBookingPayment = async (bookingId: string, paymentIntentId: string) => {
+    try {
+        const response = await axios.post('/createBookingPayment', { bookingId, paymentIntentId })
+        return response.data
+    } catch (error) {
+        console.log('error while inititating booking payment', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while initiating booking payment')
+    }
+}
+
+export const confirmBookingPayment = async (booking: BookingType, paymentIntentId: string) => {
+    try {
+        const response = await axios.post('/confirmBookingPayment', { booking, paymentIntentId })
+        return response.data
+    } catch (error) {
+        console.log('error while confirming booking payment', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while confirming booking payment')
+    }
+}
+export const cancelBooking = async (bookingId: string) => {
+    try {
+        const response = await axios.patch('/cancelBooking', { bookingId })
+        return response.data
+    } catch (error) {
+        console.log('error while cancelling booking', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while cancelling booking')
     }
 }

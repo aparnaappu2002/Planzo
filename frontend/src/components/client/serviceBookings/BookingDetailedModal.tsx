@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 interface Service {
   _id: string;
@@ -54,11 +55,12 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
+  const navigate=useNavigate()
 
   // Placeholder handler functions (replace with actual implementations)
   const handleBookingPayment = (booking: Booking) => {
     console.log('Initiating payment for booking:', booking._id);
-    // Add payment logic here (e.g., redirect to payment gateway)
+    navigate('/bookingPayment', { state: { booking } });
   };
 
   const handleChatNavigate = () => {
@@ -88,7 +90,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
           </p>
           <p>
             <span className="font-semibold text-yellow-600">Service Price:</span>{' '}
-            ${booking.service.servicePrice}
+            ₹{booking.service.servicePrice}
           </p>
           <p>
             <span className="font-semibold text-yellow-600">Vendor:</span>{' '}

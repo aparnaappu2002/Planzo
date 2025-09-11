@@ -17,6 +17,7 @@ import VendorProfilePage from '@/components/client/vendor/VendorProfileWithSampl
 import ServicesPage from '@/components/client/service/ServicesPage'
 import ServiceDetails from '@/components/client/service/serviceDetails'
 import BookingsPage from '@/components/client/serviceBookings/BookingsPage'
+import BookingPayment from '@/components/client/payment/booking/BookingPayment'
 
 
 
@@ -43,6 +44,7 @@ const UserRoute=()=>{
              <Route path='/services' element={ <ServicesPage/>  }></Route>
              <Route path='/services/:serviceId/:vendorId' element={ <ServiceDetails/>  }></Route>
              <Route path='/serviceBookings' element={<ProtectedRouteClient> <BookingsPage/> </ProtectedRouteClient> }></Route>
+             <Route path='/bookingPayment' element={<ProtectedRouteClient> <BookingPayment/> </ProtectedRouteClient> }></Route>
              </Route>
 
             
