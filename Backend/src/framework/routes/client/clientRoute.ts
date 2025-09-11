@@ -2,7 +2,7 @@ import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
     injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController,injectedServiceClientController,
-    injectedBookingClientController
+    injectedBookingClientController,
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -103,6 +103,15 @@ export class clientRoute{
         })
         this.clientRoute.get('/showBookings/:clientId/:pageNo', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedBookingClientController.handleShowBookingsInClient(req, res)
+        })
+        this.clientRoute.post('/createBookingPayment', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingClientController.handleCreateBookingPayment(req, res)
+        })
+        this.clientRoute.post('/confirmBookingPayment', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingClientController.handleConfirmBookingPaymentUseCase(req, res)
+        })
+        this.clientRoute.patch('/cancelBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedBookingClientController.handleCancelBooking(req, res)
         })
     }
 }

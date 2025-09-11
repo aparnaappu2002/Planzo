@@ -61,8 +61,9 @@ import { ServiceWithVendorUseCase } from "../../useCases/client/booking/showServ
 import { CreateBookingUseCase } from "../../useCases/client/booking/createBookingUseCase";
 import { ShowBookingsInClientUseCase } from "../../useCases/client/booking/showBookingsInClientUseCase";
 import { BookingClientController } from "../../adapters/controllers/client/booking/BookingClientController";
-
-
+import { CreateBookingPaymentUseCase } from "../../useCases/client/booking/createBookingPaymentUseCase";
+import { ConfirmBookingPaymentUseCase } from "../../useCases/client/booking/confirmaBookingPaymentUseCase";
+import { CancelBookingUseCase } from "../../useCases/client/booking/cancelBookingUseCase";
 
 const otpService=new OtpService()
 const EmailService=new emailService()
@@ -148,4 +149,7 @@ const reviewRepository=new ReviewRepository()
 const serviceWithVendorUseCase=new ServiceWithVendorUseCase(serviceRepository,reviewRepository)
 const createBookingUseCase=new CreateBookingUseCase(bookingRepository)
 const showBookingsInClientUseCase=new ShowBookingsInClientUseCase(bookingRepository)
-export const injectedBookingClientController=new BookingClientController(serviceWithVendorUseCase,createBookingUseCase,showBookingsInClientUseCase)
+const createBookingPaymentUseCase=new CreateBookingPaymentUseCase(bookingRepository,paymentService,paymentRepository)
+const confirmaBookingPaymentUseCase=new ConfirmBookingPaymentUseCase(bookingRepository,paymentRepository,walletRepository,transactionRepository,paymentService)
+const cancelBookingUseCase=new CancelBookingUseCase(bookingRepository)
+export const injectedBookingClientController=new BookingClientController(serviceWithVendorUseCase,createBookingUseCase,showBookingsInClientUseCase,createBookingPaymentUseCase,confirmaBookingPaymentUseCase,cancelBookingUseCase)
