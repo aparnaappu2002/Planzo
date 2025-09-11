@@ -2,6 +2,7 @@ import { ObjectId } from "mongoose";
 import { BookingEntity } from "../../../entities/bookingEntity";
 import { BookingsInClientEntity } from "../../../entities/bookingsInClientEntity";
 import { BookingListingEntityVendor } from "../../../entities/vendor/bookingListingEntityVendor";
+import { BookingPaymentEntity } from "../../../entities/bookingPayment/bookingPaymentEntity";
 
 
 export interface IbookingRepository {
@@ -14,4 +15,8 @@ export interface IbookingRepository {
     findBookingWithSameDate(bookingId: string, vendorId: string, date: Date[]): Promise<BookingEntity | null>
     rejectBooking(bookingId: string, rejectionReasoneason: string): Promise<BookingEntity | null>
     changeStatus(bookingId: string, status: string): Promise<BookingEntity | null>
+    findBookingByIdForPayment(bookingId: string | ObjectId): Promise<BookingPaymentEntity | null>
+    findServicePriceAndDatesOfBooking(bookingId: string | ObjectId): Promise<{ date: Date[], servicePrice: number } | null>
+    updateBookingPaymentStatus(bookingId: string | ObjectId, status: string): Promise<BookingEntity | null>
+    cancelBooking(bookingId: string): Promise<BookingEntity | null>
 }

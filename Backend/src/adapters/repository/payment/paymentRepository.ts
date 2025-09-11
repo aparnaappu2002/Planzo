@@ -13,7 +13,7 @@ export class PaymentRepository implements IpaymentRepository {
     // async updatePaymentStatusOfBooking(bookingId: string, status: string): Promise<PaymentEntity | null> {
     //     return await paymentModel.findOneAndUpdate({ bookingId }, { status }, { new: true })
     // }
-    // async findTransactionOfAUser(senderId: string | ObjectId, receiverId: string | ObjectId, bookingId: string | ObjectId): Promise<PaymentEntity | null> {
-    //     return await paymentModel.findOne({ userId: senderId, receiverId, bookingId }).select('-__v -createdAt')
-    // }
+    async findTransactionOfAUser(senderId: string | ObjectId, receiverId: string | ObjectId, bookingId: string | ObjectId): Promise<PaymentEntity | null> {
+        return await paymentModel.findOne({ userId: senderId, receiverId, bookingId }).select('-__v -createdAt')
+    }
 }
