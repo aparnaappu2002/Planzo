@@ -21,7 +21,7 @@ export class TicketRepository implements IticketRepositoryInterface {
     const filter = { clientId: userId }
     
     const [ticketAndEvent, totalItems] = await Promise.all([
-        ticketModel.find(filter).select('_id ticketId ticketCount phone email paymentStatus totalAmount ticketStatus qrCodeLink')
+        ticketModel.find(filter).select('_id ticketId ticketCount phone email paymentStatus totalAmount ticketStatus qrCodeLink ticketVariants')
             .populate('eventId', '_id title description date startTime endTime status address pricePerTicket posterImage')
             .skip(skip).limit(limit).sort({ createdAt: -1 }).lean(),
         ticketModel.countDocuments(filter)
@@ -41,6 +41,7 @@ export class TicketRepository implements IticketRepositoryInterface {
             paymentStatus: ticket.paymentStatus,
             ticketStatus: ticket.ticketStatus,
             qrCodeLink: ticket.qrCodeLink,
+            ticketVariants: ticket.ticketVariants || [], 
             event: {
                 _id: event._id,
                 title: event.title,

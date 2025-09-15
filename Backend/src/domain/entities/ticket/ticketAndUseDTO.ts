@@ -1,4 +1,5 @@
 import { ObjectId } from "mongoose";
+import { TicketVariant } from "./ticketVariantEntity";
 
 export interface TicketAndUserDTO {
     _id?: ObjectId | string
@@ -9,7 +10,8 @@ export interface TicketAndUserDTO {
     email: string;
     paymentStatus: 'pending' | 'successful' | 'failed';
     qrCodeLink: string;
-    ticketVariant: string; 
+    ticketVariants: TicketVariant[]; // Add this field
+
     eventId: {
         _id: ObjectId | string
         title: string,
