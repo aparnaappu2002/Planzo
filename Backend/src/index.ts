@@ -9,14 +9,21 @@ import { clientRoute } from "./framework/routes/client/clientRoute";
 import { VendorRoute } from "./framework/routes/vendor/vendorRoute";
 import { AdminRoute } from "./framework/routes/admin/adminRoute";
 import { AuthRoute } from "./framework/routes/auth/authRoute";
+import { SocketIoController } from "./adapters/controllers/chat/socketController";
+import http from 'http'
+import { injectedCreateChatUseCase, injectedCreateMessageUseCase, injectedFindChatBetweenClientAndVendorUseCase, injectedUpdateLastMessageUseCase } from "./framework/inject/chatInject";
+import { NotificationRepository } from "./adapters/repository/notification/notificationRepository";
 
 export class App {
   private app: Express;
   private database: connectMongo;
+  private server: http.Server
+  private socketIoServer?: SocketIoController
   constructor() {
     dotenv.config();
     this.app = express();
     this.database = new connectMongo();
+    this.server = http.createServer(this.app)
     this.database.connectDb();
     this.setMiddlewares();
     this.setClientRoute();
@@ -24,7 +31,7 @@ export class App {
     this.setAdminRoute()
     this.setAuthRoute()
     this.connectRedis()
-
+    this.setSocketIo()
   }
   private setMiddlewares() {
     this.app.use(
@@ -53,8 +60,11 @@ export class App {
   private setAuthRoute() {
     this.app.use('/auth', new AuthRoute().AuthRouter)
   }
+  private setSocketIo() {
+        this.socketIoServer = new SocketIoController(this.server, injectedFindChatBetweenClientAndVendorUseCase, injectedCreateChatUseCase, injectedCreateMessageUseCase, injectedUpdateLastMessageUseCase, redisService, new NotificationRepository())
+    }
   public listen() {
     const port = process.env.PORT;
-    this.app.listen(port, () => console.log(`server running on ${port}`));
+    this.server.listen(port, () => console.log(`server running on ${port}`));
   }
 }
