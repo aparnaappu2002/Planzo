@@ -339,3 +339,24 @@ export const updateBookingAsComplete = async (bookingId: string, status: string)
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while updating booking as complete')
     }
 }
+
+export const loadPreviousChatVendor = async (chatId: string, pageNo: number) => {
+    try {
+        const response = await axios.get('/loadPreviousChat', { params: { chatId, pageNo } })
+        return response.data
+    } catch (error) {
+        console.log('error while loading previous chat', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while loading previous messages')
+    }
+}
+
+
+export const loadChatsVendor = async (userId: string, pageNo: number) => {
+    try {
+        const response = await axios.get('/chats', { params: { userId, pageNo } })
+        return response.data
+    } catch (error) {
+        console.log('error while finding the chats of user', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while findng the chats of user')
+    }
+}

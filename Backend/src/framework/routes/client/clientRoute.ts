@@ -2,9 +2,10 @@ import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
     injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController,injectedServiceClientController,
-    injectedBookingClientController,
+    injectedBookingClientController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
+ import { injectedLoadPreviousChatController,injectedFindChatsOfUserController } from "../../inject/chatInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
 import { injectedEventController } from "../../inject/vendorInject";
 
@@ -112,6 +113,12 @@ export class clientRoute{
         })
         this.clientRoute.patch('/cancelBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedBookingClientController.handleCancelBooking(req, res)
+        })
+        this.clientRoute.get('/loadPreviousChat', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedLoadPreviousChatController.handleLoadPreviousMessage(req, res)
+        })
+        this.clientRoute.get('/chats', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedFindChatsOfUserController.handleFindChatOfUser(req, res)
         })
     }
 }

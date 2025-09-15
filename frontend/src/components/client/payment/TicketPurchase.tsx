@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -32,7 +32,9 @@ import {
   Phone,
   Crown,
   Gem,
-  Shield
+  Shield,
+  RotateCcw,
+  Info
 } from "lucide-react";
 import PaymentMethodModal from './PaymentMethod';
 import { RootState } from '@/redux/Store';
@@ -61,11 +63,19 @@ const validateContactInfo = (email, phone) => {
   return errors;
 };
 
-const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
+const TicketPurchaseModal = ({ 
+  event, 
+  isOpen, 
+  onOpenChange, 
+  children, 
+  existingTicket = null, 
+  isRetryPayment = false 
+}) => {
   const navigate = useNavigate();
   
   // Store selected variants by type: variantType -> quantity
   const [selectedTicketVariants, setSelectedTicketVariants] = useState<{[key: string]: number}>({});
+  console.log("Event", event);
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -79,6 +89,33 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
   const [showChoosePaymentModal, setShowChoosePaymentModal] = useState(false);
   
   const clientId = useSelector((state: RootState) => state.clientSlice.client?._id);
+
+  // Initialize data for retry payment scenario
+  useEffect(() => {
+    if (isRetryPayment && existingTicket) {
+      console.log('=== INITIALIZING RETRY PAYMENT ===');
+      console.log('Existing ticket data:', existingTicket);
+      
+      // Pre-fill customer information
+      setCustomerInfo({
+        name: '', // Name might not be available in existing ticket
+        email: existingTicket.email || '',
+        phone: existingTicket.phone || ''
+      });
+
+      // Initialize selected variants from existing ticket
+      if (existingTicket.ticketVariants && existingTicket.ticketVariants.length > 0) {
+        const variantSelections = {};
+        existingTicket.ticketVariants.forEach(variant => {
+          variantSelections[variant.variant] = variant.count;
+        });
+        setSelectedTicketVariants(variantSelections);
+        console.log('Initialized variant selections:', variantSelections);
+      }
+      
+      console.log('=== RETRY PAYMENT INITIALIZATION COMPLETE ===');
+    }
+  }, [isRetryPayment, existingTicket]);
 
   // Helper functions for ticket variants
   const getTicketTypeIcon = (type: string) => {
@@ -99,12 +136,21 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     }
   };
 
-  // Calculate totals - REMOVED SERVICE FEE
+  // Calculate totals
   const calculateTotals = () => {
+    if (isRetryPayment && existingTicket) {
+      // For retry payments, use the existing ticket data
+      return {
+        totalQuantity: existingTicket.ticketCount,
+        totalAmount: existingTicket.totalAmount,
+        finalAmount: existingTicket.totalAmount
+      };
+    }
+    
+    // For new purchases, calculate from selected variants
     let totalQuantity = 0;
     let totalAmount = 0;
     
-    // Iterate through selected variants using variant types
     Object.entries(selectedTicketVariants).forEach(([variantType, quantity]) => {
       const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
       if (variant && quantity > 0) {
@@ -113,11 +159,6 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
       }
     });
     
-    // REMOVED: Service fee calculation
-    // const serviceFee = totalAmount > 0 ? Math.max(10, totalAmount * 0.02) : 0;
-    // const finalAmount = totalAmount + serviceFee;
-    
-    // Final amount is now just the total amount without any additional fees
     const finalAmount = totalAmount;
     
     return { totalQuantity, totalAmount, finalAmount };
@@ -126,6 +167,11 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
   const { totalQuantity, totalAmount, finalAmount } = calculateTotals();
 
   const handleVariantQuantityChange = (variantType: string, change: number) => {
+    // Disable variant changes in retry payment mode
+    if (isRetryPayment) {
+      return;
+    }
+    
     const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
     if (!variant) {
       console.error('Variant not found:', variantType);
@@ -140,7 +186,6 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     
     setSelectedTicketVariants(prev => {
       if (newQuantity === 0) {
-        // Remove the variant if quantity is 0
         const { [variantType]: removed, ...rest } = prev;
         return rest;
       } else {
@@ -155,12 +200,16 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
   };
 
   const handleInputChange = (field, value) => {
+    // For retry payments, prevent editing of email and phone
+    if (isRetryPayment && (field === 'email' || field === 'phone')) {
+      return;
+    }
+    
     setCustomerInfo(prev => ({
       ...prev,
       [field]: value
     }));
     
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -180,31 +229,50 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     }
   };
 
-  // Prepare ticket data for backend (using variant types as keys)
+  // Prepare ticket data for backend
   const prepareTicketData = () => {
     console.log('=== PREPARING TICKET DATA FOR BACKEND ===');
+    console.log('isRetryPayment:', isRetryPayment);
+    console.log('existingTicket:', existingTicket);
     console.log('selectedTicketVariants:', selectedTicketVariants);
-    console.log('event.ticketVariants:', event.ticketVariants);
     
-    // Validate that we have selections
+    if (isRetryPayment && existingTicket) {
+      // For retry payments, use existing ticket data
+      const ticketData = {
+        clientId: clientId!,
+        email: customerInfo.email,
+        phone: customerInfo.phone,
+        eventId: event._id!,
+        ticketVariants: existingTicket.ticketVariants.reduce((acc, variant) => {
+          acc[variant.variant] = variant.count;
+          return acc;
+        }, {}),
+        // Add retry-specific fields
+        isRetry: true,
+        existingTicketId: existingTicket._id,
+        originalTicketId: existingTicket.ticketId
+      };
+      
+      console.log('Retry payment ticket data:', ticketData);
+      return ticketData;
+    }
+    
+    // For new purchases
     const hasSelections = Object.values(selectedTicketVariants).some(quantity => quantity > 0);
     if (!hasSelections) {
       console.error('No ticket variants selected');
       return null;
     }
 
-    // Prepare the ticket data structure expected by backend
     const ticketData = {
       clientId: clientId!,
       email: customerInfo.email,
       phone: customerInfo.phone,
       eventId: event._id!,
-      ticketVariants: selectedTicketVariants // This is already in the format: { variantType: quantity }
+      ticketVariants: selectedTicketVariants
     };
 
-    console.log('Final prepared ticket data:', ticketData);
-    console.log('==========================================');
-    
+    console.log('New purchase ticket data:', ticketData);
     return ticketData;
   };
 
@@ -224,11 +292,14 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     }
 
     const navigationData = {
-      amount: finalAmount, // No service fee included
+      amount: finalAmount,
       ticketData: ticketData,
-      type: 'ticketBooking',
+      type: isRetryPayment ? 'ticketRetryPayment' : 'ticketBooking',
       totalTicketCount: totalQuantity,
       vendorId: event.hostedBy,
+      isRetry: isRetryPayment,
+      existingTicketId: existingTicket?._id,
+      existingTicket: isRetryPayment ? existingTicket : undefined // Include existingTicket for retry payments
     };
 
     console.log('Wallet payment navigation data:', navigationData);
@@ -254,11 +325,14 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
     }
 
     const navigationData = {
-      amount: finalAmount, // No service fee included
+      amount: finalAmount,
       ticketData: ticketData,
-      type: 'ticketBooking',
+      type: isRetryPayment ? 'ticketRetryPayment' : 'ticketBooking',
       totalTicketCount: totalQuantity,
-      vendorId: event.hostedBy
+      vendorId: event.hostedBy,
+      isRetry: isRetryPayment,
+      existingTicketId: existingTicket?._id,
+      existingTicket: isRetryPayment ? existingTicket : undefined // Include existingTicket for retry payments
     };
 
     console.log('Stripe payment navigation data:', navigationData);
@@ -272,10 +346,8 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
 
   const handlePurchase = async () => {
     if (totalAmount > 0) {
-      // Show payment method selection for paid tickets
       setShowChoosePaymentModal(true);
     } else {
-      // Process free tickets directly
       processPurchase();
     }
   };
@@ -290,15 +362,28 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
 
     setIsProcessing(true);
     
-    // Simulate API call for free tickets
     setTimeout(() => {
       setIsProcessing(false);
       setPurchaseComplete(true);
     }, 2000);
   };
 
-  const isFormValid = customerInfo.name && customerInfo.email && customerInfo.phone && 
-                     Object.keys(errors).length === 0 && totalQuantity > 0;
+  // Make name optional for retry payments
+  const isFormValid = (isRetryPayment || customerInfo.name) && 
+                     customerInfo.email && 
+                     customerInfo.phone && 
+                     Object.keys(errors).length === 0 && 
+                     totalQuantity > 0;
+
+  // Debug logging to diagnose issues
+  console.log('Debug isFormValid:', {
+    isFormValid,
+    customerInfo,
+    errors,
+    totalQuantity,
+    selectedTicketVariants,
+    existingTicket
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date TBA';
@@ -325,9 +410,14 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
         <DialogContent className="max-w-md">
           <div className="text-center py-8">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-green-600 mb-2">Purchase Successful!</h2>
+            <h2 className="text-2xl font-bold text-green-600 mb-2">
+              {isRetryPayment ? 'Payment Successful!' : 'Purchase Successful!'}
+            </h2>
             <p className="text-gray-600 mb-4">
-              Your tickets have been confirmed. Check your email for details.
+              {isRetryPayment ? 
+                'Your payment has been completed successfully.' : 
+                'Your tickets have been confirmed. Check your email for details.'
+              }
             </p>
             <div className="bg-green-50 p-4 rounded-lg mb-4">
               <p className="text-sm text-green-700">
@@ -341,7 +431,9 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
               onClick={() => {
                 setPurchaseComplete(false);
                 onOpenChange(false);
-                setSelectedTicketVariants({});
+                if (!isRetryPayment) {
+                  setSelectedTicketVariants({});
+                }
               }}
               className="w-full"
             >
@@ -360,9 +452,28 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
         
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900">
-              Purchase Tickets
+            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              {isRetryPayment ? (
+                <>
+                  <RotateCcw className="w-6 h-6 text-blue-600" />
+                  Complete Payment
+                </>
+              ) : (
+                'Purchase Tickets'
+              )}
             </DialogTitle>
+            {isRetryPayment && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Completing pending payment</p>
+                    <p>Ticket ID: {existingTicket?.ticketId}</p>
+                    <p>Original booking details are pre-filled and cannot be modified.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogHeader>
 
           <div className="space-y-6">
@@ -402,10 +513,13 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Ticket className="w-5 h-5" />
-                    Select Ticket Types
+                    {isRetryPayment ? 'Selected Ticket Types' : 'Select Ticket Types'}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
-                    You can select multiple ticket types and quantities
+                    {isRetryPayment ? 
+                      'Your originally selected tickets (cannot be modified)' :
+                      'You can select multiple ticket types and quantities'
+                    }
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -414,25 +528,35 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                       const availableForVariant = variant.totalTickets - variant.ticketsSold;
                       const selectedQuantity = selectedTicketVariants[variant.type] || 0;
                       const maxSelectable = Math.min(availableForVariant, variant.maxPerUser);
+                      const isSelected = selectedQuantity > 0;
                       
                       return (
-                        <Card key={variant._id || index} className={`border-2 ${getTicketTypeColor(variant.type)}`}>
+                        <Card key={variant._id || index} className={`border-2 ${getTicketTypeColor(variant.type)} ${isSelected ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}>
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   {getTicketTypeIcon(variant.type)}
                                   <h4 className="font-semibold capitalize">{variant.type}</h4>
-                                  <Badge variant="outline" className="text-xs ml-2">
-                                    {availableForVariant}/{variant.totalTickets} available
-                                  </Badge>
+                                  {isRetryPayment && isSelected && (
+                                    <Badge className="bg-blue-100 text-blue-800 text-xs">
+                                      Originally Selected
+                                    </Badge>
+                                  )}
+                                  {!isRetryPayment && (
+                                    <Badge variant="outline" className="text-xs ml-2">
+                                      {availableForVariant}/{variant.totalTickets} available
+                                    </Badge>
+                                  )}
                                 </div>
                                 
                                 <p className="text-sm text-gray-600 mb-2">{variant.description}</p>
                                 
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-lg font-bold text-gray-900">₹{variant.price}</span>
-                                  <span className="text-sm text-gray-500">Max {variant.maxPerUser} per person</span>
+                                  {!isRetryPayment && (
+                                    <span className="text-sm text-gray-500">Max {variant.maxPerUser} per person</span>
+                                  )}
                                 </div>
                                 
                                 {variant.benefits && variant.benefits.length > 0 && (
@@ -449,19 +573,6 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                                   </div>
                                 )}
                                 
-                                {availableForVariant < 10 && availableForVariant > 0 && (
-                                  <div className="flex items-center gap-2 p-2 bg-orange-50 text-orange-700 rounded text-xs">
-                                    <AlertCircle className="w-3 h-3" />
-                                    <span>Only {availableForVariant} left!</span>
-                                  </div>
-                                )}
-                                
-                                {availableForVariant === 0 && (
-                                  <Badge className="w-full justify-center bg-red-100 text-red-800">
-                                    Sold Out
-                                  </Badge>
-                                )}
-                                
                                 {selectedQuantity > 0 && (
                                   <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
                                     Selected: {selectedQuantity} × ₹{variant.price} = ₹{selectedQuantity * variant.price}
@@ -469,7 +580,8 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                                 )}
                               </div>
                               
-                              {availableForVariant > 0 && (
+                              {/* Quantity controls - disabled for retry payments */}
+                              {!isRetryPayment && availableForVariant > 0 && (
                                 <div className="flex items-center gap-3 ml-4">
                                   <Button
                                     variant="outline"
@@ -490,23 +602,22 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                                   </Button>
                                 </div>
                               )}
+                              
+                              {/* Display only for retry payments */}
+                              {isRetryPayment && isSelected && (
+                                <div className="flex items-center gap-3 ml-4">
+                                  <span className="w-8 text-center font-bold text-blue-600 text-lg">{selectedQuantity}</span>
+                                </div>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
                       );
                     })}
                   </div>
-                  
-                  {totalQuantity === 0 && (
-                    <div className="text-center py-4 text-gray-500">
-                      <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>Please select at least one ticket to continue</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ) : (
-              // Fallback for events without ticket variants
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -558,9 +669,13 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="Enter your email"
                       className={`mt-1 ${errors.email ? 'border-red-500' : ''}`}
+                      disabled={isRetryPayment}
                     />
                     {errors.email && (
                       <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
+                    {isRetryPayment && (
+                      <p className="text-blue-600 text-xs mt-1">Pre-filled from original booking</p>
                     )}
                   </div>
                 </div>
@@ -575,9 +690,13 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="Enter your phone number"
                     className={`mt-1 ${errors.phone ? 'border-red-500' : ''}`}
+                    disabled={isRetryPayment}
                   />
                   {errors.phone && (
                     <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                  )}
+                  {isRetryPayment && (
+                    <p className="text-blue-600 text-xs mt-1">Pre-filled from original booking</p>
                   )}
                 </div>
               </CardContent>
@@ -589,31 +708,43 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="w-5 h-5" />
-                    Order Summary
+                    {isRetryPayment ? 'Payment Summary' : 'Order Summary'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Selected tickets breakdown */}
-                  {Object.entries(selectedTicketVariants)
-                    .filter(([_, quantity]) => quantity > 0)
-                    .map(([variantType, quantity]) => {
-                      const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
-                      if (!variant) return null;
-                      
-                      return (
-                        <div key={variantType} className="flex justify-between">
-                          <span className="flex items-center gap-2">
-                            {getTicketTypeIcon(variant.type)}
-                            {quantity} × {variant.type.charAt(0).toUpperCase() + variant.type.slice(1)} Ticket{quantity > 1 ? 's' : ''}
-                          </span>
-                          <span>₹{(variant.price * quantity).toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
+                  {isRetryPayment && existingTicket?.ticketVariants ? (
+                    // Show existing ticket variants for retry payment
+                    existingTicket.ticketVariants.map((variant, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="flex items-center gap-2">
+                          {getTicketTypeIcon(variant.variant)}
+                          {variant.count} × {variant.variant.charAt(0).toUpperCase() + variant.variant.slice(1)} Ticket{variant.count > 1 ? 's' : ''}
+                        </span>
+                        <span>₹{variant.subtotal.toFixed(2)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    // Show selected variants for new purchase
+                    Object.entries(selectedTicketVariants)
+                      .filter(([_, quantity]) => quantity > 0)
+                      .map(([variantType, quantity]) => {
+                        const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
+                        if (!variant) return null;
+                        
+                        return (
+                          <div key={variantType} className="flex justify-between">
+                            <span className="flex items-center gap-2">
+                              {getTicketTypeIcon(variant.type)}
+                              {quantity} × {variant.type.charAt(0).toUpperCase() + variant.type.slice(1)} Ticket{quantity > 1 ? 's' : ''}
+                            </span>
+                            <span>₹{(variant.price * quantity).toFixed(2)}</span>
+                          </div>
+                        );
+                      })
+                  )}
                   
                   <Separator />
-                  
-                  {/* REMOVED: Service fee display */}
                   
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total ({totalQuantity} ticket{totalQuantity > 1 ? 's' : ''})</span>
@@ -627,6 +758,13 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                       This is a free event!
                     </p>
                   )}
+                  {isRetryPayment && (
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm text-blue-800 font-medium">
+                        💳 Complete your pending payment of ₹{finalAmount.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -637,7 +775,9 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
               variant="outline" 
               onClick={() => {
                 onOpenChange(false);
-                setSelectedTicketVariants({});
+                if (!isRetryPayment) {
+                  setSelectedTicketVariants({});
+                }
               }}
               className="w-full sm:w-auto"
             >
@@ -646,7 +786,7 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
             <Button 
               onClick={handlePurchase}
               disabled={!isFormValid || isProcessing}
-              className="w-full sm:flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+              className={`w-full sm:flex-1 ${isRetryPayment ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400' : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'}`}
             >
               {isProcessing ? (
                 <div className="flex items-center gap-2">
@@ -655,8 +795,17 @@ const TicketPurchaseModal = ({ event, isOpen, onOpenChange, children }) => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4" />
-                  {totalAmount > 0 ? `Pay ₹${finalAmount.toFixed(2)}` : 'Get Free Tickets'}
+                  {isRetryPayment ? (
+                    <>
+                      <CreditCard className="w-4 h-4" />
+                      Complete Payment ₹{finalAmount.toFixed(2)}
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4" />
+                      {totalAmount > 0 ? `Pay ₹${finalAmount.toFixed(2)}` : 'Get Free Tickets'}
+                    </>
+                  )}
                 </div>
               )}
             </Button>

@@ -4,6 +4,9 @@ import { motion } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { useApproveBooking,useRejectBooking,useUpdateBookingAsComplete } from '@/hooks/vendorCustomHooks';
+import { RootState } from '@/redux/Store';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 interface Service {
   _id: string;
@@ -68,6 +71,8 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
   const [showApproveConfirmModal, setShowApproveConfirmModal] = useState(false);
   const [showStatusConfirmModal, setShowStatusConfirmModal] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string>('');
+  const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id)
+  const navigate=useNavigate()
 
   // Log booking for debugging
   console.log('Booking in Modal:', booking);
@@ -148,9 +153,16 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
   };
 
   const handleChatNavigate = () => {
-    console.log('Navigating to chat for booking:', booking._id);
-    // Add navigation logic to chat (e.g., using react-router-dom)
-  };
+        if (booking.client?.email) {
+
+            navigate('/vendor/chats', {
+                state: {
+                    clientId: booking.client._id,
+                    vendorId: vendorId,
+                    selectedChat: true
+                }
+            })
+        }}
 
   return (
     <>

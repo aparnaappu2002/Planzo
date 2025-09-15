@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { RootState } from '@/redux/Store';
+import { useSelector } from 'react-redux';
 
 interface Service {
   _id: string;
@@ -55,7 +57,9 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
+  const clientId = useSelector((state: RootState) => state.clientSlice.client?._id)
   const navigate=useNavigate()
+  console.log(booking)
 
   // Placeholder handler functions (replace with actual implementations)
   const handleBookingPayment = (booking: Booking) => {
@@ -65,7 +69,15 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
 
   const handleChatNavigate = () => {
     console.log('Navigating to chat for booking:', booking._id);
-    // Add navigation logic to chat (e.g., using react-router-dom)
+    
+     
+    navigate('/chats', {
+      state: {
+        clientId: clientId,
+        vendorId: booking.vendor._id,
+        selectedChat: true,
+      },
+    });
   };
 
   return (

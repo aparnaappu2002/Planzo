@@ -6,6 +6,7 @@ import { injectedVendorAuthenticationController,
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
+import { injectedLoadPreviousChatController,injectedFindChatsOfUserController } from "../../inject/chatInject";
 export class VendorRoute{
     public vendorRoute:Router
     constructor(){
@@ -88,6 +89,12 @@ export class VendorRoute{
         })
         this.vendorRoute.patch('/completeBooking', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedBookingVendorController.handleUpdateBookingComplete(req, res)
+        })
+        this.vendorRoute.get('/loadPreviousChat', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedLoadPreviousChatController.handleLoadPreviousMessage(req, res)
+        })
+        this.vendorRoute.get('/chats', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedFindChatsOfUserController.handleFindChatOfUser(req, res)
         })
     }
 }

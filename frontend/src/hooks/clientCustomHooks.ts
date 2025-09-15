@@ -1,11 +1,11 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import {
   clientSignup,
   clientCreateAccount,clientResendOtp,clientLogin,clientForgetPasswordEmail,clientGoogleLogin,
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
   fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService,fetchServiceDetailsWithVendor,createBooking,
-  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking
+  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,
 
 } from "../services/ApiServiceClient";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
@@ -365,3 +365,37 @@ export const useCancelBooking = () => {
     mutationFn: (bookingId: string) => cancelBooking(bookingId),
   });
 };
+
+export const useLoadMessageInfinite = (
+  chatId: string,
+  options?: { enabled?: boolean }
+) => {
+  return useInfiniteQuery({
+    queryKey: ["chatMessages", chatId],
+    queryFn: ({ pageParam: Pageno }) => loadPreviousChat(chatId, Pageno),
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.hasMore) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
+    enabled: options?.enabled,
+    
+  });
+};
+
+export const useLoadChatsInfinite = (userId: string) => {
+  return useInfiniteQuery({
+    queryKey: ["chats", userId],
+    queryFn: ({ pageParam: pageNo }) => loadChats(userId, pageNo),
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.hasMore) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
+  });
+};
+

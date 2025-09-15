@@ -195,10 +195,15 @@ function TicketPaymentForm() {
                     setIsOpen(true);
                 }, 100);
             },
-            onError: (err) => {
-                console.error('❌ Confirm ticket error:', err);
-                const errorMessage = err?.response?.data?.message || err?.message || 'Failed to confirm ticket';
-                toast.error(errorMessage);
+            onError: (error) => {
+                
+                let errorMessage = "Failed to confirm ticket";
+      
+      if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    toast.error(errorMessage); 
             }
         });
     };

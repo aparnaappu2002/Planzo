@@ -18,6 +18,7 @@ import ServicesPage from '@/components/client/service/ServicesPage'
 import ServiceDetails from '@/components/client/service/serviceDetails'
 import BookingsPage from '@/components/client/serviceBookings/BookingsPage'
 import BookingPayment from '@/components/client/payment/booking/BookingPayment'
+import { ChatPage } from '@/components/client/chat/ChatPage'
 
 
 
@@ -45,6 +46,7 @@ const UserRoute=()=>{
              <Route path='/services/:serviceId/:vendorId' element={ <ServiceDetails/>  }></Route>
              <Route path='/serviceBookings' element={<ProtectedRouteClient> <BookingsPage/> </ProtectedRouteClient> }></Route>
              <Route path='/bookingPayment' element={<ProtectedRouteClient> <BookingPayment/> </ProtectedRouteClient> }></Route>
+             <Route path='/chats' element={<ProtectedRouteClient> <ChatPage/> </ProtectedRouteClient> }></Route>
              </Route>
 
             

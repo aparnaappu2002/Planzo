@@ -2,8 +2,8 @@ import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
 findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,approveBookingVendor,rejectBooking,updateBookingAsComplete,
-showBookingsInVendor} from "@/services/ApiServiceVendor";
-import {useMutation , useQuery} from '@tanstack/react-query'
+showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor} from "@/services/ApiServiceVendor";
+import {useInfiniteQuery,useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
 import { EventEntity } from "@/types/EventType";
 import { EventUpdateEntity } from "@/types/EventUpdateEntity";
@@ -212,5 +212,35 @@ export const useRejectBooking = () => {
 export const useUpdateBookingAsComplete = () => {
     return useMutation({
         mutationFn: ({ bookingId, status }: { bookingId: string, status: string }) => updateBookingAsComplete(bookingId, status)
+    })
+}
+
+export const useLoadMessageInfiniteVendor = (chatId: string, options?: { enabled?: boolean }) => {
+    return useInfiniteQuery({
+        queryKey: ['chatMessages', chatId],
+        queryFn: ({ pageParam: Pageno }) => loadPreviousChatVendor(chatId, Pageno),
+        getNextPageParam: (lastPage, allPages) => {
+            if (lastPage.hasMore) {
+                return allPages.length + 1
+            }
+            return undefined
+        },
+        initialPageParam: 1,
+        enabled: options?.enabled,
+        
+    })
+}
+
+export const useLoadChatsInfiniteVendor = (userId: string) => {
+    return useInfiniteQuery({
+        queryKey: ['chats', userId],
+        queryFn: ({ pageParam: pageNo }) => loadChatsVendor(userId, pageNo),
+        getNextPageParam: (lastPage, allPages) => {
+            if (lastPage.hasMore) {
+                return allPages.length + 1
+            }
+            return undefined
+        },
+        initialPageParam: 1
     })
 }
