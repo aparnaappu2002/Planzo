@@ -32,7 +32,7 @@ import { FindCategoryUseCase } from "../../useCases/admin/categoryManagement/fin
 import { ChangeCategoryStatusUseCase } from "../../useCases/admin/categoryManagement/changeCategoryStatusUseCase";
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
 import { FindEventsInAdminSideUseCase } from "../../useCases/admin/eventManagement/findEventsInAdminSide";
-import { FindEventsInAdminSideController } from "../../adapters/controllers/admin/eventManagement/FindEventsInAdminController";
+import { FindEventsInAdminSideController } from "../../adapters/controllers/admin/eventManagement/findEventsInAdminController";
 import { EventRepository } from "../../adapters/repository/event/eventRepository";
 
 

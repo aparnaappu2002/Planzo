@@ -46,9 +46,9 @@ import { CategoryClientController } from "../../adapters/controllers/client/cate
 import { CategoryDatabaseRepository } from "../../adapters/repository/category/categoryRepository";
 import { SearchEventsOnLocationUseCase } from "../../useCases/client/events/searchEventsOnLocationUseCase";
 import { CheckTicketLimitUseCase } from "../../useCases/client/ticket/checkTicketLimitUseCase";
-import { VendorForClientController } from "../../adapters/controllers/client/vendor/VendorsInClientController";
-import { FindVendorForClientUseCase } from "../../useCases/client/vendors/FindVendorForClientUseCase";
-import { FindVendorProfileUseCase } from "../../useCases/client/vendors/FindVendorProfileUseCase";
+import { VendorForClientController } from "../../adapters/controllers/client/vendor/vendorsInClientController";
+import { FindVendorForClientUseCase } from "../../useCases/client/vendors/findVendorForClientUseCase";
+import { FindVendorProfileUseCase } from "../../useCases/client/vendors/findVendorProfileUseCase";
 import { WorkSampleRepository } from "../../adapters/repository/workSamples/workSampleRepository";
 import { ServiceRepository } from "../../adapters/repository/service/serviceRepository";
 import { ServiceClientController } from "../../adapters/controllers/client/service/serviceClientController";
@@ -60,7 +60,7 @@ import { ReviewRepository } from "../../adapters/repository/review/reviewReposit
 import { ServiceWithVendorUseCase } from "../../useCases/client/booking/showServiceWithVendorUseCase";
 import { CreateBookingUseCase } from "../../useCases/client/booking/createBookingUseCase";
 import { ShowBookingsInClientUseCase } from "../../useCases/client/booking/showBookingsInClientUseCase";
-import { BookingClientController } from "../../adapters/controllers/client/booking/BookingClientController";
+import { BookingClientController } from "../../adapters/controllers/client/booking/bookingClientController";
 import { CreateBookingPaymentUseCase } from "../../useCases/client/booking/createBookingPaymentUseCase";
 import { ConfirmBookingPaymentUseCase } from "../../useCases/client/booking/confirmaBookingPaymentUseCase";
 import { CancelBookingUseCase } from "../../useCases/client/booking/cancelBookingUseCase";
