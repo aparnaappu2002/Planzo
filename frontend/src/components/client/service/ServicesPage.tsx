@@ -60,6 +60,7 @@ const ServicesPage: React.FC = () => {
 
   // Fetch all services
   const { data: allServicesData, isLoading: isLoadingAll } = useFindServiceForclient(currentPage);
+  console.log(allServicesData)
 
   // Fetch services by category
   const { data: categoryServicesData, isLoading: isLoadingCategory, error: categoryError } = useFindServiceOnCategoryBasis(
@@ -72,6 +73,7 @@ const ServicesPage: React.FC = () => {
 
   // Search mutation
   const { mutate: searchServices, data: searchResultsData, isPending: isSearching } = useFindServiceUsingSearch();
+  
   
 
   // Handle search input change

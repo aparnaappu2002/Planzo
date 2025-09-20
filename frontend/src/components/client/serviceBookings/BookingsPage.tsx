@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { useFetchBookingsInClient } from '@/hooks/clientCustomHooks';
 import BookingDetailsModal from './BookingDetailedModal';
 
-// Define interfaces for type safety
+
 interface Service {
   _id: string;
   serviceTitle: string;
@@ -63,26 +63,22 @@ const BookingsPage: React.FC = () => {
   };
   console.log('Bookings Data:', data);
 
-  // Handle error
   useEffect(() => {
     if (error) {
       toast.error(`Failed to load bookings: ${error.message || 'Unknown error'}`);
     }
   }, [error]);
 
-  // Handle view details
   const handleViewDetails = (booking: Booking) => {
     console.log('View Details Clicked for Booking:', booking);
     setSelectedBooking(booking);
   };
 
-  // Close modal
   const handleCloseModal = () => {
     console.log('Closing Modal');
     setSelectedBooking(null);
   };
 
-  // Render nothing until client is validated
   if (!client || !client._id) {
     return null;
   }

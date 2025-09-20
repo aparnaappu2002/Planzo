@@ -92,17 +92,10 @@ export default function BookedEvents() {
   const handleRetryPayment = async (ticketObjectId: string) => {
     try {
       setRetryingPayment(ticketObjectId);
-      // Add your retry payment logic here
-      // This would typically redirect to payment gateway or trigger payment process
       
-      // Example implementation (replace with your actual payment retry logic):
-      // await retryPaymentMutation.mutateAsync(ticketObjectId);
-      
-      // For now, just show success message - replace with actual implementation
       toast.success('Redirecting to payment gateway...');
       
-      // You might want to redirect to payment page here
-      // window.location.href = `/payment/retry/${ticketObjectId}`;
+      
       
     } catch (error) {
       console.error('Failed to retry payment:', error);
