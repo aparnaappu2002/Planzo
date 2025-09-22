@@ -141,7 +141,7 @@ const BookingPayment: React.FC = () => {
           paymentIntentId,
         });
         toast.success('Payment confirmed successfully');
-        navigate('/bookings');
+        navigate('/serviceBookings');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to confirm payment';
         toast.error(errorMessage);
