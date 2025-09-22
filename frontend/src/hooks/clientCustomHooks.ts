@@ -5,9 +5,10 @@ import {
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
   fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService,fetchServiceDetailsWithVendor,createBooking,
-  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,
+  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,addReview,showReviews
 
 } from "../services/ApiServiceClient";
+import { ReviewEntity } from "@/types/ReviewEntity";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 import { TicketEntity } from "@/types/TicketPaymentType";
 import { BookingType } from "@/types/BookingType";
@@ -145,20 +146,20 @@ export const useConfirmTicketAndPayment = () => {
   return useMutation({
     mutationFn: ({
       tickets,
-      allTickets, // Backup field
-      ticket,     // Fallback field
+      allTickets, 
+      ticket,     
       paymentIntent,
       vendorId,
       totalTickets
     }: {
-      tickets?: TicketEntity[];      // Primary - array of tickets
-      allTickets?: TicketEntity[];   // Backup field
-      ticket?: TicketEntity;         // Fallback single ticket
+      tickets?: TicketEntity[];      
+      allTickets?: TicketEntity[];   
+      ticket?: TicketEntity;         
       paymentIntent: string;
       vendorId: string;
       totalTickets?: number;
     }) => {
-      // Determine which tickets to use with fallback logic
+      
       const ticketsToConfirm = tickets || allTickets || (ticket ? [ticket] : []);
       
       if (ticketsToConfirm.length === 0) {
@@ -396,6 +397,29 @@ export const useLoadChatsInfinite = (userId: string) => {
       return undefined;
     },
     initialPageParam: 1,
+  });
+};
+
+
+
+export const useAddReview = () => {
+  return useMutation({
+    mutationFn: (review: ReviewEntity) => addReview(review),
+  });
+};
+
+export const useShowReviews = ({
+  targetId,
+  pageNo,
+  rating,
+}: {
+  targetId: string;
+  pageNo: number;
+  rating: number;
+}) => {
+  return useQuery({
+    queryKey: ["reviews", targetId, pageNo, rating],
+    queryFn: () => showReviews(targetId, pageNo, rating),
   });
 };
 

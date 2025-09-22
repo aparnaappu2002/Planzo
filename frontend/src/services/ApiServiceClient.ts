@@ -1,7 +1,7 @@
 import { isAxiosError } from "axios";
 import axios from "../axios/clientAxios";
 import { TicketEntity } from "@/types/TicketPaymentType";
-
+import { ReviewEntity } from "@/types/ReviewEntity";
 import { BookingType } from "@/types/BookingType";
 import { ClientUpdateProfileEntity } from "@/types/ClientUpdateProfileType";
 
@@ -194,9 +194,9 @@ export const confirmTicketAndPayment = async (
 ) => {
   try {
     const response = await axios.post('/confirmTicket', { 
-      tickets,           // Primary field - array of tickets
-      allTickets: tickets, // Backup field for controller compatibility
-      ticket: tickets[0], // Fallback single ticket for old controller compatibility
+      tickets,           
+      allTickets: tickets, 
+      ticket: tickets[0], 
       paymentIntent, 
       vendorId,
       totalTickets: totalTickets || tickets.length
@@ -443,5 +443,26 @@ export const loadChats = async (userId: string, pageNo: number) => {
     } catch (error) {
         console.log('error while finding the chats of user', error)
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while findng the chats of user')
+    }
+}
+
+
+export const addReview = async (review: ReviewEntity) => {
+    try {
+        const resposne = await axios.post('/addReview', { review })
+        return resposne.data
+    } catch (error) {
+        console.log('error while adding review', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while adding review')
+    }
+}
+
+export const showReviews = async (targetId: string, pageNo: number, rating: number) => {
+    try {
+        const response = await axios.get('/injectedShowReviewController', { params: { targetId, pageNo, rating } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching the reviews', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching the reviews')
     }
 }
