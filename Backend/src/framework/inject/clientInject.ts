@@ -64,6 +64,9 @@ import { BookingClientController } from "../../adapters/controllers/client/booki
 import { CreateBookingPaymentUseCase } from "../../useCases/client/booking/createBookingPaymentUseCase";
 import { ConfirmBookingPaymentUseCase } from "../../useCases/client/booking/confirmaBookingPaymentUseCase";
 import { CancelBookingUseCase } from "../../useCases/client/booking/cancelBookingUseCase";
+import { ReviewController } from "../../adapters/controllers/client/review/reviewController";
+import { AddReviewUseCase } from "../../useCases/client/review/addReviewUseCase";
+import { ShowReviewsUseCase } from "../../useCases/client/review/showReviewsUseCase";
 
 const otpService=new OtpService()
 const EmailService=new emailService()
@@ -153,3 +156,9 @@ const createBookingPaymentUseCase=new CreateBookingPaymentUseCase(bookingReposit
 const confirmaBookingPaymentUseCase=new ConfirmBookingPaymentUseCase(bookingRepository,paymentRepository,walletRepository,transactionRepository,paymentService)
 const cancelBookingUseCase=new CancelBookingUseCase(bookingRepository)
 export const injectedBookingClientController=new BookingClientController(serviceWithVendorUseCase,createBookingUseCase,showBookingsInClientUseCase,createBookingPaymentUseCase,confirmaBookingPaymentUseCase,cancelBookingUseCase)
+
+//reviews
+
+const addReviewUseCase=new AddReviewUseCase(reviewRepository)
+const showReviewsUseCase=new ShowReviewsUseCase(reviewRepository)
+export const injectedReviewController=new ReviewController(addReviewUseCase,showReviewsUseCase)

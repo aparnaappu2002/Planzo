@@ -2,7 +2,7 @@ import { Request,Response,Router } from "express";
 import { clientAuthenticationController,injectedClientLoginController,
     injectedForgotPasswordClientController,injectedProfileClientController,injectedEventClientController,injectedTicketClientController,
     injectedWalletClientController,injectedCategoryClientController,injectedVendorForClientController,injectedServiceClientController,
-    injectedBookingClientController
+    injectedBookingClientController,injectedReviewController
  } from "../../inject/clientInject";
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { injectedLoadPreviousChatController,injectedFindChatsOfUserController } from "../../inject/chatInject";
@@ -119,6 +119,9 @@ export class clientRoute{
         })
         this.clientRoute.get('/chats', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedFindChatsOfUserController.handleFindChatOfUser(req, res)
+        })
+        this.clientRoute.post('/addReview', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedReviewController.handleAddReview(req, res)
         })
     }
 }
