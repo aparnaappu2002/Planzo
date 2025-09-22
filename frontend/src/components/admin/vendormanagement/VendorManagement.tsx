@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -37,7 +37,7 @@ interface Vendor {
   createdAt: string;
 }
 
-// Memoized VendorRow component to prevent unnecessary re-renders
+// Memoized VendorRow component
 const VendorRow = React.memo(({ vendor, handleAction }: { vendor: Vendor; handleAction: (vendor: Vendor, action: "block" | "unblock") => void }) => (
   <TableRow>
     <TableCell className="font-medium">{vendor.name}</TableCell>
@@ -83,27 +83,28 @@ const VendorManagement = () => {
   const [actionType, setActionType] = useState<"block" | "unblock">("block");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  
-  const { data: vendorData, isLoading, error, refetch } = useFetchVendorAdmin(currentPage);
-  const { data: searchResults, isLoading: isSearchLoading, refetch: refetchSearch } = useSearchVendors(searchQuery);
+  const [vendors, setVendors] = useState<Vendor[]>([]); // Local state for vendors
+
+  const { data: vendorData, isLoading, error } = useFetchVendorAdmin(currentPage);
+  const { data: searchResults, isLoading: isSearchLoading } = useSearchVendors(searchQuery);
   const blockVendor = useBlockVendor();
   const unblockVendor = useUnblockVendor();
 
-  // Memoized vendors data
-  const vendors = useMemo(() => {
-    return searchQuery ? searchResults?.vendors || [] : vendorData?.vendors || [];
+  // Update local vendors state when vendorData or searchResults change
+  useEffect(() => {
+    setVendors(searchQuery ? searchResults?.vendors || [] : vendorData?.vendors || []);
   }, [searchQuery, searchResults, vendorData]);
 
   const totalPages = searchQuery ? 1 : vendorData?.totalPages || 1;
 
-  // Stable callback for vendor actions
+  // Handle vendor action (block/unblock)
   const handleAction = useCallback((vendor: Vendor, action: "block" | "unblock") => {
     setSelectedVendor(vendor);
     setActionType(action);
     setShowDialog(true);
   }, []);
 
-  // Debounced search with useCallback
+  // Debounced search
   const debouncedSearch = useCallback(
     debounce((query: string) => {
       setSearchQuery(query);
@@ -129,30 +130,71 @@ const VendorManagement = () => {
     };
   }, [debouncedSearch]);
 
+  // Debounced API call for block/unblock
+  const debouncedBlockVendor = useCallback(
+    debounce(async (vendorId: string) => {
+      try {
+        const response = await blockVendor.mutateAsync(vendorId);
+        toast.success(response?.message || "Vendor blocked successfully.");
+      } catch (error: any) {
+        throw error; // Let the error be handled in confirmAction
+      }
+    }, 500),
+    [blockVendor]
+  );
+
+  const debouncedUnblockVendor = useCallback(
+    debounce(async (vendorId: string) => {
+      try {
+        const response = await unblockVendor.mutateAsync(vendorId);
+        toast.success(response?.message || "Vendor unblocked successfully.");
+      } catch (error: any) {
+        throw error; // Let the error be handled in confirmAction
+      }
+    }, 500),
+    [unblockVendor]
+  );
+
+  // Confirm action with optimistic update
   const confirmAction = useCallback(async () => {
     if (!selectedVendor) return;
 
+    const vendorId = selectedVendor._id; // Use _id as the primary identifier
+    const originalVendor = { ...selectedVendor }; // Store original vendor data for rollback
+
+    // Debugging: Log the vendor being updated
+    console.log(`Updating vendor: ${selectedVendor.name} (${vendorId}) to ${actionType === "block" ? "blocked" : "active"}`);
+
+    // Optimistically update only the selected vendor's status
+    setVendors((prevVendors) =>
+      prevVendors.map((vendor) =>
+        vendor._id === vendorId
+          ? { ...vendor, status: actionType === "block" ? "blocked" : "active" }
+          : vendor
+      )
+    );
+
+    setShowDialog(false);
+    setSelectedVendor(null);
+
     try {
-      let response;
       if (actionType === "block") {
-        response = await blockVendor.mutateAsync(selectedVendor._id || selectedVendor.id);
+        await debouncedBlockVendor(vendorId);
       } else {
-        response = await unblockVendor.mutateAsync(selectedVendor._id || selectedVendor.id);
+        await debouncedUnblockVendor(vendorId);
       }
-      
-      toast.success(response?.message || `Vendor ${selectedVendor.name} has been ${actionType === 'block' ? 'blocked' : 'unblocked'} successfully.`);
-      
-      await refetch();
-      if (searchQuery) {
-        await refetchSearch();
-      }
-      setShowDialog(false);
-      setSelectedVendor(null);
     } catch (error: any) {
-      console.error('Error updating vendor status:', error);
-      
+      // Revert optimistic update for only the selected vendor
+      console.log(`Error ${actionType} vendor: ${error.message}`);
+      setVendors((prevVendors) =>
+        prevVendors.map((vendor) =>
+          vendor._id === vendorId
+            ? { ...vendor, status: originalVendor.status }
+            : vendor
+        )
+      );
+
       let errorMessage = `Failed to ${actionType} vendor. Please try again.`;
-      
       if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.response?.data?.error) {
@@ -160,10 +202,9 @@ const VendorManagement = () => {
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
       toast.error(errorMessage);
     }
-  }, [selectedVendor, actionType, blockVendor, unblockVendor, refetch, searchQuery, refetchSearch]);
+  }, [selectedVendor, actionType, debouncedBlockVendor, debouncedUnblockVendor]);
 
   const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -188,7 +229,7 @@ const VendorManagement = () => {
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-destructive">Error Loading Vendors</h2>
           <p className="text-muted-foreground">{error.message}</p>
-          <Button onClick={() => refetch()}>Try Again</Button>
+          <Button onClick={() => setCurrentPage(1)}>Try Again</Button>
         </div>
       </div>
     );
@@ -267,7 +308,7 @@ const VendorManagement = () => {
                   <TableBody>
                     {vendors.map((vendor) => (
                       <VendorRow 
-                        key={vendor.id || vendor._id} 
+                        key={vendor._id} 
                         vendor={vendor} 
                         handleAction={handleAction} 
                       />
