@@ -112,7 +112,7 @@ const ServiceDetails: React.FC = () => {
       onSuccess: () => {
         setIsModalOpen(false);
         toast.success('Booking created successfully!');
-        navigate('/profile/bookings');
+        navigate('/serviceBookings');
       },
       onError: (err) => {
         console.error('Booking Error:', err);
@@ -150,7 +150,7 @@ const ServiceDetails: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-gray-600">
-                <span className="font-semibold text-yellow-600">Price:</span> ${service.price}
+                <span className="font-semibold text-yellow-600">Price:</span> ₹{service.price}
               </p>
               <p className="text-gray-600">
                 <span className="font-semibold text-yellow-600">Duration:</span> {service.duration}
