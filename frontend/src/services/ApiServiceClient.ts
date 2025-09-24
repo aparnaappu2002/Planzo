@@ -232,7 +232,6 @@ export const findEventsNearToUser = async (latitude: number, longitude: number, 
 
 export const findTicketAndEventDetailsClient = async (clientId: string, pageNo: number) => {
     try {
-        console.log(clientId)
         const response = await axios.get(`/bookings/${clientId}/${pageNo}`)
         return response.data
     } catch (error) {
