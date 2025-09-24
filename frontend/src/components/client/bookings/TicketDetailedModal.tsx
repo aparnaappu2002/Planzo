@@ -1,23 +1,29 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Ticket, Search, Filter, Eye, MapPin, Clock, Users, CreditCard, Phone, Mail, QrCode, X, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { Calendar, Ticket, MapPin, Users, CreditCard, Phone, Mail, X, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TicketAndEventType } from "@/types/TicketAndEventType";
-import { useFindTicketAndEventsDetails, useTicketCancellation } from "@/hooks/clientCustomHooks";
-import { RootState } from "@/redux/Store";
-import { useSelector } from "react-redux";
+import { motion } from "framer-motion";
+import ReviewModal from "@/components/other components/review/ReviewModal";
+import { useTicketCancellation } from "@/hooks/clientCustomHooks";
 import { toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
 
-
+export interface ReviewEntity {
+  _id?: string;
+  reviewerId: string;
+  targetId: string;
+  targetType: 'service' | 'event';
+  rating: number;
+  comment: string;
+}
 
 export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketAndEventType; onCancelTicket: (ticketId: string) => void }) {
   const { event } = ticket;
-  
+  const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  const queryClient = useQueryClient();
+  const ticketCancellation = useTicketCancellation();
+
   const getPaymentStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'paid':
@@ -36,6 +42,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
 
   const getTicketStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'unused':
       case 'active':
       case 'valid':
         return 'bg-green-100 text-green-800 border-green-200';
@@ -50,22 +57,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
     }
   };
 
-  const canCancelTicket = () => {
-    const eventDate = new Date(event.date);
-    const today = new Date();
-    const daysDifference = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
-    
-    if (ticket.ticketStatus.toLowerCase() === 'refunded') {
-      return false;
-    }
-    
-    const paymentSuccess = ['paid', 'completed', 'successful'].includes(ticket.paymentStatus.toLowerCase());
-    const ticketUnused = ['unused', 'active', 'valid'].includes(ticket.ticketStatus.toLowerCase());
-    
-    return paymentSuccess && ticketUnused;
-  };
-
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: any) => {
     if (!dateString) return 'Date not available';
     
     try {
@@ -90,14 +82,37 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
         day: 'numeric'
       });
     } catch (error) {
+      console.error('Date format error:', error);
       return 'Date format error';
     }
   };
 
   const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
+    try {
+      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Time format error:', error);
+      return 'Invalid time';
+    }
+  };
+
+  const handleCancelTicket = () => {
+    console.log('Initiating ticket cancellation for ID:', ticket._id);
+    ticketCancellation.mutate(ticket._id, {
+      onSuccess: () => {
+        console.log('Ticket cancellation successful');
+        queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails', ticket._id] });
+        queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails'] });
+        toast.success('Booking cancelled successfully');
+        onCancelTicket(ticket._id);
+      },
+      onError: (err: any) => {
+        console.error('Cancellation error:', err);
+        toast.error(err.message || 'Failed to cancel booking');
+      },
     });
   };
 
@@ -217,61 +232,103 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
         </div>
       )}
 
-      {/* Cancel Ticket Section or Cancelled Status */}
+      {/* Cancelled Status or Action Buttons */}
       {ticket.ticketStatus.toLowerCase() === 'refunded' ? (
         <div className="border-t border-border pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <X className="h-5 w-5 text-red-500" />
               <div>
-                <h4 className="font-semibold text-red-800 mb-1">Ticket Cancelled</h4>
+                <h4 className="font-semibold text-red-800 mb-1">Booking Cancelled</h4>
                 <p className="text-sm text-red-600">
-                  This ticket has been cancelled and refunded.
+                  This booking has been cancelled and refunded.
                 </p>
               </div>
             </div>
           </div>
         </div>
-      ) : canCancelTicket() && (
+      ) : (
         <div className="border-t border-border pt-4">
-          <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-              <div className="flex-1">
-                <h4 className="font-semibold text-destructive mb-1">Cancel Ticket</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Once cancelled, this action cannot be undone. You may be eligible for a refund based on the cancellation policy.
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel Ticket
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancel Ticket</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to cancel this ticket for "{event.title}"? This action cannot be undone and may affect your refund eligibility.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep Ticket</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => onCancelTicket(ticket.ticketId)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Cancel Ticket
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
+          <div className="flex gap-3">
+            {ticket.ticketStatus === 'unused' && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-2 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:shadow-yellow-300/50 hover:from-yellow-600 hover:to-yellow-700 ${
+                      ticketCancellation.isPending ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={ticketCancellation.isPending}
+                  >
+                    <X className="h-4 w-4 mr-2 inline" />
+                    {ticketCancellation.isPending ? 'Cancelling...' : 'Cancel Booking'}
+                  </motion.button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      Cancel Booking Confirmation
+                    </AlertDialogTitle>
+                    <div className="space-y-2">
+                      <p>Are you sure you want to cancel this booking for <strong>"{event.title}"</strong>?</p>
+                      <div className="bg-muted rounded-lg p-3 mt-3">
+                        <p className="text-sm font-medium">Ticket Details:</p>
+                        <ul className="text-sm text-muted-foreground mt-1 space-y-1">
+                          <li>• Ticket ID: {ticket.ticketId}</li>
+                          <li>• Quantity: {ticket.ticketCount} ticket{ticket.ticketCount > 1 ? 's' : ''}</li>
+                          <li>• Total Amount: ₹{ticket.totalAmount}</li>
+                          <li>• Event Date: {formatDate(event.date)}</li>
+                        </ul>
+                      </div>
+                      <p className="text-sm text-destructive font-medium mt-3">
+                        ⚠️ This action cannot be undone and may affect your refund eligibility.
+                      </p>
+                    </div>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelTicket}
+                      className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700"
+                      disabled={ticketCancellation.isPending}
+                    >
+                      {ticketCancellation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4 mr-2" />
+                          Yes, Cancel Booking
+                        </>
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            {ticket.ticketStatus === 'used' && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowAddReviewModal(true)}
+                className="rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-2 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:shadow-yellow-300/50 hover:from-yellow-600 hover:to-yellow-700"
+              >
+                Add Review
+              </motion.button>
+            )}
           </div>
         </div>
       )}
+
+      <ReviewModal
+        ticket={{ _id: ticket._id, event: { _id: ticket.event._id } }}
+        showReviewModal={showAddReviewModal}
+        setShowReviewModal={setShowAddReviewModal}
+      />
     </div>
   );
 }
