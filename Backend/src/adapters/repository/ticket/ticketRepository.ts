@@ -179,6 +179,8 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
                 clientId: '$client'
             }
         },
+        // Add sorting stage BEFORE pagination - sorts by creation time (newest first)
+        { $sort: { _id: -1 } },
         {
             $project: {
                 _id: 1,
@@ -238,5 +240,25 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
     
     return { ticketAndEventDetails: tickets, totalPages }
 }
+
+
+
+async findTicketUsingTicketId(ticketId: string): Promise<TicketEntity | null> {
+    return ticketModel.findOne({ ticketId }).select('-__v')
+}
+async changeUsedStatus(ticketId: string): Promise<TicketEntity | null> {
+    return await ticketModel.findByIdAndUpdate(ticketId, { ticketStatus: 'used' })
+}
+async updateCheckInHistory(ticketId: string, date: Date): Promise<boolean> {
+        const result = await ticketModel.updateOne(
+            { _id: ticketId },
+            { $addToSet: { checkInHistory: date } }
+        );
+
+    return result.modifiedCount > 0;
+}
+
+
+
 }
 
