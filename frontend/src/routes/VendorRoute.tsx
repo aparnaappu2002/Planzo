@@ -15,6 +15,7 @@ import WorkSamplesPage from "@/components/vendor/workSample/WorkSample";
 import VendorServicesPage from "@/components/vendor/service/VendorServicePage";
 import VendorBookingsPage from "@/components/vendor/bookings/VendorBookingsPage";
 import { VendorChatPage } from "@/components/vendor/chat/VendorChatPage";
+import TicketScanner from "@/components/vendor/ticket/TicketScanner";
 
 
 
@@ -37,6 +38,7 @@ const VendorRoute=()=>{
             <Route path="/services" element={<ProtectedRouteVendor>  < VendorServicesPage/> </ProtectedRouteVendor> }></Route>
             <Route path="/bookings" element={<ProtectedRouteVendor>  < VendorBookingsPage/> </ProtectedRouteVendor> }></Route>
             <Route path="/chats" element={<ProtectedRouteVendor>  < VendorChatPage/> </ProtectedRouteVendor> }></Route>
+            <Route path="/scanTickets" element={<ProtectedRouteVendor>  < TicketScanner/> </ProtectedRouteVendor> }></Route>
             </Route>
         </Routes>
     )
