@@ -5,11 +5,16 @@ import { RootState } from '@/redux/Store';
 import { useSelector } from 'react-redux';
 import { ReviewEntity } from '@/types/ReviewEntity';
 import { useAddReview } from '@/hooks/clientCustomHooks';
+
 interface ReviewModalProps {
-  booking: {
+  booking?: {
     _id: string;
-    service: { _id: string };
-  };
+    service?: { _id: string };
+  } | null;
+  ticket?: {
+    _id: string;
+    event?: { _id: string };
+  } | null;
   showReviewModal: boolean;
   setShowReviewModal: (value: boolean) => void;
 }
@@ -19,14 +24,13 @@ interface UseAddReview {
   isLoading: boolean;
 }
 
-
 const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({ children, className, ...props }) => (
   <button className={className} {...props}>
     {children}
   </button>
 );
 
-const ReviewModal: React.FC<ReviewModalProps> = ({ booking, showReviewModal, setShowReviewModal }) => {
+const ReviewModal: React.FC<ReviewModalProps> = ({ booking, ticket, showReviewModal, setShowReviewModal }) => {
   const queryClient = useQueryClient();
   const clientId = useSelector((state: RootState) => state.clientSlice.client?._id || '');
   const addReview = useAddReview();
@@ -35,6 +39,44 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ booking, showReviewModal, set
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
   const [errors, setErrors] = useState<{ rating?: string; comment?: string }>({});
+
+  // Early return if modal is not shown
+  if (!showReviewModal) return null;
+
+  // Determine target type and ID
+  let targetId: string | null = null;
+  let targetType: 'service' | 'event' | null = null;
+  let queryKey: string | null = null;
+
+  if (booking && booking.service && booking.service._id) {
+    targetId = booking.service._id;
+    targetType = 'service';
+    queryKey = booking.service._id;
+  } else if (ticket && ticket.event && ticket.event._id) {
+    targetId = ticket.event._id;
+    targetType = 'event';
+    queryKey = ticket.event._id;
+  }
+
+  // Check if we have valid data
+  if (!targetId || !targetType) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full border-2 border-red-400">
+          <h3 className="text-xl font-bold text-red-600 mb-4">Error</h3>
+          <p className="text-gray-700 mb-4">Invalid data. Cannot submit review.</p>
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setShowReviewModal(false)}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Validate form
   const validateForm = (): boolean => {
@@ -52,26 +94,38 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ booking, showReviewModal, set
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Double-check data before submission
+    if (!targetId || !targetType) {
+      toast.error('Invalid data. Cannot submit review.');
+      return;
+    }
+
     if (!validateForm()) return;
+
+    if (!clientId) {
+      toast.error('Please log in to submit a review');
+      return;
+    }
 
     const review: ReviewEntity = {
       reviewerId: clientId,
-      targetId: booking.service._id,
-      targetType: 'service',
+      targetId: targetId,
+      targetType: targetType,
       rating,
       comment,
     };
 
     addReview.mutate(review, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['Reviews', booking.service._id] });
+        if (queryKey) {
+          queryClient.invalidateQueries({ queryKey: ['Reviews', queryKey] });
+        }
         toast.success('Review submitted successfully');
-        setShowReviewModal(false);
-        setRating(0);
-        setComment('');
+        handleClose();
       },
       onError: (err: any) => {
-        toast.error(err.message || 'Failed to submit review');
+        toast.error(err?.message || 'Failed to submit review');
       },
     });
   };
@@ -89,8 +143,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ booking, showReviewModal, set
     setComment('');
     setErrors({});
   };
-
-  if (!showReviewModal) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">

@@ -1,28 +1,26 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Ticket, Search, Filter, Eye, MapPin, Clock, Users, CreditCard, Phone, Mail, QrCode, X, AlertTriangle, RotateCcw } from "lucide-react";
+import { Calendar, Ticket, Search, Filter, Eye, MapPin, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TicketAndEventType } from "@/types/TicketAndEventType";
-import { useFindTicketAndEventsDetails, useTicketCancellation } from "@/hooks/clientCustomHooks";
+import { useFindTicketAndEventsDetails } from "@/hooks/clientCustomHooks";
 import { RootState } from "@/redux/Store";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { TicketDetailsModal } from "./TicketDetailedModal";
-
-
+import { useQueryClient } from "@tanstack/react-query";
+import Pagination from "@/components/other components/Pagination";
 
 export default function BookedEvents() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [retryingPayment, setRetryingPayment] = useState<string | null>(null);
-  
-  const clientId = useSelector((state: RootState) => state.clientSlice.client?._id) 
-  
+  const clientId = useSelector((state: RootState) => state.clientSlice.client?._id);
+  const queryClient = useQueryClient();
+
   const { 
     data, 
     isLoading, 
@@ -34,113 +32,69 @@ export default function BookedEvents() {
 
   // Log hook state changes
   useEffect(() => {
-    console.log('Hook State Change:', {
-      currentPage,
-      clientId,
-      isLoading,
-      isFetching,
-      isError,
-      hasData: !!data,
-      dataKeys: data ? Object.keys(data) : null
-    });
+    console.log("Current Page:", currentPage, "Client ID:", clientId, "Loading:", isLoading, "Fetching:", isFetching, "Error:", isError);
   }, [currentPage, clientId, isLoading, isFetching, isError, data]);
 
-  const ticketCancellation = useTicketCancellation();
-  
   // Reset to page 1 when clientId changes and clear search
   useEffect(() => {
     setCurrentPage(1);
     setSearchTerm("");
   }, [clientId]);
 
-  // Force refetch when page changes (temporary solution if auto-refetch doesn't work)
+  // Force refetch when page changes
   useEffect(() => {
     if (clientId && currentPage > 0) {
-      console.log(`Triggering refetch for page ${currentPage}`);
       refetch();
     }
   }, [currentPage, clientId, refetch]);
 
-  // Debug: Log the full data response
   useEffect(() => {
     if (data) {
-      console.log('=== FULL API RESPONSE DEBUG ===');
-      console.log('Current Page State:', currentPage);
-      console.log('API Response Keys:', Object.keys(data));
-      console.log('Full Response:', JSON.stringify(data, null, 2));
-      console.log('ticketAndEventDetails type:', typeof data.ticketAndEventDetails);
-      console.log('ticketAndEventDetails isArray:', Array.isArray(data.ticketAndEventDetails));
-      console.log('================================');
+      console.log('API Data:', data);
+      console.log('Tickets:', data.ticketAndEventDetails);
     }
     if (error) {
       console.log('API Error:', error);
     }
   }, [data, currentPage, error]);
 
-  const handlePageChange = (page: number) => {
-    if (page < 1) return;
-    if (data && page > data.totalPages) return;
-    
-    console.log(`Changing to page ${page} from ${currentPage}`);
-    console.log('Current data before page change:', data);
-    setCurrentPage(page);
-    
-    // Force scroll to top immediately
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Sort tickets by event.startTime in descending order (most recent first)
+  const sortedTickets = data?.ticketAndEventDetails
+    ? [...data.ticketAndEventDetails].sort((a, b) => {
+        const dateA = a.event.startTime ? new Date(a.event.startTime).getTime() : 0;
+        const dateB = b.event.startTime ? new Date(b.event.startTime).getTime() : 0;
+        return dateB - dateA;
+      })
+    : [];
+
+  // Log sorted tickets for debugging
+  useEffect(() => {
+    if (sortedTickets.length > 0) {
+      console.log("Sorted Tickets:", sortedTickets.map(ticket => ({
+        ticketId: ticket.ticketId,
+        eventTitle: ticket.event.title,
+        startTime: ticket.event.startTime || 'N/A',
+        objectIdTimestamp: new Date(parseInt(ticket._id.substring(0, 8), 16) * 1000).toISOString()
+      })));
+    }
+  }, [sortedTickets]);
+
+  const handleCancelTicket = (ticketId: string) => {
+    queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails'] });
+    refetch();
   };
 
-  const handleRetryPayment = async (ticketObjectId: string) => {
+  const formatDate = (dateString: string) => {
     try {
-      setRetryingPayment(ticketObjectId);
-      
-      toast.success('Redirecting to payment gateway...');
-      
-      
-      
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
     } catch (error) {
-      console.error('Failed to retry payment:', error);
-      let errorMessage = "Payment retry failed";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setRetryingPayment(null);
+      console.error('Date format error:', error);
+      return 'Invalid date';
     }
-  };
-
-  const handleCancelTicket = async (ticketObjectId: string) => {
-    try {
-      await ticketCancellation.mutateAsync(ticketObjectId);
-      toast.success('Ticket cancelled successfully');
-      refetch();
-    } catch (error) {
-      console.error('Failed to cancel ticket:', error);
-      let errorMessage = "Ticket Cancel Failed";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-    
-      toast.error(errorMessage); 
-    }
-  };
-
-  const canCancelTicket = (ticket: TicketAndEventType) => {
-    if (ticket.ticketStatus.toLowerCase() === 'refunded') {
-      return false;
-    }
-
-    const paymentSuccess = ['paid', 'completed', 'successful'].includes(ticket.paymentStatus.toLowerCase());
-    const ticketUnused = ['unused', 'active', 'valid'].includes(ticket.ticketStatus.toLowerCase());
-    
-    return paymentSuccess && ticketUnused;
-  };
-
-  const canRetryPayment = (ticket: TicketAndEventType) => {
-    return ticket.paymentStatus.toLowerCase() === 'pending';
   };
 
   const getStatusBadge = (status: string, type: 'payment' | 'ticket') => {
@@ -178,112 +132,11 @@ export default function BookedEvents() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const renderPagination = () => {
-    if (!data || data.totalPages <= 1) return null;
-
-    // Generate page numbers to display
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
-    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(data.totalPages, startPage + maxVisiblePages - 1);
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-
-    return (
-      <div className="flex items-center justify-center gap-3 mt-8 p-4">
-        {/* Previous Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-          className="flex items-center gap-2 px-4 py-2"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        
-        {/* Show first page and ellipsis if needed */}
-        {startPage > 1 && (
-          <>
-            <Button
-              variant={1 === currentPage ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePageChange(1)}
-              className="min-w-[40px]"
-            >
-              1
-            </Button>
-            {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
-          </>
-        )}
-        
-        {/* Page numbers */}
-        <div className="flex gap-1">
-          {pageNumbers.map(page => (
-            <Button
-              key={page}
-              variant={page === currentPage ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePageChange(page)}
-              className="min-w-[40px]"
-            >
-              {page}
-            </Button>
-          ))}
-        </div>
-        
-        {/* Show last page and ellipsis if needed */}
-        {endPage < data.totalPages && (
-          <>
-            {endPage < data.totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
-            <Button
-              variant={data.totalPages === currentPage ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePageChange(data.totalPages)}
-              className="min-w-[40px]"
-            >
-              {data.totalPages}
-            </Button>
-          </>
-        )}
-        
-        {/* Next Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= data.totalPages}
-          className="flex items-center gap-2 px-4 py-2"
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        
-        {/* Page Info */}
-        <div className="ml-4 text-sm text-muted-foreground">
-          Page {currentPage} of {data.totalPages}
-        </div>
-      </div>
-    );
-  };
-
-  // Filter tickets based on search term
-  const filteredTickets = data?.ticketAndEventDetails?.filter(ticket => 
+  const filteredTickets = sortedTickets.filter(ticket => 
     !searchTerm || 
     ticket.event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   if (error) {
     return (
@@ -307,7 +160,6 @@ export default function BookedEvents() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl p-8 border border-primary/20 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -331,7 +183,6 @@ export default function BookedEvents() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -350,7 +201,6 @@ export default function BookedEvents() {
         </div>
       </div>
 
-      {/* Loading State */}
       {(isLoading || isFetching) && (
         <Card>
           <CardContent className="p-6">
@@ -366,10 +216,8 @@ export default function BookedEvents() {
         </Card>
       )}
 
-      {/* Content - Table Format */}
       {data && !isLoading && (
         <>
-          {/* Show message if no tickets found OR if data is inconsistent */}
           {data.ticketAndEventDetails.length === 0 ? (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-12 text-center">
@@ -399,10 +247,10 @@ export default function BookedEvents() {
                     <>
                       {currentPage > 1 && (
                         <>
-                          <Button onClick={() => handlePageChange(1)} variant="outline">
+                          <Button onClick={() => setCurrentPage(1)} variant="outline">
                             Go to First Page
                           </Button>
-                          <Button onClick={() => handlePageChange(currentPage - 1)} variant="outline">
+                          <Button onClick={() => setCurrentPage(currentPage - 1)} variant="outline">
                             Previous Page
                           </Button>
                         </>
@@ -416,7 +264,6 @@ export default function BookedEvents() {
               </CardContent>
             </Card>
           ) : filteredTickets.length === 0 ? (
-            // Show message if search filters out all results
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-12 text-center">
                 <Search className="h-16 w-16 text-primary/60 mx-auto mb-4" />
@@ -431,7 +278,6 @@ export default function BookedEvents() {
             </Card>
           ) : (
             <>
-              {/* Table with results */}
               <Card>
                 <CardContent className="p-0">
                   <Table>
@@ -443,7 +289,7 @@ export default function BookedEvents() {
                         <TableHead>Amount</TableHead>
                         <TableHead>Payment</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="w-[300px]">Actions</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -501,157 +347,23 @@ export default function BookedEvents() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap gap-2 items-center">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Details
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                                  <DialogHeader>
-                                    <DialogTitle>Ticket Details</DialogTitle>
-                                  </DialogHeader>
-                                  <TicketDetailsModal 
-                                    ticket={ticket} 
-                                    onCancelTicket={(ticketObjectId) => handleCancelTicket(ticketObjectId)}
-                                  />
-                                </DialogContent>
-                              </Dialog>
-                              
-                              {/* Show Retry Payment button for pending payments */}
-                              {canRetryPayment(ticket) ? (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                      size="sm" 
-                                      variant="default"
-                                      disabled={retryingPayment === ticket._id}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                                    >
-                                      <RotateCcw className="h-4 w-4 mr-1" />
-                                      {retryingPayment === ticket._id ? 'Retrying...' : 'Retry Payment'}
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle className="flex items-center gap-2">
-                                        <CreditCard className="h-5 w-5 text-blue-600" />
-                                        Retry Payment
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription className="space-y-2">
-                                        <p>Complete your pending payment for <strong>"{ticket.event.title}"</strong></p>
-                                        <div className="bg-muted rounded-lg p-3 mt-3">
-                                          <p className="text-sm font-medium">Payment Details:</p>
-                                          <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                                            <li>• Ticket ID: {ticket.ticketId}</li>
-                                            <li>• Quantity: {ticket.ticketCount} ticket{ticket.ticketCount > 1 ? 's' : ''}</li>
-                                            <li>• Total Amount: ₹{ticket.totalAmount}</li>
-                                            <li>• Event Date: {formatDate(ticket.event.date)}</li>
-                                            <li>• Current Status: <span className="text-yellow-600 font-medium">Pending Payment</span></li>
-                                          </ul>
-                                        </div>
-                                        <p className="text-sm text-blue-600 font-medium mt-3">
-                                          You'll be redirected to the payment gateway to complete your transaction.
-                                        </p>
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>
-                                        Cancel
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => {
-                                          handleRetryPayment(ticket._id);
-                                        }}
-                                        className="bg-blue-600 text-white hover:bg-blue-700"
-                                        disabled={retryingPayment === ticket._id}
-                                      >
-                                        {retryingPayment === ticket._id ? (
-                                          <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Processing...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <CreditCard className="h-4 w-4 mr-2" />
-                                            Complete Payment
-                                          </>
-                                        )}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              ) : ticket.ticketStatus.toLowerCase() === 'refunded' ? (
-                                <Button size="sm" variant="secondary" disabled>
-                                  <X className="h-4 w-4 mr-1" />
-                                  Cancelled
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Details
                                 </Button>
-                              ) : (
-                                /* Show Cancel button for non-pending payments */
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                      size="sm" 
-                                      variant={canCancelTicket(ticket) ? "destructive" : "outline"}
-                                      disabled={!canCancelTicket(ticket) || ticketCancellation.isPending}
-                                      title={!canCancelTicket(ticket) ? `Cannot cancel: ${ticket.paymentStatus} payment, ${ticket.ticketStatus} ticket` : ''}
-                                    >
-                                      <X className="h-4 w-4 mr-1" />
-                                      {ticketCancellation.isPending ? 'Cancelling...' : 'Cancel'}
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle className="flex items-center gap-2">
-                                        <AlertTriangle className="h-5 w-5 text-destructive" />
-                                        Cancel Ticket Confirmation
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription className="space-y-2">
-                                        <p>Are you sure you want to cancel this ticket for <strong>"{ticket.event.title}"</strong>?</p>
-                                        <div className="bg-muted rounded-lg p-3 mt-3">
-                                          <p className="text-sm font-medium">Ticket Details:</p>
-                                          <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                                            <li>• Ticket ID: {ticket.ticketId}</li>
-                                            <li>• Quantity: {ticket.ticketCount} ticket{ticket.ticketCount > 1 ? 's' : ''}</li>
-                                            <li>• Total Amount: ₹{ticket.totalAmount}</li>
-                                            <li>• Event Date: {formatDate(ticket.event.date)}</li>
-                                          </ul>
-                                        </div>
-                                        <p className="text-sm text-destructive font-medium mt-3">
-                                          ⚠️ This action cannot be undone and may affect your refund eligibility.
-                                        </p>
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>
-                                        Keep Ticket
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => {
-                                          handleCancelTicket(ticket._id);
-                                        }}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        disabled={ticketCancellation.isPending}
-                                      >
-                                        {ticketCancellation.isPending ? (
-                                          <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Cancelling...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <X className="h-4 w-4 mr-2" />
-                                            Yes, Cancel Ticket
-                                          </>
-                                        )}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </div>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Ticket Details</DialogTitle>
+                                </DialogHeader>
+                                <TicketDetailsModal 
+                                  ticket={ticket} 
+                                  onCancelTicket={handleCancelTicket}
+                                />
+                              </DialogContent>
+                            </Dialog>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -660,20 +372,18 @@ export default function BookedEvents() {
                 </CardContent>
               </Card>
               
-              {/* Pagination */}
-              {renderPagination()}
+              {data.totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    total={data.totalPages}
+                    current={currentPage}
+                    setPage={setCurrentPage}
+                  />
+                </div>
+              )}
             </>
           )}
         </>
-      )}
-      
-      {/* Debug info - remove this in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-          Debug: Current Page: {currentPage}, Total Pages: {data?.totalPages || 0}, 
-          Total Items: {data?.totalItems || 0}, Items on Page: {data?.ticketAndEventDetails?.length || 0},
-          Client ID: {clientId}, Loading: {isLoading.toString()}
-        </div>
       )}
     </div>
   );
