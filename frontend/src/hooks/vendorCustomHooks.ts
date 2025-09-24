@@ -2,7 +2,7 @@ import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
 findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,approveBookingVendor,rejectBooking,updateBookingAsComplete,
-showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor} from "@/services/ApiServiceVendor";
+showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor,verifyTicket} from "@/services/ApiServiceVendor";
 import {useInfiniteQuery,useMutation , useQuery} from '@tanstack/react-query'
 import { email } from "zod";
 import { EventEntity } from "@/types/EventType";
@@ -242,5 +242,10 @@ export const useLoadChatsInfiniteVendor = (userId: string) => {
             return undefined
         },
         initialPageParam: 1
+    })
+}
+export const useVerifyTicket = () => {
+    return useMutation({
+        mutationFn: ({ ticketId, eventId }: { ticketId: string, eventId: string }) => verifyTicket(ticketId, eventId)
     })
 }

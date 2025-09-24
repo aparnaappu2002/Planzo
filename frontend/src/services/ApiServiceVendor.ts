@@ -360,3 +360,13 @@ export const loadChatsVendor = async (userId: string, pageNo: number) => {
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while findng the chats of user')
     }
 }
+
+export const verifyTicket = async (ticketId: string, eventId: string) => {
+    try {
+        const response = await axios.post('/verifyTicket', { ticketId, eventId })
+        return response.data
+    } catch (error) {
+        console.log('error while verifying ticket', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while verifying ticket')
+    }
+}

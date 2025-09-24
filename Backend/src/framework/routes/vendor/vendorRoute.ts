@@ -2,7 +2,7 @@ import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
     injectedVendorLoginLogoutController,
     injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
-    injectedEventController,injectedTicketAndUserDetailsOfEventController,injectedWorkSampleController,injectedServiceVendorControllerUseCase,injectedBookingVendorController
+    injectedEventController,injectedTicketVendorController,injectedWorkSampleController,injectedServiceVendorControllerUseCase,injectedBookingVendorController
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -52,7 +52,7 @@ export class VendorRoute{
             injectedWalletVendorController.handleShowWalletDetaills(req, res)
         })
         this.vendorRoute.get('/ticketDetailsWithUser', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
-            injectedTicketAndUserDetailsOfEventController.handleTicketAndUserDetails(req, res)
+            injectedTicketVendorController.handleTicketAndUserDetails(req, res)
         })
         this.vendorRoute.post('/logout', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedVendorLoginLogoutController.handleVendorLogout(req, res)
@@ -95,6 +95,9 @@ export class VendorRoute{
         })
         this.vendorRoute.get('/chats', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedFindChatsOfUserController.handleFindChatOfUser(req, res)
+        })
+        this.vendorRoute.post('/verifyTicket', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketVendorController.handleTicketConfirmation(req, res)
         })
     }
 }

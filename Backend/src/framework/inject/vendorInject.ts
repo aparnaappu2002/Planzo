@@ -28,7 +28,7 @@ import { FindWalletUseCase } from "../../useCases/wallet/findWalletUseCase";
 import { FindTransactionsUseCase } from "../../useCases/transaction/findTransactionUseCase";
 import { WalletRepository } from "../../adapters/repository/wallet/walletRepository";
 import { TransactionRepository } from "../../adapters/repository/transaction/transactionRepository";
-import { TicketAndUserDetailsController } from "../../adapters/controllers/vendor/ticket/ticketAndUserDetailsVendorController";
+import { TicketVendorController } from "../../adapters/controllers/vendor/ticket/ticketVendorController";
 import { TicketAndUserDetailsOfEventUseCase } from "../../useCases/vendor/ticket/ticketAndUserDetailsofEventUseCase";
 import { TicketRepository } from "../../adapters/repository/ticket/ticketRepository";
 import { VendorLogoutUseCase } from "../../useCases/vendor/authentication/vendorLogoutUseCase";
@@ -50,6 +50,7 @@ import { ApproveBookingUseCase } from "../../useCases/vendor/booking/approveBook
 import { RejectBookingInVendorUseCase } from "../../useCases/vendor/booking/rejectBookingVendorUseCase";
 import { UpdateBookingAsCompleteUseCase } from "../../useCases/vendor/booking/updateBookingAsCompletedUseCase";
 import { BookingsVendorController } from "../../adapters/controllers/vendor/booking/bookingVendorController";
+import { TicketVerificationUseCase } from "../../useCases/vendor/ticket/ticketVerificationUseCase";
 
 
 const EmailService  = new emailService()
@@ -101,7 +102,8 @@ export const injectedWalletVendorController = new WalletVendorController(findWal
 //ticket
 const ticketRepository=new TicketRepository()
 const ticketAndUserDetailsOfEventUseCase=new TicketAndUserDetailsOfEventUseCase(ticketRepository)
-export const injectedTicketAndUserDetailsOfEventController= new TicketAndUserDetailsController(ticketAndUserDetailsOfEventUseCase)
+const ticketVerificationUseCase=new TicketVerificationUseCase(ticketRepository,eventRepository)
+export const injectedTicketVendorController= new TicketVendorController(ticketAndUserDetailsOfEventUseCase,ticketVerificationUseCase)
 
 //workSample
 const workSampleRepository=new WorkSampleRepository()

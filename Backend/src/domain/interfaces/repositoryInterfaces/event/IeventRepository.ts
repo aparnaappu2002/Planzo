@@ -19,4 +19,5 @@ export interface IeventRepository{
     findEventsNearLocation(locationQuery: string, options?: SearchLocationOptions): Promise<SearchEventsResult>;
     updateVariantTicketsSold(eventId: string | ObjectId, variantType: string, ticketCount: number): Promise<EventEntity | null>;
     listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
+    findEventByIdForTicketVerification(eventId: string): Promise<EventEntity | null>
 }

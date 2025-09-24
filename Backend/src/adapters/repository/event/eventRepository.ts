@@ -165,5 +165,7 @@ async listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] 
         const totalPages = Math.ceil(await eventModal.countDocuments() / limit)
         return { events, totalPages }
     }
-
+async findEventByIdForTicketVerification(eventId: string): Promise<EventEntity | null> {
+        return eventModal.findById(eventId).select('hostedBy date')
+    }
 }
