@@ -5,7 +5,7 @@ import {
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
   fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService,fetchServiceDetailsWithVendor,createBooking,
-  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,addReview,showReviews
+  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,addReview,showReviews,findTicketsByStatus
 
 } from "../services/ApiServiceClient";
 import { ReviewEntity } from "@/types/ReviewEntity";
@@ -420,6 +420,19 @@ export const useShowReviews = ({
   return useQuery({
     queryKey: ["reviews", targetId, pageNo, rating],
     queryFn: () => showReviews(targetId, pageNo, rating),
+  });
+};
+
+export const useFindTicketsByStatus = (
+  ticketStatus: string,
+  paymentStatus: string,
+  pageNo: number,
+  sortBy: string
+) => {
+  return useQuery({
+    queryKey: ["ticketByStatus", ticketStatus, paymentStatus, pageNo, sortBy],
+    queryFn: () => findTicketsByStatus(ticketStatus, paymentStatus, pageNo, sortBy),
+    enabled: !!ticketStatus || !!paymentStatus || !!sortBy,
   });
 };
 

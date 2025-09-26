@@ -465,3 +465,13 @@ export const showReviews = async (targetId: string, pageNo: number, rating: numb
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching the reviews')
     }
 }
+
+export const findTicketsByStatus = async (ticketStatus: string, paymentStatus: string, pageNo: number, sortBy: string) => {
+    try {
+        const response = await axios.get(`/ticketByStatus/${ticketStatus}/${paymentStatus}/${pageNo}/${sortBy}`);
+        return response.data;
+    } catch (error) {
+        console.log('error while fetching tickets by status', error);
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching tickets by status');
+    }
+}

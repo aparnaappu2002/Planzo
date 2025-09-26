@@ -1,13 +1,20 @@
+
 import { useState, useEffect } from "react";
-import { Calendar, Ticket, Search, Filter, Eye, MapPin, Clock, Users } from "lucide-react";
+import { Calendar, Ticket, Filter, Eye, MapPin, Clock, Users, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TicketAndEventType } from "@/types/TicketAndEventType";
-import { useFindTicketAndEventsDetails } from "@/hooks/clientCustomHooks";
+import { useFindTicketAndEventsDetails, useFindTicketsByStatus } from "@/hooks/clientCustomHooks";
 import { RootState } from "@/redux/Store";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -17,74 +24,87 @@ import Pagination from "@/components/other components/Pagination";
 
 export default function BookedEvents() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [ticketStatusFilter, setTicketStatusFilter] = useState("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const clientId = useSelector((state: RootState) => state.clientSlice.client?._id);
   const queryClient = useQueryClient();
 
+  // Use filtered hook when filters are applied, otherwise use the original hook
+  const useFilteredData = ticketStatusFilter !== "all" || paymentStatusFilter !== "all";
+
   const { 
-    data, 
-    isLoading, 
-    error, 
-    refetch,
-    isFetching,
-    isError
-  } = useFindTicketAndEventsDetails(clientId, currentPage);
+    data: originalData, 
+    isLoading: originalLoading, 
+    error: originalError, 
+    refetch: originalRefetch,
+    isFetching: originalFetching,
+    isError: originalIsError
+  } = useFindTicketAndEventsDetails(clientId, currentPage, { enabled: !useFilteredData && !!clientId });
 
-  // Log hook state changes
+  const { 
+    data: filteredData, 
+    isLoading: filteredLoading, 
+    error: filteredError, 
+    refetch: filteredRefetch,
+    isFetching: filteredFetching,
+    isError: filteredIsError
+  } = useFindTicketsByStatus(
+    ticketStatusFilter === "all" ? undefined : ticketStatusFilter,
+    paymentStatusFilter === "all" ? undefined : paymentStatusFilter,
+    currentPage,
+    sortBy,
+    { enabled: useFilteredData && !!clientId }
+  );
+
+  // Adjust data access based on filtered or original data
+  const data = useFilteredData ? filteredData?.data : originalData;
+  const isLoading = useFilteredData ? filteredLoading : originalLoading;
+  const error = useFilteredData ? filteredError : originalError;
+  const refetch = useFilteredData ? filteredRefetch : originalRefetch;
+  const isFetching = useFilteredData ? filteredFetching : originalFetching;
+  const isError = useFilteredData ? filteredIsError : originalIsError;
+
+  // Debug data structure
   useEffect(() => {
-    console.log("Current Page:", currentPage, "Client ID:", clientId, "Loading:", isLoading, "Fetching:", isFetching, "Error:", isError);
-  }, [currentPage, clientId, isLoading, isFetching, isError, data]);
+    console.log('Original Data:', originalData);
+    console.log('Filtered Data:', filteredData);
+  }, [originalData, filteredData]);
 
-  // Reset to page 1 when clientId changes and clear search
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-    setSearchTerm("");
+  }, [ticketStatusFilter, paymentStatusFilter, sortBy]);
+
+  // Reset to page 1 when clientId changes
+  useEffect(() => {
+    setCurrentPage(1);
   }, [clientId]);
 
-  // Force refetch when page changes
+  // Force refetch when page or clientId changes
   useEffect(() => {
     if (clientId && currentPage > 0) {
       refetch();
     }
   }, [currentPage, clientId, refetch]);
 
+  // Show error toast
   useEffect(() => {
-    if (data) {
-      console.log('API Data:', data);
-      console.log('Tickets:', data.ticketAndEventDetails);
-    }
     if (error) {
-      console.log('API Error:', error);
+      console.error('API Error:', error);
+      toast.error('Failed to load events. Please try again.');
     }
-  }, [data, currentPage, error]);
-
-  // Sort tickets by event.startTime in descending order (most recent first)
-  const sortedTickets = data?.ticketAndEventDetails
-    ? [...data.ticketAndEventDetails].sort((a, b) => {
-        const dateA = a.event.startTime ? new Date(a.event.startTime).getTime() : 0;
-        const dateB = b.event.startTime ? new Date(b.event.startTime).getTime() : 0;
-        return dateB - dateA;
-      })
-    : [];
-
-  // Log sorted tickets for debugging
-  useEffect(() => {
-    if (sortedTickets.length > 0) {
-      console.log("Sorted Tickets:", sortedTickets.map(ticket => ({
-        ticketId: ticket.ticketId,
-        eventTitle: ticket.event.title,
-        startTime: ticket.event.startTime || 'N/A',
-        objectIdTimestamp: new Date(parseInt(ticket._id.substring(0, 8), 16) * 1000).toISOString()
-      })));
-    }
-  }, [sortedTickets]);
+  }, [error]);
 
   const handleCancelTicket = (ticketId: string) => {
-    queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails'] });
+    queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails', clientId] });
+    queryClient.invalidateQueries({ queryKey: ['ticketsByStatus', ticketStatusFilter, paymentStatusFilter, sortBy] });
     refetch();
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateInput?: string | string[]) => {
+    if (!dateInput) return 'N/A';
+    const dateString = Array.isArray(dateInput) ? dateInput[0] : dateInput;
     try {
       return new Date(dateString).toLocaleDateString('en-US', {
         month: 'short',
@@ -93,11 +113,33 @@ export default function BookedEvents() {
       });
     } catch (error) {
       console.error('Date format error:', error);
-      return 'Invalid date';
+      return 'N/A';
     }
   };
 
-  const getStatusBadge = (status: string, type: 'payment' | 'ticket') => {
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return 'N/A';
+    try {
+      // Check if timeString is a full ISO date and extract time
+      const time = timeString.includes('T') 
+        ? new Date(timeString).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+          })
+        : new Date(`1970-01-01T${timeString}`).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+          });
+      return time;
+    } catch (error) {
+      console.error('Time format error:', error);
+      return 'N/A';
+    }
+  };
+
+  const getStatusBadge = (status: string = 'unknown', type: 'payment' | 'ticket') => {
     const baseClasses = "text-xs px-2 py-1 rounded-full border";
     
     if (type === 'payment') {
@@ -132,13 +174,21 @@ export default function BookedEvents() {
     }
   };
 
-  const filteredTickets = sortedTickets.filter(ticket => 
-    !searchTerm || 
-    ticket.event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const clearFilters = () => {
+    setTicketStatusFilter("all");
+    setPaymentStatusFilter("all");
+    setSortBy("newest");
+    setCurrentPage(1);
+  };
 
-  if (error) {
+  const getFilterLabel = () => {
+    const filters = [];
+    if (ticketStatusFilter !== "all") filters.push(`Ticket: ${ticketStatusFilter}`);
+    if (paymentStatusFilter !== "all") filters.push(`Payment: ${paymentStatusFilter}`);
+    return filters.length > 0 ? filters.join(", ") : "All Tickets";
+  };
+
+  if (isError) {
     return (
       <div className="p-6">
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl p-8 border border-primary/20 mb-6">
@@ -173,10 +223,10 @@ export default function BookedEvents() {
           {data && (
             <div className="flex items-center gap-4">
               <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                {data.totalItems} tickets
+                {(useFilteredData ? data.tickets?.length : data.ticketAndEventDetails?.length) || 0} tickets
               </Badge>
               <Badge variant="outline" className="border-primary/30 text-primary">
-                Page {currentPage} of {data.totalPages}
+                Page {currentPage} of {data.totalPages || 1}
               </Badge>
             </div>
           )}
@@ -185,20 +235,99 @@ export default function BookedEvents() {
 
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search events..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="justify-between min-w-[150px]">
+                <Filter className="h-4 w-4 mr-2" />
+                Ticket Status
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Ticket Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setTicketStatusFilter("all")}>
+                All Tickets
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTicketStatusFilter("unused")}>
+                Unused
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTicketStatusFilter("used")}>
+                Used
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTicketStatusFilter("refunded")}>
+                Refunded
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="justify-between min-w-[150px]">
+                Payment Status
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Payment Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setPaymentStatusFilter("all")}>
+                All Payments
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPaymentStatusFilter("successful")}>
+                Successful
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPaymentStatusFilter("pending")}>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPaymentStatusFilter("failed")}>
+                Failed
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPaymentStatusFilter("refunded")}>
+                Refunded
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="justify-between min-w-[120px]">
+                Sort By
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy("newest")}>
+                Newest First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("oldest")}>
+                Oldest First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("amount-high-low")}>
+                Amount: High to Low
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("amount-low-high")}>
+                Amount: Low to High
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {(ticketStatusFilter !== "all" || paymentStatusFilter !== "all" || sortBy !== "newest") && (
+            <Button variant="ghost" onClick={clearFilters}>
+              Clear Filters
+            </Button>
+          )}
         </div>
+
+        {(ticketStatusFilter !== "all" || paymentStatusFilter !== "all") && (
+          <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              Showing: <span className="font-medium text-primary">{getFilterLabel()}</span>
+            </p>
+          </div>
+        )}
       </div>
 
       {(isLoading || isFetching) && (
@@ -210,172 +339,147 @@ export default function BookedEvents() {
               <div className="h-4 bg-muted rounded w-1/2"></div>
             </div>
             <div className="text-center mt-4 text-sm text-muted-foreground">
-              {isLoading ? 'Loading...' : 'Fetching page data...'}
+              {isLoading ? 'Loading...' : 'Fetching filtered data...'}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {data && !isLoading && (
+      {data && !isLoading && !isFetching && (
         <>
-          {data.ticketAndEventDetails.length === 0 ? (
+          {(useFilteredData ? (data.tickets?.length === 0) : (data.ticketAndEventDetails?.length === 0)) ? (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-12 text-center">
                 <Calendar className="h-16 w-16 text-primary/60 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">No Events Found</h3>
                 <p className="text-muted-foreground mb-6">
-                  {data.totalItems === 0 ? (
-                    "You haven't booked any events yet. Start exploring events to book your first ticket!"
-                  ) : currentPage > 1 ? (
-                    <>
-                      No events found on this page. This might be a data loading issue.
-                      <br />
-                      <span className="text-sm text-destructive">
-                        API returned {data.totalItems} total items but 0 items for this page.
-                      </span>
-                    </>
+                  {useFilteredData ? (
+                    "No tickets match your current filters. Try adjusting your filter criteria."
                   ) : (
-                    "No events found. This might be a data loading issue."
+                    "You haven't booked any events yet. Start exploring events to book your first ticket!"
                   )}
                 </p>
                 <div className="flex gap-3 justify-center">
-                  {data.totalItems === 0 ? (
+                  {useFilteredData ? (
+                    <Button onClick={clearFilters} variant="outline">
+                      Clear Filters
+                    </Button>
+                  ) : (
                     <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                       Browse Events
                     </Button>
-                  ) : (
-                    <>
-                      {currentPage > 1 && (
-                        <>
-                          <Button onClick={() => setCurrentPage(1)} variant="outline">
-                            Go to First Page
-                          </Button>
-                          <Button onClick={() => setCurrentPage(currentPage - 1)} variant="outline">
-                            Previous Page
-                          </Button>
-                        </>
-                      )}
-                      <Button onClick={() => refetch()} variant="destructive">
-                        Retry Loading
-                      </Button>
-                    </>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ) : filteredTickets.length === 0 ? (
-            <Card className="border-primary/20 bg-primary/5">
-              <CardContent className="p-12 text-center">
-                <Search className="h-16 w-16 text-primary/60 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No Events Match Your Search</h3>
-                <p className="text-muted-foreground mb-6">
-                  Try adjusting your search terms or clearing the search to see all events.
-                </p>
-                <Button onClick={() => setSearchTerm("")} variant="outline">
-                  Clear Search
-                </Button>
               </CardContent>
             </Card>
           ) : (
             <>
               <Card>
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Tickets</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Payment</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTickets.map((ticket) => (
-                        <TableRow key={ticket._id} className="hover:bg-muted/50">
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {ticket.event.posterImage && (
-                                <div className="w-12 h-12 rounded-lg overflow-hidden border border-border flex-shrink-0">
-                                  <img
-                                    src={ticket.event.posterImage[0]}
-                                    alt={ticket.event.title}
-                                    className="w-full h-full object-cover"
-                                  />
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-4 font-medium">Event</th>
+                          <th className="text-left p-4 font-medium">Date</th>
+                          <th className="text-left p-4 font-medium">Tickets</th>
+                          <th className="text-left p-4 font-medium">Amount</th>
+                          <th className="text-left p-4 font-medium">Payment</th>
+                          <th className="text-left p-4 font-medium">Status</th>
+                          <th className="text-left p-4 font-medium w-[100px]">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(useFilteredData ? data.tickets || [] : data.ticketAndEventDetails || []).map((ticket: TicketAndEventType) => {
+                          // Use eventId for filtered data, event for original data
+                          const event = useFilteredData ? ticket.eventId : ticket.event;
+                          return (
+                            <tr key={ticket._id} className="border-b hover:bg-muted/50">
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  {event?.posterImage?.[0] && (
+                                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-border flex-shrink-0">
+                                      <img
+                                        src={event.posterImage[0]}
+                                        alt={event.title || 'Event'}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="font-medium text-foreground">{event?.title || 'N/A'}</p>
+                                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {event?.address?.split(',')[0] || 'N/A'}
+                                    </p>
+                                  </div>
                                 </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-foreground">{ticket.event.title}</p>
-                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {ticket.event.address.split(',')[0]}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <p className="font-medium">{formatDate(ticket.event.date)}</p>
-                              <p className="text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {ticket.event.startTime}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm">
-                              <Users className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{ticket.ticketCount}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <p className="font-bold text-primary">₹{ticket.totalAmount}</p>
-                              <p className="text-muted-foreground">₹{ticket.event.pricePerTicket} each</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className={getStatusBadge(ticket.paymentStatus, 'payment')}>
-                              {ticket.paymentStatus}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className={getStatusBadge(ticket.ticketStatus, 'ticket')}>
-                              {ticket.ticketStatus}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button size="sm" variant="outline">
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Details
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>Ticket Details</DialogTitle>
-                                </DialogHeader>
-                                <TicketDetailsModal 
-                                  ticket={ticket} 
-                                  onCancelTicket={handleCancelTicket}
-                                />
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                              </td>
+                              <td className="p-4">
+                                <div className="text-sm">
+                                  <p className="font-medium">{formatDate(event?.date)}</p>
+                                  <p className="text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatTime(event?.startTime)}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-1 text-sm">
+                                  <Users className="h-4 w-4 text-primary" />
+                                  <span className="font-medium">{ticket.ticketCount || 0}</span>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="text-sm">
+                                  <p className="font-bold text-primary">₹{ticket.totalAmount || 0}</p>
+                                  <p className="text-muted-foreground">
+                                    ₹{event?.pricePerTicket || ticket.ticketVariants?.[0]?.price || 0} each
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <span className={getStatusBadge(ticket.paymentStatus)}>
+                                  {ticket.paymentStatus || 'Unknown'}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <span className={getStatusBadge(ticket.ticketStatus, 'ticket')}>
+                                  {ticket.ticketStatus || 'Unknown'}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Details
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                                    <DialogHeader>
+                                      <DialogTitle>Ticket Details</DialogTitle>
+                                    </DialogHeader>
+                                    <TicketDetailsModal 
+                                      ticket={{ ...ticket, event: event }} // Pass event for consistency
+                                      onCancelTicket={handleCancelTicket}
+                                    />
+                                  </DialogContent>
+                                </Dialog>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </CardContent>
               </Card>
               
               {data.totalPages > 1 && (
                 <div className="mt-8">
                   <Pagination
-                    total={data.totalPages}
+                    total={data.totalPages || 1}
                     current={currentPage}
                     setPage={setCurrentPage}
                   />
