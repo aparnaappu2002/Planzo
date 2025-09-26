@@ -67,6 +67,7 @@ import { CancelBookingUseCase } from "../../useCases/client/booking/cancelBookin
 import { ReviewController } from "../../adapters/controllers/client/review/reviewController";
 import { AddReviewUseCase } from "../../useCases/client/review/addReviewUseCase";
 import { ShowReviewsUseCase } from "../../useCases/client/review/showReviewsUseCase";
+import { FindTicketsByStatusUseCase } from "../../useCases/client/ticket/findTicketsBasedOnStatusUseCase";
 
 const otpService=new OtpService()
 const EmailService=new emailService()
@@ -120,7 +121,8 @@ const confirmTicketAndPaymentUseCase=new ConfirmTicketAndPaymentUseCase(paymentS
 const showTicketAndEventUseCase=new ShowTicketAndEventClientUseCase(ticketRepository)
 const ticketCancelUseCase=new TicketCancelUseCase(ticketRepository,walletRepository,transactionRepository)
 const checkTicketLimitUseCase=new CheckTicketLimitUseCase(ticketRepository)
-export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase,showTicketAndEventUseCase,ticketCancelUseCase,checkTicketLimitUseCase)
+const findTicketByStatusUseCase=new FindTicketsByStatusUseCase(ticketRepository)
+export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase,showTicketAndEventUseCase,ticketCancelUseCase,checkTicketLimitUseCase,findTicketByStatusUseCase)
 
 //wallet
 const findWalletClientUseCase = new FindWalletUseCase(walletRepository)

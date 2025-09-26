@@ -123,5 +123,8 @@ export class clientRoute{
         this.clientRoute.post('/addReview', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedReviewController.handleAddReview(req, res)
         })
+        this.clientRoute.get('/ticketByStatus/:ticketStatus/:paymentStatus/:pageNo/:sortBy', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketClientController.handleFindTicketsByStatus(req, res)
+        })
     }
 }

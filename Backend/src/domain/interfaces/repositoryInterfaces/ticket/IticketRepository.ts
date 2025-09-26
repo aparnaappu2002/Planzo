@@ -15,4 +15,10 @@ export interface IticketRepositoryInterface {
     findTicketUsingTicketId(ticketId: string): Promise<TicketEntity | null>
     changeUsedStatus(ticketId: string): Promise<TicketEntity | null>
     updateCheckInHistory(ticketId:string,date:Date):Promise<boolean>
+    getTicketsByStatus(
+        ticketStatus: 'used' | 'refunded' | 'unused',
+        paymentStatus: 'pending' | 'successful' | 'failed' | 'refunded',
+        pageNo: number,
+        sortBy: string
+    ): Promise<{ tickets: TicketAndUserDTO[] | []; totalPages: number; }>
 }

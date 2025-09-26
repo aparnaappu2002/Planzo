@@ -258,6 +258,109 @@ async updateCheckInHistory(ticketId: string, date: Date): Promise<boolean> {
     return result.modifiedCount > 0;
 }
 
+async getTicketsByStatus(
+    ticketStatus: 'used' | 'refunded' | 'unused',
+    paymentStatus: 'pending' | 'successful' | 'failed' | 'refunded',
+    pageNo: number,
+    sortBy: string
+): Promise<{ tickets: TicketAndUserDTO[] | []; totalPages: number; }> {
+    const sortOptions: Record<string, any> = {
+        "newest": { createdAt: -1 },
+        "oldest": { createdAt: 1 },
+        "amount-low-high": { totalAmount: 1 },
+        "amount-high-low": { totalAmount: -1 },
+        "ticket-count": { ticketCount: -1 }
+    }
+    const sort = sortOptions[sortBy] || { createdAt: -1 }
+    const limit = 5
+    const page = Math.max(pageNo, 1)
+    const skip = (page - 1) * limit
+    
+    const matchStage = {
+        ticketStatus,
+        paymentStatus
+    }
+    
+    const tickets = await ticketModel.aggregate([
+        {
+            $match: matchStage
+        },
+        {
+            $lookup: {
+                from: 'events',
+                localField: 'eventId',
+                foreignField: '_id',
+                as: 'event'
+            }
+        },
+        { $unwind: '$event' },
+        {
+            $lookup: {
+                from: 'clients',
+                localField: 'clientId',
+                foreignField: '_id',
+                as: 'client'
+            }
+        },
+        { $unwind: '$client' },
+        {
+            $addFields: {
+                eventId: '$event',
+                clientId: '$client'
+            }
+        },
+        // Add sorting stage BEFORE pagination
+        { $sort: sort },
+        {
+            $project: {
+                _id: 1,
+                ticketId: 1,
+                totalAmount: 1,
+                ticketCount: 1,
+                phone: 1,
+                email: 1,
+                paymentStatus: 1,
+                qrCodeLink: 1,
+                ticketVariant: 1,
+                ticketStatus: 1,
+                paymentTransactionId: 1,
+                createdAt: 1,
+                eventId: {
+                    _id: '$event._id',
+                    title: '$event.title',
+                    description: '$event.description',
+                    date: '$event.date',
+                    startTime: '$event.startTime',
+                    endTime: '$event.endTime',
+                    status: '$event.status',
+                    address: '$event.address',
+                    pricePerTicket: '$event.pricePerTicket',
+                    posterImage: '$event.posterImage'
+                },
+                clientId: {
+                    _id: '$client._id',
+                    name: '$client.name',
+                    profileImage: '$client.profileImage'
+                }
+            }
+        },
+        { $skip: skip },
+        { $limit: limit }
+    ]);
+    
+    // Count total documents with the same filter
+    const countResult = await ticketModel.aggregate([
+        {
+            $match: matchStage
+        },
+        { $count: 'total' }
+    ]);
+    
+    const totalCount = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return { tickets, totalPages }
+}
 
 
 }

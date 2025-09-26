@@ -5,21 +5,24 @@ import { IconfirmTicketAndPaymentUseCase } from "../../../../domain/interfaces/u
 import { IshowTicketAndEventClientUseCaseInterface } from "../../../../domain/interfaces/useCaseInterfaces/client/ticket/IshowEventsBookingUseCase";
 import { ITicketCancelUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/ticket/IticketCancelUseCase";
 import { IcheckTicketLimitUseCaseInterface } from "../../../../domain/interfaces/useCaseInterfaces/client/ticket/IcheckTicketLimitUseCaseInterface";
+import { IfindTicketsByStatus } from "../../../../domain/interfaces/useCaseInterfaces/client/ticket/IfindTicketBasedOnStatusUseCase";
 export class TicketClientController {
     private createTicketUseCase: IcreateTicketUseCase
     private confirmTicketAndPaymentUseCase: IconfirmTicketAndPaymentUseCase
     private showTickeAndEventUseCase:IshowTicketAndEventClientUseCaseInterface
     private ticketCancelUseCase:ITicketCancelUseCase
+    private findTicketsByStatusUseCase:IfindTicketsByStatus
     private checkTicketLimitUseCase : IcheckTicketLimitUseCaseInterface
     constructor(createTicketUseCase: IcreateTicketUseCase,confirmTicketAndPaymentUseCase: IconfirmTicketAndPaymentUseCase,
         showTicketAndEventsUseCase:IshowTicketAndEventClientUseCaseInterface,ticketCancelUseCase:ITicketCancelUseCase,
-        checkTicketLimitUseCase:IcheckTicketLimitUseCaseInterface
+        checkTicketLimitUseCase:IcheckTicketLimitUseCaseInterface,findTicketsByStatusUseCase:IfindTicketsByStatus
     ) {
         this.createTicketUseCase = createTicketUseCase
         this.confirmTicketAndPaymentUseCase=confirmTicketAndPaymentUseCase
         this.showTickeAndEventUseCase=showTicketAndEventsUseCase
         this.ticketCancelUseCase=ticketCancelUseCase
         this.checkTicketLimitUseCase=checkTicketLimitUseCase
+        this.findTicketsByStatusUseCase=findTicketsByStatusUseCase
     }
 async handleCreateUseCase(req: Request, res: Response): Promise<void> {
     try {
@@ -277,4 +280,26 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
             })
         }
     }
+    async handleFindTicketsByStatus(req: Request, res: Response): Promise<void> {
+    try {
+        const { ticketStatus, paymentStatus, pageNo, sortBy } = req.params;
+        
+        const result = await this.findTicketsByStatusUseCase.findTicketsByStatus(
+            ticketStatus as 'used' | 'refunded' | 'unused',
+            paymentStatus as 'pending' | 'successful' | 'failed' | 'refunded',
+            Number(pageNo),
+            sortBy
+        );
+        
+        res.status(HttpStatus.OK).json({ message: 'Tickets retrieved successfully', data: result });
+        
+    } catch (error) {
+        console.log('Error while finding tickets by status', error);
+        res.status(HttpStatus.BAD_REQUEST).json({
+            message: 'Error while finding tickets by status',
+            error: error instanceof Error ? error.message : 'Error while finding tickets by status'
+        });
+    }
+}
+
 }
