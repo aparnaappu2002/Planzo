@@ -28,6 +28,7 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
     try {
         const { ticket, totalCount, totalAmount, paymentIntentId, vendorId } = req.body;
 
+        // ... existing validation code remains the same ...
         if (!ticket) {
             res.status(HttpStatus.BAD_REQUEST).json({
                 message: "Ticket data is required"
@@ -81,47 +82,75 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        // Check ticket limits for each variant
+        // APPROACH 1: Quick fix - Add retry mechanism with exponential backoff
         const selectedVariants = Object.entries(ticket.ticketVariants)
             .filter(([variant, quantity]) => typeof quantity === 'number' && quantity > 0);
 
-        const limitCheckPromises = selectedVariants.map(([variant, quantity]) => 
-            this.checkTicketLimitUseCase.checkTicketLimit(
-                ticket.clientId,
-                ticket.eventId,
-                variant as 'standard' | 'premium' | 'vip',
-                quantity as number
-            )
-        );
+        let retryCount = 0;
+        const maxRetries = 3;
+        let ticketCreationResult;
 
-        const limitCheckResults = await Promise.all(limitCheckPromises);
-        
-        // Check if any variant exceeds the limit
-        const failedChecks = limitCheckResults
-            .map((result, index) => ({ result, variant: selectedVariants[index][0], requested: selectedVariants[index][1] }))
-            .filter(({ result }) => !result.canBook);
-        
-        if (failedChecks.length > 0) {
-            console.log("Ticket limit exceeded")
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Ticket booking limit exceeded",
-                details: failedChecks.map(({ result, variant, requested }) => ({
-                    variant,
-                    maxPerUser: result.maxPerUser,
-                    remainingLimit: result.remainingLimit,
-                    requested
-                }))
-            });
-            return;
+        while (retryCount < maxRetries) {
+            try {
+                // Check limits right before creation
+                const limitCheckPromises = selectedVariants.map(([variant, quantity]) => 
+                    this.checkTicketLimitUseCase.checkTicketLimit(
+                        ticket.clientId,
+                        ticket.eventId,
+                        variant as 'standard' | 'premium' | 'vip',
+                        quantity as number
+                    )
+                );
+
+                const limitCheckResults = await Promise.all(limitCheckPromises);
+                
+                const failedChecks = limitCheckResults
+                    .map((result, index) => ({ result, variant: selectedVariants[index][0], requested: selectedVariants[index][1] }))
+                    .filter(({ result }) => !result.canBook);
+                
+                if (failedChecks.length > 0) {
+                    console.log("Ticket limit exceeded")
+                    res.status(HttpStatus.BAD_REQUEST).json({
+                        message: "Ticket booking limit exceeded",
+                        details: failedChecks.map(({ result, variant, requested }) => ({
+                            variant,
+                            maxPerUser: result.maxPerUser,
+                            remainingLimit: result.remainingLimit,
+                            requested
+                        }))
+                    });
+                    return;
+                }
+
+                // Immediately create ticket after limit check
+                ticketCreationResult = await this.createTicketUseCase.createTicket(
+                    ticket,
+                    totalCount,
+                    totalAmount,
+                    paymentIntentId,
+                    vendorId
+                );
+
+                // If we reach here, ticket was created successfully
+                break;
+
+            } catch (error) {
+                retryCount++;
+                if (retryCount >= maxRetries) {
+                    throw error;
+                }
+                
+                // Exponential backoff: wait 100ms, then 200ms, then 400ms
+                await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retryCount - 1)));
+                console.log(`Retrying ticket creation, attempt ${retryCount + 1}`);
+            }
         }
 
-        const { stripeClientId, createdTicket } = await this.createTicketUseCase.createTicket(
-            ticket,
-            totalCount,
-            totalAmount,
-            paymentIntentId,
-            vendorId
-        );
+        if (!ticketCreationResult) {
+            throw new Error('Failed to create ticket after multiple attempts');
+        }
+
+        const { stripeClientId, createdTicket } = ticketCreationResult;
 
         // Calculate summary from the single consolidated ticket
         const variantsSummary = createdTicket.ticketVariants.map(variant => ({
@@ -161,6 +190,7 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
         });
     }
 }
+
 
     async handleConfirmTicketAndPayment(req: Request, res: Response): Promise<void> {
     try {
