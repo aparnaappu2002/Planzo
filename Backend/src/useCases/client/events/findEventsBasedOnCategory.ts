@@ -9,7 +9,6 @@ export class FindEventsBasedOnCategoryUseCase implements IfindEventsBasedOnCateg
     }
     async findEventsbasedOnCategory(category: string, pageNo: number, sortBy: string): Promise<{ events: EventEntity[] | [], totalPages: number }> {
         const { events, totalPages } = await this.eventDatabase.findEventsBaseOnCategory(category, pageNo, sortBy)
-        console.log("Events",events)
         return { events, totalPages }
     }
 }
