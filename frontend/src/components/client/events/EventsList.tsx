@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useFindEvents, useFindEventsBasedOnCategory } from '@/hooks/clientCustomHooks';
+import { useFindEvents, useFindEventsBasedOnCategory, useFindCategoryClient } from '@/hooks/clientCustomHooks';
 import { EventCard } from './EventCard';
 import { EventsHero } from './EventsHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, ChevronLeft, ChevronRight, X, Info, MapPin, Search, Filter, Calendar } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import Pagination from '@/components/other components/Pagination';
 
 interface SearchResults {
   events: any[];
@@ -19,57 +20,30 @@ interface SearchResults {
   };
 }
 
-// Hardcoded categories
-const HARDCODED_CATEGORIES = [
-  'All Categories',
-  'Music',
-  'Entertainment', 
-  'Workshop',
-  'Seminar',
-  'Conference',
-  
-];
-
-// Helper function to check if an event is expired - FIXED VERSION
 const isEventExpired = (event: any): boolean => {
-  // Handle different date formats
   let dateToCheck = event.date;
-  
-  // If date is an array, use the first element
   if (Array.isArray(event.date) && event.date.length > 0) {
     dateToCheck = event.date[0];
   }
-
   if (!dateToCheck) {
-    
-    return false; // If no date, don't filter out
+    return false;
   }
-  
   const eventDate = new Date(dateToCheck);
-  
-  // Check if date parsing was successful
   if (isNaN(eventDate.getTime())) {
-    
-    return false; // If date is invalid, don't filter out
+    return false;
   }
-  
   const today = new Date();
-  
-  // FIXED: Simple and reliable date comparison using date strings
-  const eventDateString = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
-  const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
-  
+  const eventDateString = eventDate.toISOString().split('T')[0];
+  const todayDateString = today.toISOString().split('T')[0];
   const isExpired = eventDateString < todayDateString;
-  
   console.log('Date comparison for event:', {
     title: event.title,
-    category: event.category, // Add category to debug logs
+    category: event.category,
     eventDateRaw: dateToCheck,
     eventDateString,
     todayDateString,
-    isExpired
+    isExpired,
   });
-  
   return isExpired;
 };
 
@@ -95,78 +69,98 @@ export const EventsList = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedSort, setSelectedSort] = useState('newest');
-
-  // Add state for active category search
   const [activeCategorySearch, setActiveCategorySearch] = useState<{
     category: string;
     sortBy: string;
   } | null>(null);
-
-  // Add state to track if category search returned only expired events
   const [categoryHasOnlyExpiredEvents, setCategoryHasOnlyExpiredEvents] = useState(false);
+  const [enableDebugLogs] = useState(true);
 
-  // DEBUG: Add temporary state to enable detailed logging
-  const [enableDebugLogs] = useState(true); // Set to false to disable
+  // Fetch categories using the useFindCategoryClient hook
+  const { 
+    data: categoriesData, 
+    isLoading: categoriesLoading, 
+    error: categoriesError 
+  } = useFindCategoryClient();
+
+  // Process categories data
+  const categories = useMemo(() => {
+    if (categoriesError || !categoriesData) {
+      console.log('No categories data or error occurred:', categoriesError?.message || 'No data');
+      return ['All Categories'];
+    }
+    const rawCategories = categoriesData.categories || categoriesData;
+    const fetchedCategories = Array.isArray(rawCategories)
+      ? rawCategories
+          .map(category => {
+            if (typeof category === 'string') {
+              return category;
+            } else if (category && typeof category === 'object' && category.title) {
+              return category.title;
+            }
+            return null;
+          })
+          .filter((title): title is string => typeof title === 'string' && title.trim() !== '')
+      : [];
+    const uniqueCategories = ['All Categories', ...new Set(fetchedCategories)];
+    console.log('Raw categories data:', rawCategories);
+    console.log('Processed categories:', uniqueCategories);
+    return uniqueCategories;
+  }, [categoriesData, categoriesError]);
+
+  // Debug: Log categories passed to EventsHero
+  useEffect(() => {
+    console.log('Categories passed to EventsHero:', categories);
+  }, [categories]);
 
   // Determine data source and fetch strategy
   const isShowingSearchResults = searchResults !== null;
   const isShowingCategoryResults = searchResults?.searchType === 'category';
   const shouldFetchRegularEvents = !isShowingSearchResults && !isSearching;
-  
-  // Use activeCategorySearch for determining if we should fetch category events
   const shouldFetchCategoryEvents = activeCategorySearch !== null && activeCategorySearch.category !== 'All Categories';
 
-  // Regular events fetch (for default view)
+  // Regular events fetch
   const { 
     data: regularEventsData, 
     isLoading: regularEventsLoading, 
     error: regularFetchError 
   } = useFindEvents(currentPage, shouldFetchRegularEvents);
 
-  // Category-based events fetch - Use activeCategorySearch
+  // Category-based events fetch
   const categoryToFetch = shouldFetchCategoryEvents ? activeCategorySearch.category : '';
   const sortToUse = shouldFetchCategoryEvents ? activeCategorySearch.sortBy : selectedSort;
-  
-  
-  
   const { 
     data: categoryEventsData, 
     isLoading: categoryEventsLoading, 
     error: categoryFetchError,
     refetch: refetchCategoryEvents
-  } = useFindEventsBasedOnCategory(
-    categoryToFetch,
-    currentPage,
-    sortToUse
-  );
+  } = useFindEventsBasedOnCategory(categoryToFetch, currentPage, sortToUse);
 
   // Log hook results and compare with regular events
   useEffect(() => {
     if (shouldFetchCategoryEvents) {
-     
+      console.log('Fetching category events:', { categoryToFetch, sortToUse });
     }
-    
-    // Debug: Log regular events to compare categories
     if (regularEventsData?.events && !isShowingSearchResults) {
       const entertainmentEvents = regularEventsData.events.filter(event => 
         event.category && event.category.toLowerCase().includes('entertainment')
       );
-      
+      console.log('Entertainment events in regular data:', entertainmentEvents.length);
     }
   }, [categoryEventsData, categoryEventsLoading, categoryFetchError, categoryToFetch, sortToUse, shouldFetchCategoryEvents, regularEventsData, isShowingSearchResults]);
 
-  // DEBUG: Log all regular events with their categories when component loads
+  // Debug logging for regular events
   useEffect(() => {
     if (enableDebugLogs && regularEventsData?.events && !isShowingSearchResults) {
       console.log('=== DEBUG: All regular events with categories ===');
       regularEventsData.events.forEach((event, index) => {
-        
+        console.log(`Event ${index + 1}:`, { title: event.title, category: event.category, date: event.date });
       });
       console.log('=== END DEBUG ===');
     }
   }, [regularEventsData, isShowingSearchResults, enableDebugLogs]);
 
-  // Debug logging
+  // Debug logging for component state
   useEffect(() => {
     console.log('EventsList state:', {
       isShowingSearchResults,
@@ -178,54 +172,44 @@ export const EventsList = () => {
       searchResults: searchResults?.searchType,
       categoryEventsData: categoryEventsData?.events?.length,
       categoryEventsLoading,
-      categoryHasOnlyExpiredEvents
+      categoryHasOnlyExpiredEvents,
+      categories: categories.length,
+      categoriesList: categories,
+      categoriesLoading,
     });
-  }, [isShowingSearchResults, isShowingCategoryResults, shouldFetchCategoryEvents, categoryToFetch, sortToUse, activeCategorySearch, searchResults, categoryEventsData, categoryEventsLoading, categoryHasOnlyExpiredEvents]);
+  }, [isShowingSearchResults, isShowingCategoryResults, shouldFetchCategoryEvents, categoryToFetch, sortToUse, activeCategorySearch, searchResults, categoryEventsData, categoryEventsLoading, categoryHasOnlyExpiredEvents, categories, categoriesLoading]);
 
   // Normalize and filter events data
   const eventsToShow = useMemo(() => {
     let rawEvents: any[] = [];
-
-    
-
     if (isShowingSearchResults) {
       if (isShowingCategoryResults && categoryEventsData?.events) {
         console.log('Using category events data:', categoryEventsData.events.length);
-        // For category searches, use the fresh data from the hook
         rawEvents = categoryEventsData.events;
       } else if (searchResults?.events) {
         console.log('Using search results events:', searchResults.events.length);
-        // For other search types, use search results
         rawEvents = searchResults.events;
       }
     } else {
       console.log('Using regular events data:', regularEventsData?.events?.length || 0);
-      // Use regular events for default view
       rawEvents = regularEventsData?.events || [];
     }
-    
     console.log('Raw events before filtering:', rawEvents.length);
-    
-    // Filter out expired events
     const filteredEvents = filterActiveEvents(rawEvents);
     console.log('Events after filtering:', filteredEvents.length);
-    
-    // Check if this is a category search that returned only expired events
     if (isShowingCategoryResults && rawEvents.length > 0 && filteredEvents.length === 0) {
       console.log('Category search returned only expired events');
       setCategoryHasOnlyExpiredEvents(true);
     } else {
       setCategoryHasOnlyExpiredEvents(false);
     }
-    
     return filteredEvents;
   }, [isShowingSearchResults, isShowingCategoryResults, searchResults?.events, regularEventsData?.events, categoryEventsData?.events]);
 
-  // Handle totalPages - Use category data for category searches
+  // Handle totalPages
   const totalPages = useMemo(() => {
     if (isShowingSearchResults) {
       if (isShowingCategoryResults && categoryEventsData?.totalPages !== undefined) {
-        // For category searches, if all events are expired, show 1 page
         if (categoryHasOnlyExpiredEvents) {
           return 1;
         }
@@ -249,71 +233,32 @@ export const EventsList = () => {
     eventsToShow.length > 0 && 
     eventsToShow.some(event => !event.date && !event.address && !event.category && event._id && event.title);
 
-  // Check search types
   const isLocationSearch = isShowingSearchResults && searchResults?.searchType === 'location';
   const isCategorySearch = isShowingSearchResults && searchResults?.searchType === 'category';
 
-  // Handle page changes - Refetch category data when page changes
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      const newPage = currentPage - 1;
-      setCurrentPage(newPage);
-      
-      // If showing category results, refetch with new page
-      if (isCategorySearch) {
-        setTimeout(() => {
-          refetchCategoryEvents();
-        }, 100);
-      }
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      const newPage = currentPage + 1;
-      setCurrentPage(newPage);
-      
-      // If showing category results, refetch with new page
-      if (isCategorySearch) {
-        setTimeout(() => {
-          refetchCategoryEvents();
-        }, 100);
-      }
-    }
-  };
-
-  const handlePageClick = (page: number) => {
+  // Handle page changes for category searches
+  const handleSetPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      
-      // If showing category results, refetch with new page
       if (isCategorySearch) {
         setTimeout(() => {
           refetchCategoryEvents();
         }, 100);
       }
     }
-  };
+  }, [totalPages, isCategorySearch, refetchCategoryEvents]);
 
-  // Search handlers - Proper state management
+  // Search handlers
   const handleSearchResults = useCallback((results: SearchResults) => {
     console.log('Received search results:', results);
-    
-    // Handle different search types
     if (results.searchType === 'query' && results.query && results.events) {
-      // Filter out events that don't match the search query in title for query-based search
       const query = results.query.toLowerCase();
       const filteredEvents = results.events.filter(event => 
         event.title && event.title.toLowerCase().includes(query)
       );
-      
-      // Also filter out expired events
       const activeEvents = filterActiveEvents(filteredEvents);
-      
-      // Clear any active category search
       setActiveCategorySearch(null);
       setCategoryHasOnlyExpiredEvents(false);
-      
       if (activeEvents.length === 0) {
         setSearchResults({
           events: [],
@@ -329,13 +274,9 @@ export const EventsList = () => {
         });
       }
     } else if (results.searchType === 'location') {
-      // For location-based search, filter out expired events
       const activeEvents = filterActiveEvents(results.events || []);
-      
-      // Clear any active category search
       setActiveCategorySearch(null);
       setCategoryHasOnlyExpiredEvents(false);
-      
       setSearchResults({
         ...results,
         events: activeEvents,
@@ -343,43 +284,29 @@ export const EventsList = () => {
         totalPages: results.totalPages === 0 && activeEvents.length > 0 ? 1 : (results.totalPages || 1)
       });
     } else if (results.searchType === 'category') {
-      // For category-based search, set up the active category search
       console.log('Setting up category search:', results.category, results.sortBy);
-      
-      // Set the active category search which will trigger the hook
       setActiveCategorySearch({
         category: results.category || 'All Categories',
         sortBy: results.sortBy || 'newest'
       });
-      
-      // Update selected category and sort if it's a category search
       setSelectedCategory(results.category || 'All Categories');
       setSelectedSort(results.sortBy || 'newest');
-      setCurrentPage(1); // Reset to first page for category searches
-      
-      // Set search results - events will be populated by the hook
+      setCurrentPage(1);
       setSearchResults({
         ...results,
-        events: [], // Will be populated by the hook
+        events: [],
         searchType: 'category'
       });
-      
-      // Reset expired events flag
       setCategoryHasOnlyExpiredEvents(false);
     } else {
-      // Fallback for other cases - still filter expired events
       const activeEvents = filterActiveEvents(results.events || []);
-      
-      // Clear any active category search
       setActiveCategorySearch(null);
       setCategoryHasOnlyExpiredEvents(false);
-      
       setSearchResults({
         ...results,
         events: activeEvents
       });
     }
-    
     setIsSearching(false);
     setSearchError(null);
     setSearchQuery(results?.query || '');
@@ -420,32 +347,20 @@ export const EventsList = () => {
     }
   }, [isSearching]);
 
-  // Handle category events data updates and force refetch when activeCategorySearch changes
+  // Handle category events data updates
   useEffect(() => {
     if (activeCategorySearch && activeCategorySearch.category !== 'All Categories') {
       console.log('activeCategorySearch changed, forcing refetch:', activeCategorySearch);
-      // Small delay to ensure hook parameters are updated
       const timer = setTimeout(() => {
         refetchCategoryEvents();
       }, 300);
-      
       return () => clearTimeout(timer);
     }
   }, [activeCategorySearch, refetchCategoryEvents]);
 
-  // Handle category events data updates
   useEffect(() => {
     if (isCategorySearch && categoryEventsData?.events && activeCategorySearch) {
       console.log('Category events data received:', categoryEventsData.events.length, 'events');
-      console.log('Raw category events:', categoryEventsData.events.map(event => ({
-        title: event.title,
-        category: event.category,
-        date: event.date,
-        id: event.id || event._id
-      })));
-      console.log('Updating search results with category data...');
-      
-      // Update search results with the actual events data
       setSearchResults(prev => prev ? {
         ...prev,
         events: categoryEventsData.events,
@@ -454,10 +369,17 @@ export const EventsList = () => {
     }
   }, [categoryEventsData, isCategorySearch, activeCategorySearch]);
 
-  // Determine loading state
+  // Combined loading state
   const isLoading = isSearching || 
     (regularEventsLoading && !isShowingSearchResults) || 
-    (categoryEventsLoading && isCategorySearch);
+    (categoryEventsLoading && isCategorySearch) || 
+    categoriesLoading;
+
+  // Combined error state
+  const currentError = searchError || 
+    (regularFetchError && !isShowingSearchResults) || 
+    (categoryFetchError && isCategorySearch) || 
+    categoriesError;
 
   // Loading state
   if (isLoading) {
@@ -467,20 +389,19 @@ export const EventsList = () => {
           onSearchResults={handleSearchResults}
           onSearchStart={handleSearchStart}
           onSearchError={handleSearchError}
-          categories={HARDCODED_CATEGORIES}
+          categories={categories}
         />
         <div className="flex flex-col items-center justify-center py-12 gap-2">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="text-muted-foreground">
-            {isSearching ? 'Searching events...' : 'Loading events...'}
+            {isSearching ? 'Searching events...' : categoriesLoading ? 'Loading categories...' : 'Loading events...'}
           </span>
         </div>
       </>
     );
   }
 
-  // Error states
-  const currentError = searchError || (regularFetchError && !isShowingSearchResults) || (categoryFetchError && isCategorySearch);
+  // Error state
   if (currentError) {
     return (
       <>
@@ -488,12 +409,12 @@ export const EventsList = () => {
           onSearchResults={handleSearchResults}
           onSearchStart={handleSearchStart}
           onSearchError={handleSearchError}
-          categories={HARDCODED_CATEGORIES}
+          categories={categories}
         />
         <div className="container mx-auto px-4 py-8">
           <Alert variant="destructive">
             <AlertDescription>
-              {searchError || 'Failed to load events. Please try again later.'}
+              {searchError || categoriesError?.message || 'Failed to load events or categories. Please try again later.'}
             </AlertDescription>
           </Alert>
         </div>
@@ -501,38 +422,11 @@ export const EventsList = () => {
     );
   }
 
-  // Pagination helpers
-  const getVisiblePages = () => {
-    const delta = 2;
-    const range = [];
-    
-    const start = Math.max(1, currentPage - delta);
-    const end = Math.min(totalPages, currentPage + delta);
-    
-    if (start > 1) {
-      range.push(1);
-      if (start > 2) range.push('...');
-    }
-    
-    for (let i = start; i <= end; i++) {
-      range.push(i);
-    }
-    
-    if (end < totalPages) {
-      if (end < totalPages - 1) range.push('...');
-      range.push(totalPages);
-    }
-    
-    return range;
-  };
-
   // Get search results description
   const getSearchResultsDescription = () => {
     if (!isShowingSearchResults) return '';
-    
     const count = eventsToShow.length;
     const eventText = count !== 1 ? 'events' : 'event';
-    
     if (isLocationSearch) {
       return `Found ${count} upcoming ${eventText} near your location`;
     } else if (isCategorySearch && searchResults?.category) {
@@ -563,7 +457,7 @@ export const EventsList = () => {
     }
   };
 
-  // Get search result header info
+  // Get search header info
   const getSearchHeaderInfo = () => {
     if (isLocationSearch) {
       return {
@@ -597,9 +491,8 @@ export const EventsList = () => {
         onSearchResults={handleSearchResults}
         onSearchStart={handleSearchStart}
         onSearchError={handleSearchError}
-        categories={HARDCODED_CATEGORIES}
+        categories={categories}
       />
-
       <div className="container mx-auto px-4 py-8">
         {/* Search results header */}
         {isShowingSearchResults && (
@@ -634,8 +527,6 @@ export const EventsList = () => {
                 {isLocationSearch ? 'Show All Events' : isCategorySearch ? 'Clear Filter' : 'Clear Search'}
               </Button>
             </div>
-            
-            {/* Info about limited search data - only for query-based search */}
             {hasLimitedSearchData && (
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start gap-2">
@@ -646,8 +537,6 @@ export const EventsList = () => {
                 </div>
               </div>
             )}
-
-            {/* Location search info */}
             {isLocationSearch && searchResults?.location && (
               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-start gap-2">
@@ -658,8 +547,6 @@ export const EventsList = () => {
                 </div>
               </div>
             )}
-
-            {/* Category search info */}
             {isCategorySearch && (
               <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                 <div className="flex items-start gap-2">
@@ -670,8 +557,6 @@ export const EventsList = () => {
                 </div>
               </div>
             )}
-
-            {/* Special message for categories with only expired events */}
             {categoryHasOnlyExpiredEvents && isCategorySearch && (
               <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                 <div className="flex items-start gap-2">
@@ -689,8 +574,6 @@ export const EventsList = () => {
             )}
           </div>
         )}
-
-        {/* Events section */}
         <section>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground">
@@ -710,8 +593,6 @@ export const EventsList = () => {
               </div>
             )}
           </div>
-
-          {/* Events grid */}
           {eventsToShow.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
               <p className="text-muted-foreground text-lg">
@@ -767,52 +648,14 @@ export const EventsList = () => {
               ))}
             </div>
           )}
-
           {/* Pagination - show for regular events and category searches (but not when all events are expired) */}
           {totalPages > 1 && (!isShowingSearchResults || (isCategorySearch && !categoryHasOnlyExpiredEvents)) && (
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage <= 1}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-1">
-                  {getVisiblePages().map((page, index) => (
-                    <div key={`page-${index}`}>
-                      {page === '...' ? (
-                        <span className="px-3 py-1 text-muted-foreground">...</span>
-                      ) : (
-                        <Button
-                          variant={currentPage === page ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handlePageClick(page as number)}
-                          className="min-w-[40px]"
-                        >
-                          {page}
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextPage}
-                  disabled={currentPage >= totalPages}
-                  className="gap-2"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+            <div className="mt-12">
+              <Pagination
+                total={totalPages}
+                current={currentPage}
+                setPage={handleSetPage}
+              />
             </div>
           )}
         </section>
