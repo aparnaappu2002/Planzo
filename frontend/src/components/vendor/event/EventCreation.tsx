@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,11 @@ import { toast } from "react-toastify";
 import LocationSection from "./LocationSection";
 import { useCreateEvent } from "@/hooks/vendorCustomHooks";
 import { useUploadImageMutation } from "@/hooks/vendorCustomHooks";
+import { useFetchCategoryForServiceQuery } from "@/hooks/vendorCustomHooks";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-
+import { useNavigate } from "react-router-dom";
 // Define ticket variant interface
 interface TicketVariant {
   type: 'standard' | 'premium' | 'vip';
@@ -60,6 +62,7 @@ export const EventCreation = () => {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [posterImages, setPosterImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const navigate=useNavigate()
 
   // Ticket variants state
   const [ticketVariants, setTicketVariants] = useState<TicketVariant[]>([
@@ -95,6 +98,10 @@ export const EventCreation = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const createEventMutation = useCreateEvent();
   const uploadImageMutation = useUploadImageMutation();
+  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useFetchCategoryForServiceQuery();
+
+  // Process categories data
+  const categories = categoriesData?.categories?.map(category => category.title) || [];
 
   const handleInputChange = (field: keyof EventType, value: any) => {
     setValue(field, value);
@@ -314,6 +321,7 @@ export const EventCreation = () => {
       });
 
       toast.success(response.message);
+      navigate('/vendor/events')
       resetForm();
 
     } catch (error: any) {
@@ -369,7 +377,7 @@ export const EventCreation = () => {
     ]);
   };
 
-  const isLoading = createEventMutation.isPending || uploadImageMutation.isPending;
+  const isLoading = createEventMutation.isPending || uploadImageMutation.isPending || categoriesLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-yellow-50 to-yellow-100 p-6">
@@ -413,23 +421,29 @@ export const EventCreation = () => {
                   <Label htmlFor="category" className="text-sm font-medium">
                     Category *
                   </Label>
-                  <Select 
-                    onValueChange={(value) => handleInputChange('category', value)}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="conference">Conference</SelectItem>
-                      <SelectItem value="workshop">Workshop</SelectItem>
-                      <SelectItem value="seminar">Seminar</SelectItem>
-                      <SelectItem value="networking">Networking</SelectItem>
-                      <SelectItem value="entertainment">Entertainment</SelectItem>
-                      <SelectItem value="sports">Sports</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {categoriesLoading ? (
+                    <div className="text-sm text-muted-foreground">Loading categories...</div>
+                  ) : categoriesError ? (
+                    <div className="text-sm text-red-500">Failed to load categories</div>
+                  ) : categories.length === 0 ? (
+                    <div className="text-sm text-red-500">No categories available</div>
+                  ) : (
+                    <Select 
+                      onValueChange={(value) => handleInputChange('category', value)}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   {errors.category && <p className="text-sm text-red-500">{errors.category.message}</p>}
                 </div>
               </div>
