@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useFindAllEventsVendorSide } from '@/hooks/vendorCustomHooks';
 import { EventType } from '@/types/EventType';
@@ -19,14 +20,15 @@ import {
 } from 'lucide-react';
 import { RootState } from '@/redux/Store';
 import { useSelector } from 'react-redux';
-import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useQueryClient } from '@tanstack/react-query';
+import Pagination from '@/components/other components/Pagination';
 
 const Events = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
-  const queryClient = useQueryClient(); // Initialize query client
+  const queryClient = useQueryClient();
   
-  const [pageNo] = useState(1);
-  const [localEvents, setLocalEvents] = useState<EventType[]>([]); // NEW: Local state for events
+  const [pageNo, setPageNo] = useState(1); // Updated to dynamic state
+  const [localEvents, setLocalEvents] = useState<EventType[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
   const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
@@ -35,27 +37,23 @@ const Events = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId, pageNo);
+  console.log(apiResponse);
   
   const events = localEvents.length > 0 ? localEvents : (apiResponse?.events || []);
-  
-  
-  
+  const totalPages = apiResponse?.totalPages || 1; // Extract totalPages from API response
+
   React.useEffect(() => {
     if (apiResponse?.events && Array.isArray(apiResponse.events)) {
       setLocalEvents(apiResponse.events);
-      
     }
   }, [apiResponse?.events]);
-  
+
   // DEBUG: Log when data changes
   React.useEffect(() => {
-    
-  }, [events]);
-  
+    console.log('Events updated:', events.length, 'Page:', pageNo, 'Total pages:', totalPages);
+  }, [events, pageNo, totalPages]);
 
-  
   const filteredEvents = React.useMemo(() => {
-   
     if (!events || !Array.isArray(events)) return [];
 
     return events.filter(event => {
@@ -70,9 +68,7 @@ const Events = () => {
     });
   }, [events, searchTerm, statusFilter, categoryFilter]);
 
- 
   const stats = React.useMemo(() => {
-    
     if (!events || !Array.isArray(events)) return { totalEvents: 0, totalRevenue: 0, totalTicketsSold: 0, averageAttendance: 0 };
 
     const totalEvents = events.length;
@@ -84,46 +80,38 @@ const Events = () => {
     return { totalEvents, totalRevenue, totalTicketsSold, averageAttendance };
   }, [events]);
 
-
   const categories = React.useMemo(() => {
-   
     if (!events || !Array.isArray(events)) return [];
     return [...new Set(events.map(event => event.category).filter(Boolean))];
   }, [events]);
 
   const handleViewEvent = (event: EventType) => {
-    
     setViewingEvent(event);
   };
 
   const handleEditEvent = (event: EventType) => {
-   
     setEditingEvent(event);
   };
 
   const handleCloseModals = () => {
-    
     setViewingEvent(null);
     setEditingEvent(null);
   };
 
-  // NEW: Handle event update without page refresh
   const handleEventUpdated = async (updatedEvent: EventType) => {
     console.log('🔄 Handling event update:', updatedEvent._id);
     
     try {
-      // 1. Update local state immediately for instant UI feedback
+      // Update local state immediately for instant UI feedback
       setLocalEvents(prevEvents => {
         const updated = prevEvents.map(event => 
           event._id === updatedEvent._id ? { ...event, ...updatedEvent } : event
         );
-        
         return updated;
       });
       
-      // 2. Try to find and invalidate the correct query key
+      // Try to find and invalidate the correct query key
       const possibleQueryKeys = [
-        // Common patterns for vendor events
         ['findAllEventsVendorSide', vendorId, pageNo],
         ['findAllEventsVendorSide', vendorId],
         ['vendorEvents', vendorId, pageNo],
@@ -131,50 +119,53 @@ const Events = () => {
         ['events', 'vendor', vendorId],
         ['events', vendorId, pageNo],
         ['events', vendorId],
-        // Without parameters
         ['findAllEventsVendorSide'],
         ['vendorEvents'],
         ['events']
       ];
       
-      
-      
       // Try invalidating each possible key
       for (const queryKey of possibleQueryKeys) {
         try {
           await queryClient.invalidateQueries({ queryKey });
-          
         } catch (error) {
-          
+          console.log('Failed to invalidate query key:', queryKey);
         }
       }
       
-      // 3. Force complete cache invalidation as backup
+      // Force complete cache invalidation as backup
       await queryClient.invalidateQueries();
       
-      // 4. Force immediate refetch
+      // Force immediate refetch
       const refetchResult = await refetch();
       
-      // 5. Update viewing modal if it's the same event
+      // Update viewing modal if it's the same event
       if (viewingEvent && viewingEvent._id === updatedEvent._id) {
         setViewingEvent(updatedEvent);
       }
       
-      // 6. Update editing modal if it's the same event (though it should be closing)
+      // Update editing modal if it's the same event
       if (editingEvent && editingEvent._id === updatedEvent._id) {
         setEditingEvent(updatedEvent);
       }
       
-      
     } catch (error) {
-      
-      // Ultimate fallback: Force refetch after a delay
+      console.error('Error handling event update:', error);
+      // Fallback: Force refetch after a delay
       setTimeout(async () => {
         try {
           await refetch();
         } catch (fallbackError) {
+          console.error('Fallback refetch failed:', fallbackError);
         }
       }, 500);
+    }
+  };
+
+  // Handle page change
+  const handleSetPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setPageNo(page);
     }
   };
 
@@ -204,17 +195,76 @@ const Events = () => {
                 Manage and track your events, sales, and performance
               </p>
             </div>
-        
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-6 py-8 space-y-8">
         {/* Statistics Cards */}
-        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-card p-6 rounded-lg shadow-sm border border-border/50">
+            <div className="flex items-center gap-4">
+              <CalendarDays className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Events</p>
+                <p className="text-2xl font-bold">{stats.totalEvents}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-card p-6 rounded-lg shadow-sm border border-border/50">
+            <div className="flex items-center gap-4">
+              <DollarSign className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Revenue</p>
+                <p className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-card p-6 rounded-lg shadow-sm border border-border/50">
+            <div className="flex items-center gap-4">
+              <TrendingUp className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Attendance Rate</p>
+                <p className="text-2xl font-bold">{stats.averageAttendance.toFixed(1)}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Search and Filters */}
-        
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:w-1/3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search events..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-4 w-full md:w-auto">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border rounded-lg px-4 py-2 bg-background"
+            >
+              <option value="all">All Statuses</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="border rounded-lg px-4 py-2 bg-background"
+            >
+              <option value="all">All Categories</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {/* Events Grid */}
         {isLoading ? (
@@ -231,21 +281,33 @@ const Events = () => {
             ))}
           </div>
         ) : filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <EventCard
-                key={`${event._id || event.id}-${event.updatedAt || Date.now()}`} // Include timestamp to force updates
-                event={event}
-                onView={(eventData) => {
-                  console.log('🎯 EventCard triggered view for:', eventData._id);
-                  handleViewEvent(eventData);
-                }}
-                onEdit={(eventData) => {
-                  console.log('🎯 EventCard triggered edit for:', eventData._id);
-                  handleEditEvent(eventData);
-                }}
-              />
-            ))}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEvents.map((event) => (
+                <EventCard
+                  key={`${event._id || event.id}-${event.updatedAt || Date.now()}`}
+                  event={event}
+                  onView={(eventData) => {
+                    console.log('🎯 EventCard triggered view for:', eventData._id);
+                    handleViewEvent(eventData);
+                  }}
+                  onEdit={(eventData) => {
+                    console.log('🎯 EventCard triggered edit for:', eventData._id);
+                    handleEditEvent(eventData);
+                  }}
+                />
+              ))}
+            </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12">
+                <Pagination
+                  total={totalPages}
+                  current={pageNo}
+                  setPage={handleSetPage}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">
@@ -265,15 +327,15 @@ const Events = () => {
         event={viewingEvent}
         isOpen={!!viewingEvent}
         onClose={handleCloseModals}
-        key={viewingEvent?._id || 'view-modal'} // Force re-render when event changes
+        key={viewingEvent?._id || 'view-modal'}
       />
       
       <EventEditModal
         event={editingEvent}
         isOpen={!!editingEvent}
         onClose={handleCloseModals}
-        onEventUpdated={handleEventUpdated} // NEW: Pass the update handler
-        key={editingEvent?._id || 'edit-modal'} // Force re-render when event changes
+        onEventUpdated={handleEventUpdated}
+        key={editingEvent?._id || 'edit-modal'}
       />
     </div>
   );
