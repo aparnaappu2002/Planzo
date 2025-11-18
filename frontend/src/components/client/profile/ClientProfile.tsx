@@ -415,7 +415,13 @@ const ClientProfile: React.FC = () => {
                         placeholder="Enter your full name"
                         className={profileErrors.name ? 'border-red-500' : ''}
                       />
-                      {profileErrors.name && (
+                      {profileData.name.length>15 ? (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Name cannot exceed 15 characters</span>
+                        </div>
+                      ):
+                      profileErrors.name && (
                         <div className="flex items-center gap-1 text-red-500 text-sm">
                           <AlertCircle className="w-4 h-4" />
                           <span>{profileErrors.name}</span>
