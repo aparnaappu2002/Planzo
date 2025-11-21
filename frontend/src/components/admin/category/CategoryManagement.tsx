@@ -2,18 +2,28 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useFindAllCategories,useCreateCategory,useUpdateCategory,useChangeStatusCategory } from '@/hooks/adminCustomHooks';
+
+// Your custom hooks
+import { 
+  useFindAllCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useChangeStatusCategory 
+} from '@/hooks/adminCustomHooks';
+
+// Components
 import { CategoryCard } from './CategoryCard';
 import { CategoryFormModal } from './CategoryFormModal';
 import { ConfirmationModal } from './ConfirmationModal';
-import { Category,CreateCategoryData } from '@/types/Category';
+import Pagination from '@/components/other components/Pagination';
+
+// Types
+import { Category, CreateCategoryData } from '@/types/Category';
 import { CategoryUpdate } from '@/types/CategoryUpdate';
 
-
 const CategoryManagement: React.FC = () => {
-  
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -21,16 +31,26 @@ const CategoryManagement: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [categoryToToggle, setCategoryToToggle] = useState<string | null>(null);
 
-  // Hooks
-  const { data: categoriesData, isLoading, refetch } = useFindAllCategories(currentPage);
-  
+  // Fetch categories with pagination
+  const { 
+    data: categoriesData, 
+    isLoading, 
+    refetch 
+  } = useFindAllCategories(currentPage);
+
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
   const changeStatusMutation = useChangeStatusCategory();
 
-  // Provide default empty array if categories is undefined
+  // Extract data
   const categories = categoriesData?.categories || [];
-  
+  const totalPages = categoriesData?.totalPages || 1;
+  const totalCategories = categoriesData?.totalCategories || 0;
+
+  // Filter categories client-side for search (since search isn't paginated)
+  const filteredCategories = categories.filter(category =>
+    category.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Handlers
   const handleCreateCategory = async (data: CreateCategoryData) => {
@@ -39,42 +59,20 @@ const CategoryManagement: React.FC = () => {
       toast.success(response.message || 'Category created successfully!');
       setIsFormModalOpen(false);
       refetch();
-    } catch (error) {
-      let errorMessage = "Category creation failed";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage); 
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Category creation failed");
     }
   };
 
   const handleUpdateCategory = async (data: { categoryId: string; updates: CategoryUpdate }) => {
     try {
       const response = await updateMutation.mutateAsync(data);
-      console.log('Update data sent:', data);
       toast.success(response.message || 'Category updated successfully!');
       setIsFormModalOpen(false);
       setSelectedCategory(null);
       refetch();
-    } catch (error) {
-      console.error('Update error:', error);
-      let errorMessage = "Failed to update category";
-      
-      // Better error handling for 400 errors
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
-        if (axiosError.response?.data?.message) {
-          errorMessage = axiosError.response.data.message;
-        } else if (axiosError.response?.status === 400) {
-          errorMessage = "Invalid data provided. Please check all fields.";
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update category");
     }
   };
 
@@ -87,70 +85,25 @@ const CategoryManagement: React.FC = () => {
   };
 
   const handleToggleStatus = (categoryId: string) => {
-    
     setCategoryToToggle(categoryId);
-    
     setIsConfirmModalOpen(true);
   };
 
   const confirmToggleStatus = async () => {
-    console.log('confirmToggleStatus called with categoryToToggle:', categoryToToggle);
-    
-    if (!categoryToToggle) {
-      console.error('No category to toggle');
-      return;
-    }
-    
-    try {
-      // Find the current category to determine the new status
-      const currentCategory = categories.find(c => c._id === categoryToToggle);
-      
-      
-      if (!currentCategory) {
-        toast.error('Category not found');
-        return;
-      }
+    if (!categoryToToggle) return;
 
-      // Determine the new status
-      const newStatus = currentCategory.status === 'active' ? 'inactive' : 'active';
+    try {
+      const currentCategory = categories.find(c => c._id === categoryToToggle);
+      const newStatus = currentCategory?.status === 'active' ? 'inactive' : 'active';
+
+      await changeStatusMutation.mutateAsync(categoryToToggle);
+      toast.success(`Category ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
       
-      const response = await changeStatusMutation.mutateAsync(categoryToToggle);
-      
-      console.log('Mutation response:', response);
-      
-      toast.success(response.message || `Category ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
       setIsConfirmModalOpen(false);
       setCategoryToToggle(null);
       refetch();
-    } catch (error) {
-      console.error('Status toggle error:', error);
-      let errorMessage = "Failed to change category status";
-      
-      // Better error handling for API responses
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
-        console.error('Axios error details:', {
-          status: axiosError.response?.status,
-          data: axiosError.response?.data,
-          config: axiosError.config
-        });
-        
-        if (axiosError.response?.data?.message) {
-          errorMessage = axiosError.response.data.message;
-        } else if (axiosError.response?.status === 400) {
-          errorMessage = "Invalid request. Please check the category data.";
-        } else if (axiosError.response?.status === 404) {
-          errorMessage = "Category not found. Please refresh and try again.";
-        } else if (axiosError.response?.status === 500) {
-          errorMessage = "Server error. Please try again later.";
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-      
-      // Close modal even on error to prevent stuck state
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to change status");
       setIsConfirmModalOpen(false);
       setCategoryToToggle(null);
     }
@@ -160,10 +113,6 @@ const CategoryManagement: React.FC = () => {
     setSelectedCategory(category);
     setIsFormModalOpen(true);
   };
-
-  const filteredCategories = categories.filter(category =>
-    category.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const categoryToToggleData = categories.find(c => c._id === categoryToToggle);
 
@@ -189,11 +138,11 @@ const CategoryManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters & Search */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex gap-4 items-center">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search categories..."
@@ -223,13 +172,13 @@ const CategoryManagement: React.FC = () => {
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 <span className="text-sm text-muted-foreground">Total Categories</span>
               </div>
-              <p className="text-2xl font-bold text-foreground mt-1">{categories.length}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{totalCategories}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-success rounded-full"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm text-muted-foreground">Active</span>
               </div>
               <p className="text-2xl font-bold text-foreground mt-1">
@@ -240,7 +189,7 @@ const CategoryManagement: React.FC = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                 <span className="text-sm text-muted-foreground">Inactive</span>
               </div>
               <p className="text-2xl font-bold text-foreground mt-1">
@@ -252,30 +201,52 @@ const CategoryManagement: React.FC = () => {
 
         {/* Categories Grid */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-foreground">Categories ({filteredCategories.length})</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-foreground">
+              Categories ({searchTerm ? filteredCategories.length : categories.length})
+            </CardTitle>
+            {!searchTerm && totalPages > 1 && (
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">Loading categories...</span>
+                <RefreshCw className="h-6 w-6 animate-spin text-primary mr-3" />
+                <span className="text-muted-foreground">Loading categories...</span>
               </div>
             ) : filteredCategories.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No categories found</p>
+                <p className="text-muted-foreground text-lg">
+                  {searchTerm ? `No categories found for "${searchTerm}"` : "No categories available"}
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredCategories.map((category) => (
-                  <CategoryCard
-                    key={category._id}
-                    category={category}
-                    onEdit={handleEditCategory}
-                    onToggleStatus={handleToggleStatus}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredCategories.map((category) => (
+                    <CategoryCard
+                      key={category._id}
+                      category={category}
+                      onEdit={handleEditCategory}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination - Only show when not searching */}
+                {!searchTerm && totalPages > 1 && (
+                  <div className="mt-10">
+                    <Pagination
+                      total={totalPages}
+                      current={currentPage}
+                      setPage={setCurrentPage}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -304,8 +275,8 @@ const CategoryManagement: React.FC = () => {
             categoryToToggleData
               ? `Are you sure you want to ${
                   categoryToToggleData.status === 'active' ? 'deactivate' : 'activate'
-                } the category "${categoryToToggleData.title}"?`
-              : 'Are you sure you want to change this category status?'
+                } "${categoryToToggleData.title}"?`
+              : 'Are you sure?'
           }
           isLoading={changeStatusMutation.isPending}
           confirmText={
