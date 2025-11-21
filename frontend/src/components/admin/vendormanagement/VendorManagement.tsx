@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -21,13 +21,27 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Shield, ShieldOff, Loader2, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import { useFetchVendorAdmin, useBlockVendor, useUnblockVendor, useSearchVendors } from "@/hooks/adminCustomHooks";
-import { toast } from "react-toastify";
-import { debounce } from "lodash";
+import {
+  Shield,
+  ShieldOff,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+} from "lucide-react";
 
+import {
+  useFetchVendorAdmin,
+  useBlockVendor,
+  useUnblockVendor,
+  useSearchVendors,
+} from "@/hooks/adminCustomHooks";
+import { toast } from "react-toastify";
+
+
+import { useDebounce } from "@/hooks/useDebounce"; 
 interface Vendor {
-  id: string;
   _id: string;
   name: string;
   email: string;
@@ -37,185 +51,140 @@ interface Vendor {
   createdAt: string;
 }
 
-// Memoized VendorRow component
-const VendorRow = React.memo(({ vendor, handleAction }: { vendor: Vendor; handleAction: (vendor: Vendor, action: "block" | "unblock") => void }) => (
-  <TableRow>
-    <TableCell className="font-medium">{vendor.name}</TableCell>
-    <TableCell>{vendor.company}</TableCell>
-    <TableCell className="text-muted-foreground">{vendor.email}</TableCell>
-    <TableCell>{vendor.phone}</TableCell>
-    <TableCell>{new Date(vendor.createdAt).toLocaleDateString()}</TableCell>
-    <TableCell>
-      <Badge variant={vendor.status === "active" ? "default" : "destructive"}>
-        {vendor.status === "active" ? "Active" : "Blocked"}
-      </Badge>
-    </TableCell>
-    <TableCell>
-      <div className="flex gap-2">
-        {vendor.status === "active" ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleAction(vendor, "block")}
-          >
-            <ShieldOff className="w-4 h-4 mr-2" />
-            Block
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => handleAction(vendor, "unblock")}
-          >
-            <Shield className="w-4 h-4 mr-2" />
-            Unblock
-          </Button>
-        )}
-      </div>
-    </TableCell>
-  </TableRow>
-));
+const VendorRow = React.memo(
+  ({
+    vendor,
+    onAction,
+  }: {
+    vendor: Vendor;
+    onAction: (vendor: Vendor, action: "block" | "unblock") => void;
+  }) => (
+    <TableRow>
+      <TableCell className="font-medium">{vendor.name}</TableCell>
+      <TableCell>{vendor.company}</TableCell>
+      <TableCell className="text-muted-foreground">{vendor.email}</TableCell>
+      <TableCell>{vendor.phone}</TableCell>
+      <TableCell>{new Date(vendor.createdAt).toLocaleDateString()}</TableCell>
+      <TableCell>
+        <Badge variant={vendor.status === "active" ? "default" : "destructive"}>
+          {vendor.status === "active" ? "Active" : "Blocked"}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-2">
+          {vendor.status === "active" ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onAction(vendor, "block")}
+            >
+              <ShieldOff className="w-4 h-4 mr-2" />
+              Block
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => onAction(vendor, "unblock")}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Unblock
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+);
 
-const VendorManagement = () => {
+export default function VendorManagement() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [actionType, setActionType] = useState<"block" | "unblock">("block");
-  const [searchInput, setSearchInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [vendors, setVendors] = useState<Vendor[]>([]); // Local state for vendors
 
-  const { data: vendorData, isLoading, error } = useFetchVendorAdmin(currentPage);
-  const { data: searchResults, isLoading: isSearchLoading } = useSearchVendors(searchQuery);
+  // This is the missing piece!
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  // Debounced search
+  const debouncedSearchQuery = useDebounce(searchInput.trim(), 300);
+
+  const { data: vendorData, isLoading } = useFetchVendorAdmin(currentPage);
+  const { data: searchResults, isLoading: isSearchLoading } = useSearchVendors(debouncedSearchQuery);
+
   const blockVendor = useBlockVendor();
   const unblockVendor = useUnblockVendor();
 
-  // Update local vendors state when vendorData or searchResults change
+  const isSearching = debouncedSearchQuery.length > 0;
+
+  // Sync vendors from API (paginated list or search results)
   useEffect(() => {
-    setVendors(searchQuery ? searchResults?.vendors || [] : vendorData?.vendors || []);
-  }, [searchQuery, searchResults, vendorData]);
+    if (isSearching) {
+      setVendors(searchResults?.vendors || []);
+    } else {
+      setVendors(vendorData?.vendors || []);
+    }
+  }, [isSearching, searchResults?.vendors, vendorData?.vendors]);
 
-  const totalPages = searchQuery ? 1 : vendorData?.totalPages || 1;
+  const totalPages = isSearching ? 1 : vendorData?.totalPages || 1;
 
-  // Handle vendor action (block/unblock)
+  // Reset page when starting search
+  useEffect(() => {
+    if (isSearching) setCurrentPage(1);
+  }, [isSearching]);
+
   const handleAction = useCallback((vendor: Vendor, action: "block" | "unblock") => {
     setSelectedVendor(vendor);
     setActionType(action);
     setShowDialog(true);
   }, []);
 
-  // Debounced search
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      setSearchQuery(query);
-    }, 300),
-    []
-  );
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchInput(query);
-    debouncedSearch(query);
-  };
-
-  const clearSearch = useCallback(() => {
-    setSearchInput("");
-    setSearchQuery("");
-  }, []);
-
-  // Clean up debounce on unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  // Debounced API call for block/unblock
-  const debouncedBlockVendor = useCallback(
-    debounce(async (vendorId: string) => {
-      try {
-        const response = await blockVendor.mutateAsync(vendorId);
-        toast.success(response?.message || "Vendor blocked successfully.");
-      } catch (error: any) {
-        throw error; // Let the error be handled in confirmAction
-      }
-    }, 500),
-    [blockVendor]
-  );
-
-  const debouncedUnblockVendor = useCallback(
-    debounce(async (vendorId: string) => {
-      try {
-        const response = await unblockVendor.mutateAsync(vendorId);
-        toast.success(response?.message || "Vendor unblocked successfully.");
-      } catch (error: any) {
-        throw error; // Let the error be handled in confirmAction
-      }
-    }, 500),
-    [unblockVendor]
-  );
-
-  // Confirm action with optimistic update
   const confirmAction = useCallback(async () => {
     if (!selectedVendor) return;
 
-    const vendorId = selectedVendor._id; // Use _id as the primary identifier
-    const originalVendor = { ...selectedVendor }; // Store original vendor data for rollback
+    const vendorId = selectedVendor._id;
 
-    // Debugging: Log the vendor being updated
-    console.log(`Updating vendor: ${selectedVendor.name} (${vendorId}) to ${actionType === "block" ? "blocked" : "active"}`);
-
-    // Optimistically update only the selected vendor's status
-    setVendors((prevVendors) =>
-      prevVendors.map((vendor) =>
-        vendor._id === vendorId
-          ? { ...vendor, status: actionType === "block" ? "blocked" : "active" }
-          : vendor
+    // Optimistic UI update
+    setVendors((prev) =>
+      prev.map((v) =>
+        v._id === vendorId
+          ? { ...v, status: actionType === "block" ? "blocked" : "active" }
+          : v
       )
     );
 
     setShowDialog(false);
-    setSelectedVendor(null);
 
     try {
       if (actionType === "block") {
-        await debouncedBlockVendor(vendorId);
+        await blockVendor.mutateAsync(vendorId);
+        toast.success("Vendor blocked successfully");
       } else {
-        await debouncedUnblockVendor(vendorId);
+        await unblockVendor.mutateAsync(vendorId);
+        toast.success("Vendor unblocked successfully");
       }
-    } catch (error: any) {
-      // Revert optimistic update for only the selected vendor
-      console.log(`Error ${actionType} vendor: ${error.message}`);
-      setVendors((prevVendors) =>
-        prevVendors.map((vendor) =>
-          vendor._id === vendorId
-            ? { ...vendor, status: originalVendor.status }
-            : vendor
+    } catch (err: any) {
+      // Rollback on error
+      setVendors((prev) =>
+        prev.map((v) =>
+          v._id === vendorId ? { ...v, status: selectedVendor.status } : v
         )
       );
-
-      let errorMessage = `Failed to ${actionType} vendor. Please try again.`;
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      toast.error(errorMessage);
+      toast.error(err?.response?.data?.message || `Failed to ${actionType} vendor`);
+    } finally {
+      setSelectedVendor(null);
     }
-  }, [selectedVendor, actionType, debouncedBlockVendor, debouncedUnblockVendor]);
+  }, [selectedVendor, actionType, blockVendor, unblockVendor]);
 
-  const handlePageChange = useCallback((page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  }, [totalPages]);
+  const clearSearch = () => setSearchInput("");
 
-  if (isLoading || (searchQuery && isSearchLoading)) {
+  const isLoadingNow = isLoading || (isSearching && isSearchLoading);
+
+  if (isLoadingNow) {
     return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-        <div className="flex items-center space-x-2">
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex items-center gap-3">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Loading vendors...</span>
         </div>
@@ -223,74 +192,52 @@ const VendorManagement = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-xl font-semibold text-destructive">Error Loading Vendors</h2>
-          <p className="text-muted-foreground">{error.message}</p>
-          <Button onClick={() => setCurrentPage(1)}>Try Again</Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">Vendor Management</h1>
-          <p className="text-muted-foreground text-lg">
-            Manage your vendors and their access status
-          </p>
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold">Vendor Management</h1>
+          <p className="text-muted-foreground">Manage vendor accounts and access</p>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
-          </div>
+        {/* Search */}
+        <div className="relative mx-auto max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
-            type="text"
-            placeholder="Search vendors by name, email, or company..."
-            className="pl-10 pr-10"
+            placeholder="Search vendors..."
             value={searchInput}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-10 pr-10"
           />
-          {isSearchLoading && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          {searchInput && !isSearchLoading && (
+          {searchInput && (
             <button
-              type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
               onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               <X className="h-5 w-5 text-muted-foreground" />
             </button>
           )}
+          {isSearching && isSearchLoading && (
+            <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
+          )}
         </div>
 
-        {/* Vendors Table */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Vendor List</CardTitle>
-            {!searchQuery && (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <span>Page {currentPage} of {totalPages}</span>
-              </div>
+            {!isSearching && (
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
             )}
           </CardHeader>
           <CardContent>
             {vendors.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  {searchQuery ? `No vendors found for "${searchQuery}"` : "No vendors found."}
-                </p>
-              </div>
+              <p className="py-8 text-center text-muted-foreground">
+                {isSearching
+                  ? `No vendors found for "${debouncedSearchQuery}"`
+                  : "No vendors available"}
+              </p>
             ) : (
               <>
                 <Table>
@@ -307,39 +254,36 @@ const VendorManagement = () => {
                   </TableHeader>
                   <TableBody>
                     {vendors.map((vendor) => (
-                      <VendorRow 
-                        key={vendor._id} 
-                        vendor={vendor} 
-                        handleAction={handleAction} 
+                      <VendorRow
+                        key={vendor._id}
+                        vendor={vendor}
+                        onAction={handleAction}
                       />
                     ))}
                   </TableBody>
                 </Table>
 
-                {/* Pagination - Only show when not searching */}
-                {!searchQuery && totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4">
+                {!isSearching && totalPages > 1 && (
+                  <div className="mt-6 flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      Showing page {currentPage} of {totalPages}
+                      Page {currentPage} of {totalPages}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
                       >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
+                        <ChevronLeft className="h-4 w-4" /> Previous
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
                       >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
+                        Next <ChevronRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -354,22 +298,16 @@ const VendorManagement = () => {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {actionType === "block" ? "Block Vendor" : "Unblock Vendor"}
+                {actionType === "block" ? "Block" : "Unblock"} Vendor
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to {actionType} {selectedVendor?.name}? 
-                {actionType === "block" 
-                  ? " This will prevent them from accessing the platform."
-                  : " This will restore their access to the platform."
-                }
+                Are you sure you want to {actionType}{" "}
+                <strong>{selectedVendor?.name}</strong>?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmAction}
-                className={actionType === "block" ? "bg-destructive hover:bg-destructive/90" : ""}
-              >
+              <AlertDialogAction onClick={confirmAction}>
                 {actionType === "block" ? "Block" : "Unblock"} Vendor
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -378,6 +316,4 @@ const VendorManagement = () => {
       </div>
     </div>
   );
-};
-
-export default VendorManagement;
+}

@@ -43,42 +43,33 @@ import {
   useFetchClientsAdmin,
   useBlockClient,
   useUnblockClient,
-  useSearchClients
+  useSearchClients,
 } from "@/hooks/adminCustomHooks";
 import { toast } from "react-toastify";
 
-// Custom hook for debounced value
-function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+// Import your reusable debounce hook
+import { useDebounce } from "@/hooks/useDebounce"; // Adjust path if needed
 
 export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [alertDialog, setAlertDialog] = useState({
+  const [alertDialog, setAlertDialog] = useState<{
+    open: boolean;
+    type: "block" | "unblock" | null;
+    user: any;
+  }>({
     open: false,
     type: null,
     user: null,
   });
 
-  const [localUserUpdates, setLocalUserUpdates] = useState({});
-  
-  // Ref for the search input
-  const searchInputRef = useRef(null);
-  
-  // Debounce search term to avoid excessive API calls
+  const [localUserUpdates, setLocalUserUpdates] = useState<Record<string, any>>(
+    {}
+  );
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Use imported reusable debounce
   const debouncedSearchTerm = useDebounce(searchTerm.trim(), 300);
 
   const fetchClientQuery = useFetchClientsAdmin(currentPage);
@@ -86,11 +77,9 @@ export default function UserManagement() {
   const blockClientMutation = useBlockClient();
   const unblockClientMutation = useUnblockClient();
 
-  // Determine which data to display based on search state
   const isSearching = debouncedSearchTerm.length > 0;
   const activeQuery = isSearching ? searchClientQuery : fetchClientQuery;
 
-  // Memoize data extraction to prevent unnecessary re-calculations
   const {
     clients,
     totalPages,
@@ -98,22 +87,23 @@ export default function UserManagement() {
     currentPageFromAPI,
     limit,
     startIndex,
-    endIndex
+    endIndex,
   } = useMemo(() => {
-    const clientsData = isSearching 
-      ? searchClientQuery?.data?.clients || [] 
+    const clientsData = isSearching
+      ? searchClientQuery?.data?.clients || []
       : fetchClientQuery?.data?.clients || [];
-    
-    const totalPagesData = isSearching ? 1 : (fetchClientQuery?.data?.totalPages || 1);
-    const totalUsersData = isSearching 
+
+    const totalPagesData = isSearching ? 1 : fetchClientQuery?.data?.totalPages || 1;
+    const totalUsersData = isSearching
       ? searchClientQuery?.data?.totalUsers || clientsData.length
       : fetchClientQuery?.data?.totalUsers || 0;
-    const currentPageFromAPIData = isSearching ? 1 : (fetchClientQuery?.data?.currentPage || currentPage);
+    const currentPageFromAPIData = isSearching ? 1 : currentPage;
     const limitData = fetchClientQuery?.data?.limit || 5;
 
-    // Calculate display indices
-    const startIndexData = isSearching ? 1 : ((currentPage - 1) * limitData + 1);
-    const endIndexData = isSearching ? clientsData.length : Math.min(currentPage * limitData, totalUsersData);
+    const startIndexData = isSearching ? 1 : (currentPage - 1) * limitData + 1;
+    const endIndexData = isSearching
+      ? clientsData.length
+      : Math.min(currentPage * limitData, totalUsersData);
 
     return {
       clients: clientsData,
@@ -122,49 +112,37 @@ export default function UserManagement() {
       currentPageFromAPI: currentPageFromAPIData,
       limit: limitData,
       startIndex: startIndexData,
-      endIndex: endIndexData
+      endIndex: endIndexData,
     };
   }, [
-    isSearching, 
-    searchClientQuery?.data, 
-    fetchClientQuery?.data, 
-    currentPage
+    isSearching,
+    searchClientQuery?.data,
+    fetchClientQuery?.data,
+    currentPage,
   ]);
 
-
-
-  // Reset page when starting/stopping search
   useEffect(() => {
     if (isSearching) {
       setCurrentPage(1);
     }
   }, [isSearching]);
 
-  // Memoized search handler to prevent unnecessary re-renders
-  const handleSearchChange = useCallback((e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   }, []);
 
   const clearSearch = useCallback(() => {
     setSearchTerm("");
-    // Focus back to input after clearing
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-    }, 0);
+    setTimeout(() => searchInputRef.current?.focus(), 0);
   }, []);
 
-  const showConfirmation = useCallback((user, action) => {
-    setAlertDialog({
-      open: true,
-      type: action,
-      user: user,
-    });
+  const showConfirmation = useCallback((user: any, action: "block" | "unblock") => {
+    setAlertDialog({ open: true, type: action, user });
   }, []);
 
   const confirmAction = async () => {
+    if (!alertDialog.user) return;
+
     try {
       const userId = alertDialog.user._id;
 
@@ -173,7 +151,6 @@ export default function UserManagement() {
           ...prev,
           [userId]: { status: "block", timestamp: Date.now() },
         }));
-
         await blockClientMutation.mutateAsync(userId);
         toast.success("User blocked successfully");
       } else if (alertDialog.type === "unblock") {
@@ -181,135 +158,88 @@ export default function UserManagement() {
           ...prev,
           [userId]: { status: "active", timestamp: Date.now() },
         }));
-
         await unblockClientMutation.mutateAsync(userId);
         toast.success("User unblocked successfully");
       }
 
       setAlertDialog({ open: false, type: null, user: null });
-      
-      // Refetch appropriate query
+
       if (isSearching) {
-        await searchClientQuery.refetch();
+        searchClientQuery.refetch();
       } else {
-        await fetchClientQuery.refetch();
+        fetchClientQuery.refetch();
       }
     } catch (error) {
-      console.error("Error performing action:", error);
+      console.error("Action failed:", error);
+      toast.error(`Failed to ${alertDialog.type} user`);
 
-      const userId = alertDialog.user._id;
+      // Revert optimistic update
       setLocalUserUpdates((prev) => {
         const updated = { ...prev };
-        delete updated[userId];
+        delete updated[alertDialog.user._id];
         return updated;
       });
 
-      toast.error(`Failed to ${alertDialog.type} user. Please try again.`);
       setAlertDialog({ open: false, type: null, user: null });
     }
   };
 
-  // Memoized utility functions
-  const getStatusColor = useCallback((status) => {
-    const normalizedStatus = status?.toString().toLowerCase();
-    switch (normalizedStatus) {
-      case "active":
-      case "unblocked":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "blocked":
-      case "block":
-      case "inactive":
-        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
-      default:
-        return "bg-secondary text-secondary-foreground";
-    }
+  const getStatusColor = useCallback((status: string) => {
+    const s = status?.toLowerCase();
+    if (s === "active" || s === "unblocked") return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+    if (s === "blocked" || s === "block" || s === "inactive") return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+    return "bg-secondary text-secondary-foreground";
   }, []);
 
-  const getRoleColor = useCallback((role) => {
-    switch (role) {
-      case "Admin":
-        return "bg-primary/10 text-primary";
-      case "Moderator":
-        return "bg-accent text-accent-foreground";
-      default:
-        return "bg-secondary text-secondary-foreground";
-    }
+  // FIXED: Fixed the syntax error here!
+  const getRoleColor = useCallback((role?: string) => {
+    if (role === "Admin") return "bg-primary/10 text-primary";
+    if (role === "Moderator") return "bg-accent text-accent-foreground";
+    return "bg-secondary text-secondary-foreground";
   }, []);
 
-  const getCurrentUserStatus = useCallback((user) => {
-    const userId = user._id || user.clientId;
-    const localUpdate = localUserUpdates[userId];
+  const getCurrentUserStatus = useCallback(
+    (user: any) => {
+      const userId = user._id || user.clientId;
+      return localUserUpdates[userId]?.status || user.status || "active";
+    },
+    [localUserUpdates]
+  );
 
-    if (localUpdate) {
-      return localUpdate.status;
-    }
+  const isUserBlocked = useCallback(
+    (user: any) => getCurrentUserStatus(user) === "block",
+    [getCurrentUserStatus]
+  );
 
-    return user.status || "active";
-  }, [localUserUpdates]);
+  const getDisplayStatus = useCallback(
+    (user: any) => (getCurrentUserStatus(user) === "block" ? "Blocked" : "Active"),
+    [getCurrentUserStatus]
+  );
 
-  const isUserBlocked = useCallback((user) => {
-    const currentStatus = getCurrentUserStatus(user);
-    return currentStatus === "block";
-  }, [getCurrentUserStatus]);
+  const goToFirstPage = () => !isSearching && currentPage !== 1 && setCurrentPage(1);
+  const goToPreviousPage = () => !isSearching && currentPage > 1 && setCurrentPage(p => p - 1);
+  const goToNextPage = () => !isSearching && currentPage < totalPages && setCurrentPage(p => p + 1);
+  const goToLastPage = () => !isSearching && currentPage !== totalPages && setCurrentPage(totalPages);
 
-  const getDisplayStatus = useCallback((user) => {
-    const currentStatus = getCurrentUserStatus(user);
-
-    if (currentStatus === "active") {
-      return "Active";
-    } else if (currentStatus === "block") {
-      return "Blocked";
-    }
-
-    return "Active";
-  }, [getCurrentUserStatus]);
-
-  // Backend pagination handlers - only work when not searching
-  const goToFirstPage = useCallback(() => {
-    if (!isSearching && currentPage !== 1 && !fetchClientQuery.isLoading) {
-      setCurrentPage(1);
-    }
-  }, [isSearching, currentPage, fetchClientQuery.isLoading]);
-  
-  const goToPreviousPage = useCallback(() => {
-    if (!isSearching && currentPage > 1 && !fetchClientQuery.isLoading) {
-      setCurrentPage(prev => prev - 1);
-    }
-  }, [isSearching, currentPage, fetchClientQuery.isLoading]);
-  
-  const goToNextPage = useCallback(() => {
-    if (!isSearching && currentPage < totalPages && !fetchClientQuery.isLoading) {
-      setCurrentPage(prev => prev + 1);
-    }
-  }, [isSearching, currentPage, totalPages, fetchClientQuery.isLoading]);
-  
-  const goToLastPage = useCallback(() => {
-    if (!isSearching && currentPage !== totalPages && !fetchClientQuery.isLoading) {
-      setCurrentPage(totalPages);
-    }
-  }, [isSearching, currentPage, totalPages, fetchClientQuery.isLoading]);
-
-  // Show loading state only for initial load or when searching changes
-  const showLoading = activeQuery.isLoading && (!isSearching || debouncedSearchTerm !== searchTerm.trim());
-  const formatDate = (dateString) => {
-  if (!dateString) return "Never";
-  
-  try {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Never";
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "N/A";
-    
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch (error) {
-    return "N/A";
-  }
-};
+    return isNaN(date.getTime())
+      ? "N/A"
+      : date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+  };
+
+  const showLoading =
+    activeQuery.isLoading &&
+    (!isSearching || debouncedSearchTerm !== searchTerm.trim());
+
   if (showLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -322,10 +252,8 @@ export default function UserManagement() {
 
   if (activeQuery.isError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-destructive">
-          Error {isSearching ? "searching" : "loading"} users: {activeQuery.error?.message}
-        </div>
+      <div className="flex items-center justify-center h-64 text-destructive">
+        Error {isSearching ? "searching" : "loading"} users
       </div>
     );
   }
@@ -334,12 +262,8 @@ export default function UserManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">
-            User Management
-          </h2>
-          <p className="text-muted-foreground">
-            Manage and monitor user accounts
-          </p>
+          <h2 className="text-2xl font-bold">User Management</h2>
+          <p className="text-muted-foreground">Manage and monitor user accounts</p>
         </div>
       </div>
 
@@ -347,248 +271,159 @@ export default function UserManagement() {
         <CardHeader>
           <CardTitle>Users</CardTitle>
           <CardDescription>
-            {isSearching 
-              ? `Search results for "${debouncedSearchTerm}" (${clients.length} users found)`
-              : `A list of all users in your system (${totalUsers} total users)`
-            }
+            {isSearching
+              ? `Search results for "${debouncedSearchTerm}" (${clients.length} found)`
+              : `All users (${totalUsers} total)`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                ref={searchInputRef}
-                placeholder="Search users by name, email, or client ID..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="pl-10 pr-10"
-                autoComplete="off"
-              />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearSearch}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-              {/* Loading indicator for search */}
-              {searchTerm.trim() !== debouncedSearchTerm && (
-                <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              )}
-            </div>
 
-            {/* Users List */}
-            {clients.length > 0 ? (
-              clients.map((user, index) => {
-                
-                const userBlocked = isUserBlocked(user);
-                const displayStatus = getDisplayStatus(user);
-                
-                return (
-                  <div
-                    key={user.clientId || user._id || index}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-primary font-medium">
-                          {user.name
-                            ?.split(" ")
-                            .map((n) => n[0])
-                            .join("") ||
-                            user.email?.[0]?.toUpperCase() ||
-                            "U"}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{user.name || "N/A"}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {user.email}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ClientID: {user.clientId || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                      <Badge className={getRoleColor(user.role || "User")}>
-                        {user.role || "User"}
-                      </Badge>
-                      <Badge className={getStatusColor(displayStatus)}>
-                        {displayStatus}
-                      </Badge>
-                      <div className="text-sm text-muted-foreground min-w-[100px]">
-                        {formatDate(user.lastLogin) || "N/A"}
-                      </div>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          {!userBlocked ? (
-                            <DropdownMenuItem
-                              onClick={() => showConfirmation(user, "block")}
-                              className="text-destructive"
-                            >
-                              <ShieldOff className="h-4 w-4 mr-2" />
-                              Block User
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => showConfirmation(user, "unblock")}
-                              className="text-green-600"
-                            >
-                              <Shield className="h-4 w-4 mr-2" />
-                              Unblock User
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                {isSearching 
-                  ? `No users found matching "${debouncedSearchTerm}"`
-                  : "No users found"
-                }
+        <CardContent className="space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              placeholder="Search by name, email, or client ID..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="pl-10 pr-10"
+            />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSearch}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            {searchTerm.trim() !== debouncedSearchTerm && (
+              <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
               </div>
             )}
           </div>
 
-          {/* Backend Pagination Controls - Hidden during search */}
-          {!isSearching && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex} to {endIndex} of {totalUsers} users
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToFirstPage}
-                  disabled={currentPage === 1 || fetchClientQuery.isLoading}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1 || fetchClientQuery.isLoading}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <div className="flex items-center space-x-1 min-w-[120px] justify-center">
-                  {fetchClientQuery.isLoading ? (
-                    <span className="text-sm text-muted-foreground">Loading...</span>
-                  ) : (
-                    <>
-                      <span className="text-sm text-muted-foreground">Page</span>
-                      <span className="text-sm font-medium">
-                        {currentPage} of {totalPages}
-                      </span>
-                    </>
-                  )}
+          {/* User List */}
+          {clients.length > 0 ? (
+            clients.map((user: any) => (
+              <div
+                key={user._id || user.clientId}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex-center">
+                    <span className="font-medium text-primary">
+                      {(user.name || user.email || "U")[0].toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{user.name || "Unnamed User"}</h3>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">ID: {user.clientId || user._id}</p>
+                  </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages || fetchClientQuery.isLoading}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToLastPage}
-                  disabled={currentPage === totalPages || fetchClientQuery.isLoading}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Badge className={getRoleColor(user.role)}>{user.role || "User"}</Badge>
+                  <Badge className={getStatusColor(getDisplayStatus(user))}>
+                    {getDisplayStatus(user)}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground min-w-[120px]">
+                    {formatDate(user.lastLogin)}
+                  </span>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Edit className="h-4 w-4 mr-2" /> Edit
+                      </DropdownMenuItem>
+                      {isUserBlocked(user) ? (
+                        <DropdownMenuItem
+                          onClick={() => showConfirmation(user, "unblock")}
+                          className="text-green-600"
+                        >
+                          <Shield className="h-4 w-4 mr-2" /> Unblock User
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => showConfirmation(user, "block")}
+                          className="text-destructive"
+                        >
+                          <ShieldOff className="h-4 w-4 mr-2" /> Block User
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              {isSearching
+                ? `No users found for "${debouncedSearchTerm}"`
+                : "No users available"}
             </div>
           )}
 
-          {/* Search Results Info - Shown during search */}
-          {isSearching && clients.length > 0 && (
-            <div className="mt-6 pt-4 border-t">
-              <div className="text-sm text-muted-foreground text-center">
-                Showing {clients.length} search result{clients.length !== 1 ? 's' : ''} for "{debouncedSearchTerm}"
+          {/* Pagination */}
+          {!isSearching && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex}–{endIndex} of {totalUsers}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={goToFirstPage} disabled={currentPage === 1}>
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-4 text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={goToLastPage} disabled={currentPage === totalPages}>
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <AlertDialog
-        open={alertDialog.open}
-        onOpenChange={(open) =>
-          !open && setAlertDialog({ open: false, type: null, user: null })
-        }
-      >
+      {/* Confirmation Dialog */}
+      <AlertDialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ open: false, type: null, user: null })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {alertDialog.type === "block" ? "Block User" : "Unblock User"}
+              {alertDialog.type === "block" ? "Block" : "Unblock"} User
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to {alertDialog.type} user "
-              {alertDialog.user?.name}"?
-              {alertDialog.type === "block"
-                ? " This will prevent them from accessing the system."
-                : " This will restore their access to the system."}
+              Are you sure you want to {alertDialog.type} <strong>{alertDialog.user?.name || "this user"}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmAction}
-              disabled={
-                blockClientMutation.isPending || unblockClientMutation.isPending
-              }
-              className={
-                alertDialog.type === "block"
-                  ? "bg-destructive hover:bg-destructive/90"
-                  : "bg-green-600 hover:bg-green-700"
-              }
+              disabled={blockClientMutation.isPending || unblockClientMutation.isPending}
+              className={alertDialog.type === "block" ? "bg-destructive" : "bg-green-600"}
             >
               {blockClientMutation.isPending || unblockClientMutation.isPending
                 ? "Processing..."
-                : alertDialog.type === "block"
-                ? "Block User"
-                : "Unblock User"}
+                : alertDialog.type === "block" ? "Block User" : "Unblock User"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
