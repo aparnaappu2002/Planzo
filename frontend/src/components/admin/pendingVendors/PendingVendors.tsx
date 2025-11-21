@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,97 +10,79 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Users, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Eye,
+  Clock,
+  CheckCircle,
+  Search,
+  X,
+  Loader2,
+} from "lucide-react";
+
 import VendorDetailModal, { PendingVendor } from "./VendorDetailedModal";
 import {
   useFetchPendingVendors,
   useApprovePendingVendor,
   useRejectPendingVendor,
+  useSearchVendors,
 } from "@/hooks/adminCustomHooks";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const PendingVendors = () => {
-  const [pendingVendors, setPendingVendors] = useState<PendingVendor[]>([]);
-  const [selectedVendor, setSelectedVendor] = useState<PendingVendor | null>(
-    null
-  );
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [currentPage] = useState(1);
 
-  
+  // Debounce search input
+  const debouncedSearch = useDebounce(searchInput.trim(), 400);
+
+  // Default list
   const {
     data: fetchedVendors,
-    isLoading,
+    isLoading: isLoadingList,
     error,
     refetch,
   } = useFetchPendingVendors(currentPage);
-  const { mutate: approveVendor, isLoading: isApproving } =
-    useApprovePendingVendor();
-  const { mutate: rejectVendor, isLoading: isRejecting } =
-    useRejectPendingVendor();
 
-  
-  useEffect(() => {
-    if (fetchedVendors) {
-      let vendorsArray = [];
-      if (Array.isArray(fetchedVendors)) {
-        vendorsArray = fetchedVendors;
-      } else if (
-        fetchedVendors &&
-        Array.isArray(fetchedVendors.pendingVendors)
-      ) {
-        vendorsArray = fetchedVendors.pendingVendors;
-      } else if (fetchedVendors && Array.isArray(fetchedVendors.data)) {
-        vendorsArray = fetchedVendors.data;
-      } else if (fetchedVendors && Array.isArray(fetchedVendors.vendors)) {
-        vendorsArray = fetchedVendors.vendors;
-      } else {
-        console.error(
-          "fetchedVendors is not in expected format:",
-          fetchedVendors
-        );
-        return;
-      }
+  // Search query (only runs when ≥3 chars thanks to enabled in hook)
+  const {
+    data: searchResults,
+    isLoading: isSearchingNow,
+  } = useSearchVendors(debouncedSearch);
+  console.log("SearchResult:",searchResults)
 
-      if (vendorsArray.length > 0) {
-        console.log("First vendor:", vendorsArray[0]);
-      }
+  // Mutations
+  const { mutate: approveVendor, isLoading: isApproving } = useApprovePendingVendor();
+  const { mutate: rejectVendor, isLoading: isRejecting } = useRejectPendingVendor(); // ← Fixed!
 
-      setPendingVendors(vendorsArray);
-    }
-  }, [fetchedVendors]);
+  const [selectedVendor, setSelectedVendor] = useState<PendingVendor | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Are we in search mode?
+  const hasSearchQuery = debouncedSearch.length >= 3;
+
+  // Choose data source
+  const vendorsData = hasSearchQuery ? searchResults : fetchedVendors;
+
+  // Normalize the array (handles different API shapes)
+  const pendingVendors: PendingVendor[] = (() => {
+    if (!vendorsData) return [];
+    if (Array.isArray(vendorsData)) return vendorsData;
+    if (Array.isArray(vendorsData.pendingVendors)) return vendorsData.pendingVendors;
+    if (Array.isArray(vendorsData.vendors)) return vendorsData.vendors;
+    if (Array.isArray(vendorsData.data)) return vendorsData.data;
+    return [];
+  })();
+
+  const totalPending = pendingVendors.length;
 
   const handleViewDetails = (vendor: PendingVendor) => {
     setSelectedVendor(vendor);
     setShowDetailModal(true);
   };
 
-  const handleApprove = async (params: {
-    vendorId: string;
-    newStatus: string;
-  }) => {
-    try {
-      await approveVendor(params, {
-        onSuccess: (response) => {
-          setPendingVendors(
-            (prev) =>
-              prev?.filter((vendor) => vendor.vendorId !== params.vendorId) ||
-              []
-          );
-
-          refetch();
-
-          return response;
-        },
-        onError: (error) => {
-          console.error("Failed to approve vendor:", error);
-
-          throw error;
-        },
-      });
-    } catch (error) {
-      console.error("Error approving vendor:", error);
-      throw error;
-    }
+  const handleApprove = async (params: { vendorId: string; newStatus: string }) => {
+    await approveVendor(params, { onSuccess: () => refetch() });
   };
 
   const handleReject = async (params: {
@@ -108,64 +90,37 @@ const PendingVendors = () => {
     newStatus: string;
     rejectionReason: string;
   }) => {
-    try {
-      await rejectVendor(params, {
-        onSuccess: (response) => {
-          setPendingVendors(
-            (prev) =>
-              prev?.filter((vendor) => vendor.vendorId !== params.vendorId) ||
-              []
-          );
-
-          refetch();
-
-          return response;
-        },
-        onError: (error) => {
-          console.error("Failed to reject vendor:", error);
-        },
-      });
-    } catch (error) {
-      console.error("Error rejecting vendor:", error);
-      throw error;
-    }
+    await rejectVendor(params, { onSuccess: () => refetch() });
   };
 
-  
-  const totalPending = pendingVendors?.length || 0;
+  const clearSearch = () => setSearchInput("");
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
-  };
 
-  if (isLoading) {
+  const isPageLoading = isLoadingList || (hasSearchQuery && isSearchingNow);
+
+  if (isPageLoading && !hasSearchQuery) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="text-center">
-            <p className="text-muted-foreground">Loading pending vendors...</p>
-          </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading pending vendors...</span>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !hasSearchQuery) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="text-center">
-            <p className="text-red-500">
-              Error loading pending vendors: {error.message}
-            </p>
-            <Button onClick={() => refetch()} className="mt-4">
-              Retry
-            </Button>
-          </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-red-500">Error: {error.message}</p>
+          <Button onClick={() => refetch()}>Retry</Button>
         </div>
       </div>
     );
@@ -174,44 +129,75 @@ const PendingVendors = () => {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">
-            Pending Vendor Applications
-          </h1>
+          <h1 className="text-4xl font-bold">Pending Vendor Applications</h1>
           <p className="text-muted-foreground text-lg">
-            Review and approve vendor applications to expand your network
+            Review and approve new vendor registrations
           </p>
         </div>
 
+        {/* Stats Card */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-orange-500" />
-                <div>
-                  <p className="text-2xl font-bold">{totalPending}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Pending Applications
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-8 h-8 text-orange-500" />
+                  <div>
+                    <p className="text-3xl font-bold">{totalPending}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {hasSearchQuery ? "Search Results" : "Pending Applications"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Search Bar */}
+        <div className="relative max-w-md mx-auto">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email, phone, or ID..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-10 pr-12"
+          />
+          {searchInput && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+          {hasSearchQuery && isSearchingNow && (
+            <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
+          )}
+        </div>
+
+        {/* Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Vendor Applications ({totalPending})</CardTitle>
+            <CardTitle>
+              {hasSearchQuery
+                ? `Search Results (${totalPending})`
+                : `Pending Applications (${totalPending})`}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {totalPending === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  All Caught Up!
+              <div className="text-center py-16">
+                <CheckCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">
+                  {hasSearchQuery ? "No results found" : "All Caught Up!"}
                 </h3>
                 <p className="text-muted-foreground">
-                  No pending vendor applications to review.
+                  {hasSearchQuery
+                    ? `No vendors match "${debouncedSearch}"`
+                    : "No pending applications to review."}
                 </p>
               </div>
             ) : (
@@ -222,47 +208,37 @@ const PendingVendors = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Vendor ID</TableHead>
-                    <TableHead>Registration Date</TableHead>
+                    <TableHead>Applied On</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pendingVendors.map((vendor) => (
-                    <TableRow key={vendor._id}>
-                      <TableCell className="font-medium">
-                        {vendor.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {vendor.email}
-                      </TableCell>
-                      <TableCell>{vendor.phone}</TableCell>
+                    <TableRow key={vendor._id || vendor.vendorId}>
+                      <TableCell className="font-medium">{vendor.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{vendor.email}</TableCell>
+                      <TableCell>{vendor.phone || "—"}</TableCell>
                       <TableCell>
                         <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {vendor.vendorId.substring(0, 8)}...
+                          {(vendor.vendorId || vendor._id || "").toString().substring(0, 10)}...
                         </code>
                       </TableCell>
                       <TableCell>{formatDate(vendor.createdAt)}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className="bg-orange-100 text-orange-800"
-                        >
-                          {vendor.vendorStatus}
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                          {vendor.vendorStatus || "Pending"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewDetails(vendor)}
-                            className="flex items-center gap-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                            View Details
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(vendor)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -272,7 +248,7 @@ const PendingVendors = () => {
           </CardContent>
         </Card>
 
-        {/* Vendor Detail Modal */}
+        {/* Detail Modal */}
         <VendorDetailModal
           vendor={selectedVendor}
           isOpen={showDetailModal}
