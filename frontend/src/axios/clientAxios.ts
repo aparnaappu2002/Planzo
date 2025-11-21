@@ -11,8 +11,13 @@ const instance = axios.create({
 instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = store.getState().token.token
+        const storeToken = store.getState().token.token;
+console.log('🔍 Token from store after dispatch:', storeToken);
+console.log('🔍 Store state:', store.getState().token);
+
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
+            
         }
         return config
     }
@@ -33,11 +38,7 @@ instance.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as CustomAxiosRequestConfig
         const data = error.response?.data as CustomErrorResponse;
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && data?.code !== "USER_BLOCKED") {
-
-            console.log('this is error', error.response)
-        }
-
+        console.log('this is error', error.response)
         if (error.response?.status === 403 && data?.code === "USER_BLOCKED") {
             store.dispatch(removeClient(null))
             store.dispatch(removeToken(null))
@@ -55,8 +56,13 @@ instance.interceptors.response.use(
                     {},
                     { withCredentials: true }
                 );
+
+                
+
                 console.log('this is the refreshResponse', refreshResponse)
                 const newAccessToken = refreshResponse.data.newAccessToken;
+                
+
 
                 store.dispatch(addToken(newAccessToken));
                 originalRequest.headers = {
