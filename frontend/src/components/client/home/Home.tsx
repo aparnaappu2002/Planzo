@@ -119,30 +119,7 @@ const handleSignupClick = () => {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center justify-center">
-              <div className="relative w-full max-w-md p-4 overflow-hidden bg-white rounded-lg shadow-xl">
-                <div className="absolute top-0 right-0 w-20 h-20 -mt-10 -mr-10 bg-yellow-500 rounded-full opacity-20"></div>
-                <div className="absolute bottom-0 left-0 w-16 h-16 -mb-8 -ml-8 bg-amber-500 rounded-full opacity-20"></div>
-                <h3 className="mb-4 text-lg font-semibold">Find Your Next Event</h3>
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input placeholder="Search events..." className="pl-10 h-12" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input placeholder="Location" className="pl-10 h-12" />
-                    </div>
-                    <div className="relative">
-                      <CalendarDays className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input placeholder="Date" className="pl-10 h-12" type="date" />
-                    </div>
-                  </div>
-                  <Button className="w-full h-12 bg-yellow-500 hover:bg-yellow-600">Search Events</Button>
-                </div>
-              </div>
-            </div>
+            
           </div>
         </div>
       </section>

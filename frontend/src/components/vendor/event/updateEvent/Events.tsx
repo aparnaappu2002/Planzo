@@ -211,24 +211,8 @@ const Events = () => {
               </div>
             </div>
           </div>
-          <div className="bg-card p-6 rounded-lg shadow-sm border border-border/50">
-            <div className="flex items-center gap-4">
-              <DollarSign className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-card p-6 rounded-lg shadow-sm border border-border/50">
-            <div className="flex items-center gap-4">
-              <TrendingUp className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Attendance Rate</p>
-                <p className="text-2xl font-bold">{stats.averageAttendance.toFixed(1)}%</p>
-              </div>
-            </div>
-          </div>
+          
+          
         </div>
 
         {/* Search and Filters */}
