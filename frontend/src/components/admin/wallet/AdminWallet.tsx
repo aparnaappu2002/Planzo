@@ -16,42 +16,22 @@ import {
 import { cn } from "@/lib/utils";
 import { useFindAdminWallet } from "@/hooks/adminCustomHooks";
 
-// Transaction interface matching your actual data structure
-interface Transaction {
-  _id: string;
-  amount: number;
-  currency: string;
-  paymentStatus: 'credit' | 'debit';
-  paymentType: string;
-  walletId: string;
-  date: string;
-}
 
-interface AdminWalletData {
-  message: string;
-  wallet: {
-    _id: string;
-    balance: number;
-    createdAt: string;
-    updatedAt: string;
-    userId: string;
-    userModel: string;
-    walletId: string;
-    __v: number;
-  };
-  transactions: Transaction[];
-  totalPages: number;
-}
+import Pagination from "@/components/other components/Pagination";
+
+
+import { Transaction } from "@/types/admin/TransactionType";
+
+import { AdminWalletData } from "@/types/admin/TransactionType";
 
 const AdminWallet = () => {
-  const userId = localStorage.getItem('adminId')
+  const userId = localStorage.getItem('adminId');
   const [currentPage, setCurrentPage] = useState(1);
   const { data, isLoading, error } = useFindAdminWallet(userId, currentPage) as {
     data: AdminWalletData | null;
     isLoading: boolean;
     error: any;
   };
-  console.log(data)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -148,7 +128,6 @@ const AdminWallet = () => {
     const totalCredits = creditTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
     const totalDebits = debitTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
 
-    // Calculate monthly change (placeholder - you might want to implement actual monthly calculation)
     const monthlyChange = totalCredits > 0 ? ((totalCredits - totalDebits) / totalCredits * 100) : 0;
 
     return {
@@ -176,6 +155,7 @@ const AdminWallet = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* ... (all your stat cards remain unchanged) */}
           <Card className="relative overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -274,10 +254,8 @@ const AdminWallet = () => {
                 </thead>
                 <tbody>
                   {transactions?.length > 0 ? (
-                    transactions.map((transaction: Transaction, index: number) => {
+                    transactions.map((transaction: Transaction) => {
                       const isCredit = transaction.paymentStatus === 'credit';
-                      
-                      // Create display description from paymentType
                       const displayDescription = transaction.paymentType.charAt(0).toUpperCase() + 
                                                transaction.paymentType.slice(1).replace(/([A-Z])/g, ' $1');
                       
@@ -338,33 +316,14 @@ const AdminWallet = () => {
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* NEW: Custom Pagination Component */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <div className="text-sm text-muted-foreground">
-                  Showing page {currentPage} of {totalPages} 
-                  ({transactions.length} total transactions)
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="mt-8">
+                <Pagination
+                  total={totalPages}
+                  current={currentPage}
+                  setPage={setCurrentPage}
+                />
               </div>
             )}
           </CardContent>
