@@ -1,6 +1,6 @@
 import { adminLogin,unblockClient,blockClient,fetchClientsAdmin,
     fetchVendorsAdmin,blockVendor,unblockVendor,fetchPendingVendorsAdmin,approvePendingVendor,rejectPendingVendor,searchClients,searchVendors,
-    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory,findEventsInAdminSide
+    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory,findEventsInAdminSide,findTransactionsByPaymentStatus
  } from "@/services/ApiServiceAdmin";
 import { useMutation,useQuery } from "@tanstack/react-query";
 import { CategoryUpdate } from "@/types/CategoryUpdate";
@@ -159,3 +159,16 @@ export const useFindEventsInAdmin = (pageNo: number) => {
     })
 }
 
+export const useFindTransactionsByPaymentStatus = (
+  paymentStatus: "credit" | "debit",
+  pageNo: number,
+  sortBy: string = "newest"
+) => {
+  return useQuery({
+    queryKey: ["transactionsByPaymentStatus", paymentStatus, pageNo, sortBy],
+    queryFn: () =>
+      findTransactionsByPaymentStatus(paymentStatus, pageNo, sortBy),
+    enabled: !!paymentStatus, 
+    
+  });
+};

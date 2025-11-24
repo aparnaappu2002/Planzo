@@ -17,5 +17,48 @@ export class TransactionRepository implements ItransactionRepository {
         const totalPages = Math.ceil(await transactionModel.countDocuments({ walletId: formattedWalletId }) / limit) || 1
         return { transactions, totalPages }
     }
-    
+    async findTransactionsByPaymentStatus(
+    paymentStatus: "credit" | "debit" | string,
+    pageNo: number,
+    sortBy: string = "newest"
+): Promise<{ transactions: TransactionsEntity[] | []; totalPages: number; total?: number }> {
+    const sortOptions: Record<string, any> = {
+        "amount-high-low": { amount: -1 },
+        "amount-low-high": { amount: 1 },
+        "newest": { date: -1 },
+        "oldest": { date: 1 },
+    };
+
+    const sort = sortOptions[sortBy] || { date: -1 };
+
+    const limit = 10;
+    const page = Math.max(pageNo, 1);
+    const skip = (page - 1) * limit;
+
+    // Normalize input
+    const status = paymentStatus.toLowerCase().trim();
+    if (!["credit", "debit"].includes(status)) {
+        return { transactions: [], totalPages: 0 };
+    }
+
+    const query = { paymentStatus: status }; // exact match
+
+    const [transactions, totalCount] = await Promise.all([
+        transactionModel
+            .find(query)
+            .select('-__v -updatedAt')
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .lean<TransactionsEntity[]>(),
+
+        transactionModel.countDocuments(query)
+    ]);
+
+    return {
+        transactions: transactions || [],
+        totalPages: Math.ceil(totalCount / limit) || 1,
+        total: totalCount
+    };
+}
 }

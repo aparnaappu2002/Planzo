@@ -2,36 +2,61 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Wallet, 
-  TrendingUp, 
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; // ← New: for clean filter
+import {
+  ChevronLeft,
+  ChevronRight,
+  Wallet,
+  TrendingUp,
   TrendingDown,
   DollarSign,
   ArrowUpRight,
   ArrowDownLeft,
-  Calendar
+  Calendar,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFindAdminWallet } from "@/hooks/adminCustomHooks";
+import { useFindAdminWallet,useFindTransactionsByPaymentStatus } from "@/hooks/adminCustomHooks";
 
 
 import Pagination from "@/components/other components/Pagination";
+import { Transaction, AdminWalletData } from "@/types/admin/TransactionType";
 
-
-import { Transaction } from "@/types/admin/TransactionType";
-
-import { AdminWalletData } from "@/types/admin/TransactionType";
+type FilterType = "all" | "credit" | "debit";
 
 const AdminWallet = () => {
   const userId = localStorage.getItem('adminId');
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, isLoading, error } = useFindAdminWallet(userId, currentPage) as {
+  const [filter, setFilter] = useState<FilterType>("all");
+
+  // Main wallet data (for balance & stats)
+  const { data: walletData, isLoading: loadingWallet } = useFindAdminWallet(userId, 1) as {
     data: AdminWalletData | null;
     isLoading: boolean;
-    error: any;
   };
+
+  // Filtered transactions using your new hook
+  const { 
+    data: filteredData, 
+    isLoading: loadingTransactions,
+    isPreviousData // from keepPreviousData
+  } = useFindTransactionsByPaymentStatus(
+    filter === "all" ? "credit" : filter, // dummy value when "all" — will be ignored
+    currentPage,
+    "newest"
+  );
+
+  // Choose which data to display
+  const transactions = filter === "all" 
+    ? walletData?.transactions || [] 
+    : filteredData?.transactions || [];
+
+  const totalPages = filter === "all"
+    ? walletData?.totalPages || 1
+    : filteredData?.totalPages || 1;
+
+  const isLoading = loadingWallet || loadingTransactions;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -50,21 +75,7 @@ const AdminWallet = () => {
     });
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed': 
-      case 'success':
-      case 'approved': return 'default';
-      case 'pending': 
-      case 'processing': return 'secondary';
-      case 'failed': 
-      case 'rejected':
-      case 'declined': return 'destructive';
-      default: return 'default';
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading && !isPreviousData) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-2 mb-6">
@@ -87,54 +98,29 @@ const AdminWallet = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
-        <Card className="p-6 text-center">
-          <p className="text-muted-foreground">Failed to load wallet data</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!data) {
+  if (!walletData?.wallet) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <Card className="p-6 text-center">
           <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No wallet found</h3>
+          <h3 className="text-lg font-medium mb-2">No wallet found</h3>
           <p className="text-muted-foreground">Unable to load wallet data.</p>
         </Card>
       </div>
     );
   }
 
-  const balance = data.wallet.balance;
-  const transactions = data.transactions;
-  const totalPages = data.totalPages;
+  const balance = walletData.wallet.balance;
 
-  // Calculate stats from transactions using paymentStatus
   const calculateStats = () => {
-    const creditTransactions = transactions.filter((t: Transaction) => t.paymentStatus === 'credit');
-    const debitTransactions = transactions.filter((t: Transaction) => t.paymentStatus === 'debit');
-    
-    const totalCredits = creditTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
-    const totalDebits = debitTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
+    const allTxns = walletData?.transactions || [];
+    const creditTxns = allTxns.filter(t => t.paymentStatus === 'credit');
+    const debitTxns = allTxns.filter(t => t.paymentStatus === 'debit');
 
-    const monthlyChange = totalCredits > 0 ? ((totalCredits - totalDebits) / totalCredits * 100) : 0;
+    const totalCredits = creditTxns.reduce((sum, t) => sum + t.amount, 0);
+    const totalDebits = debitTxns.reduce((sum, t) => sum + t.amount, 0);
 
-    return {
-      totalCredits,
-      totalDebits,
-      monthlyChange: parseFloat(monthlyChange.toFixed(2))
-    };
+    return { totalCredits, totalDebits };
   };
 
   const stats = calculateStats();
@@ -155,7 +141,6 @@ const AdminWallet = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* ... (all your stat cards remain unchanged) */}
           <Card className="relative overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -167,14 +152,13 @@ const AdminWallet = () => {
               <div className="text-2xl font-bold text-foreground">
                 {formatCurrency(balance)}
               </div>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary/10 to-accent/10 rounded-bl-full"></div>
             </CardContent>
           </Card>
 
           <Card style={{ boxShadow: 'var(--shadow-card)' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4 text-success" />
+                <ArrowUpCircle className="h-4 w-4 text-success" />
                 Total Credits
               </CardTitle>
             </CardHeader>
@@ -182,16 +166,13 @@ const AdminWallet = () => {
               <div className="text-2xl font-bold text-success">
                 {formatCurrency(stats.totalCredits)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {transactions.filter(t => t.paymentStatus === 'credit').length} transactions
-              </div>
             </CardContent>
           </Card>
 
           <Card style={{ boxShadow: 'var(--shadow-card)' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <ArrowDownLeft className="h-4 w-4 text-destructive" />
+                <ArrowDownCircle className="h-4 w-4 text-destructive" />
                 Total Debits
               </CardTitle>
             </CardHeader>
@@ -199,116 +180,98 @@ const AdminWallet = () => {
               <div className="text-2xl font-bold text-destructive">
                 {formatCurrency(stats.totalDebits)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {transactions.filter(t => t.paymentStatus === 'debit').length} transactions
-              </div>
             </CardContent>
           </Card>
 
           <Card style={{ boxShadow: 'var(--shadow-card)' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                {stats.monthlyChange >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )}
-                Net Change
+                {balance >= 0 ? <TrendingUp className="h-4 w-4 text-success" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
+                Net Balance
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={cn(
-                "text-2xl font-bold",
-                stats.totalCredits - stats.totalDebits >= 0 ? "text-success" : "text-destructive"
-              )}>
-                {stats.totalCredits - stats.totalDebits >= 0 ? '+' : ''}
-                {formatCurrency(stats.totalCredits - stats.totalDebits)}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {transactions.length} total transactions
+              <div className={cn("text-2xl font-bold", balance >= 0 ? "text-success" : "text-destructive")}>
+                {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Transactions Table */}
+        {/* Filter Tabs + Transactions Table */}
         <Card style={{ boxShadow: 'var(--shadow-card)' }}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Recent Transactions
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Transaction History
+              </CardTitle>
+
+              {/* Filter Tabs */}
+              <Tabs value={filter} onValueChange={(v) => {
+                setFilter(v as FilterType);
+                setCurrentPage(1); // Reset to page 1 on filter change
+              }}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="all" className="flex items-center gap-2">
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger value="credit" className="flex items-center gap-2">
+                    <ArrowUpRight className="h-4 w-4 text-success" />
+                    Credits
+                  </TabsTrigger>
+                  <TabsTrigger value="debit" className="flex items-center gap-2">
+                    <ArrowDownLeft className="h-4 w-4 text-destructive" />
+                    Debits
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </CardHeader>
+
           <CardContent>
             <div className="rounded-lg border border-gray-200 overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50/30">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Transaction ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">ID</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Type</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Amount</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Payment Type</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Currency</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions?.length > 0 ? (
-                    transactions.map((transaction: Transaction) => {
-                      const isCredit = transaction.paymentStatus === 'credit';
-                      const displayDescription = transaction.paymentType.charAt(0).toUpperCase() + 
-                                               transaction.paymentType.slice(1).replace(/([A-Z])/g, ' $1');
-                      
+                  {transactions.length > 0 ? (
+                    transactions.map((t: Transaction) => {
+                      const isCredit = t.paymentStatus === 'credit';
+                      const displayType = t.paymentType.charAt(0).toUpperCase() + 
+                                        t.paymentType.slice(1).replace(/([A-Z])/g, ' $1');
+
                       return (
-                        <tr key={transaction._id} className="border-t hover:bg-gray-50/20">
-                          <td className="px-4 py-3 font-mono text-sm">
-                            {transaction._id.slice(-8)}
-                          </td>
+                        <tr key={t._id} className="border-t hover:bg-gray-50/20">
+                          <td className="px-4 py-3 font-mono text-sm">{t._id.slice(-8)}</td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              {isCredit ? (
-                                <ArrowUpRight className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <ArrowDownLeft className="h-4 w-4 text-red-600" />
-                              )}
-                              <Badge 
-                                variant={isCredit ? "default" : "destructive"}
-                                className="text-xs"
-                              >
-                                {isCredit ? 'Credit' : 'Debit'}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className={cn(
-                            "px-4 py-3 font-semibold",
-                            isCredit ? "text-green-600" : "text-red-600"
-                          )}>
-                            {isCredit ? '+' : '-'}
-                            {formatCurrency(transaction.amount)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant="secondary" className="text-xs">
-                              {displayDescription}
+                            <Badge variant={isCredit ? "default" : "destructive"}>
+                              {isCredit ? "Credit" : "Debit"}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {transaction.date ? formatDate(transaction.date) : 'N/A'}
+                          <td className={cn("px-4 py-3 font-semibold", isCredit ? "text-success" : "text-destructive")}>
+                            {isCredit ? "+" : "-"} {formatCurrency(t.amount)}
                           </td>
                           <td className="px-4 py-3">
-                            <Badge variant="outline" className="text-xs">
-                              {transaction.currency.toUpperCase()}
-                            </Badge>
+                            <Badge variant="secondary">{displayType}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {t.date ? formatDate(t.date) : "N/A"}
                           </td>
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-600">
-                        <div className="flex flex-col items-center gap-2">
-                          <Wallet className="h-8 w-8 text-gray-400" />
-                          <span>No transactions found</span>
-                        </div>
+                      <td colSpan={5} className="text-center py-10 text-muted-foreground">
+                        No {filter === "all" ? "" : filter} transactions found
                       </td>
                     </tr>
                   )}
@@ -316,7 +279,6 @@ const AdminWallet = () => {
               </table>
             </div>
 
-            {/* NEW: Custom Pagination Component */}
             {totalPages > 1 && (
               <div className="mt-8">
                 <Pagination

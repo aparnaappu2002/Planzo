@@ -66,5 +66,8 @@ export class AdminRoute{
         this.adminRoute.get('/eventDetails', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
             injectedFindEventsInAdminSideController.handleListingEventsInAdminSide(req, res)
         })
+        this.adminRoute.get('/transactions', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedAdminWalletController.handleFindWalletByPaymentStatus(req, res)
+        })
     }
 }

@@ -34,6 +34,8 @@ import { CategoryDatabaseRepository } from "../../adapters/repository/category/c
 import { FindEventsInAdminSideUseCase } from "../../useCases/admin/eventManagement/findEventsInAdminSide";
 import { FindEventsInAdminSideController } from "../../adapters/controllers/admin/eventManagement/findEventsInAdminController";
 import { EventRepository } from "../../adapters/repository/event/eventRepository";
+import { FindTransactionByPaymentUseCase } from "../../useCases/transaction/findTransactionByPaymentStatusUseCase";
+
 
 
 
@@ -79,7 +81,8 @@ export const injectedVendorStatusController = new VendorStatusController(approve
 const findWalletAdminUseCase=new FindWalletUseCase(walletRepository)
 const transactionRepository=new TransactionRepository()
 const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
-export const injectedAdminWalletController = new FindAdminWalletDetailsController(findWalletAdminUseCase,findTransactionUseCase)
+const findTransactionByPaymentStatusUseCase=new FindTransactionByPaymentUseCase(transactionRepository)
+export const injectedAdminWalletController = new FindAdminWalletDetailsController(findWalletAdminUseCase,findTransactionUseCase,findTransactionByPaymentStatusUseCase)
 
 //category
 const categoryRepository=new CategoryDatabaseRepository()

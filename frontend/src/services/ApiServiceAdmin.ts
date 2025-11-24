@@ -224,3 +224,31 @@ export const findEventsInAdminSide = async (pageNo: number) => {
     }
 }
 
+
+
+export const findTransactionsByPaymentStatus = async (
+  paymentStatus: "credit" | "debit",
+  pageNo: number,
+  sortBy: string = "newest"
+) => {
+  try {
+    const response = await axios.get(`/transactions`, {
+      params: {
+        paymentStatus,
+        pageNo,
+        sortBy
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Error while fetching transactions by payment status", error);
+    throw new Error(
+      isAxiosError(error)
+        ? error.response?.data.message || "Failed to fetch transactions"
+        : "Unexpected error while fetching transactions"
+    );
+  }
+};
+
+
