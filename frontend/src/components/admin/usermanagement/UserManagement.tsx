@@ -6,10 +6,6 @@ import {
   Trash2,
   Shield,
   ShieldOff,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   X,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -46,9 +42,9 @@ import {
   useSearchClients,
 } from "@/hooks/adminCustomHooks";
 import { toast } from "react-toastify";
+import { useDebounce } from "@/hooks/useDebounce";
 
-// Import your reusable debounce hook
-import { useDebounce } from "@/hooks/useDebounce"; // Adjust path if needed
+import Pagination from "@/components/other components/Pagination";
 
 export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,8 +64,6 @@ export default function UserManagement() {
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Use imported reusable debounce
   const debouncedSearchTerm = useDebounce(searchTerm.trim(), 300);
 
   const fetchClientQuery = useFetchClientsAdmin(currentPage);
@@ -84,8 +78,6 @@ export default function UserManagement() {
     clients,
     totalPages,
     totalUsers,
-    currentPageFromAPI,
-    limit,
     startIndex,
     endIndex,
   } = useMemo(() => {
@@ -97,9 +89,8 @@ export default function UserManagement() {
     const totalUsersData = isSearching
       ? searchClientQuery?.data?.totalUsers || clientsData.length
       : fetchClientQuery?.data?.totalUsers || 0;
-    const currentPageFromAPIData = isSearching ? 1 : currentPage;
-    const limitData = fetchClientQuery?.data?.limit || 5;
 
+    const limitData = fetchClientQuery?.data?.limit || 5;
     const startIndexData = isSearching ? 1 : (currentPage - 1) * limitData + 1;
     const endIndexData = isSearching
       ? clientsData.length
@@ -109,8 +100,6 @@ export default function UserManagement() {
       clients: clientsData,
       totalPages: totalPagesData,
       totalUsers: totalUsersData,
-      currentPageFromAPI: currentPageFromAPIData,
-      limit: limitData,
       startIndex: startIndexData,
       endIndex: endIndexData,
     };
@@ -172,14 +161,11 @@ export default function UserManagement() {
     } catch (error) {
       console.error("Action failed:", error);
       toast.error(`Failed to ${alertDialog.type} user`);
-
-      // Revert optimistic update
       setLocalUserUpdates((prev) => {
         const updated = { ...prev };
         delete updated[alertDialog.user._id];
         return updated;
       });
-
       setAlertDialog({ open: false, type: null, user: null });
     }
   };
@@ -191,7 +177,6 @@ export default function UserManagement() {
     return "bg-secondary text-secondary-foreground";
   }, []);
 
-  // FIXED: Fixed the syntax error here!
   const getRoleColor = useCallback((role?: string) => {
     if (role === "Admin") return "bg-primary/10 text-primary";
     if (role === "Moderator") return "bg-accent text-accent-foreground";
@@ -215,11 +200,6 @@ export default function UserManagement() {
     (user: any) => (getCurrentUserStatus(user) === "block" ? "Blocked" : "Active"),
     [getCurrentUserStatus]
   );
-
-  const goToFirstPage = () => !isSearching && currentPage !== 1 && setCurrentPage(1);
-  const goToPreviousPage = () => !isSearching && currentPage > 1 && setCurrentPage(p => p - 1);
-  const goToNextPage = () => !isSearching && currentPage < totalPages && setCurrentPage(p => p + 1);
-  const goToLastPage = () => !isSearching && currentPage !== totalPages && setCurrentPage(totalPages);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Never";
@@ -310,10 +290,10 @@ export default function UserManagement() {
             clients.map((user: any) => (
               <div
                 key={user._id || user.clientId}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex-center">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                     <span className="font-medium text-primary">
                       {(user.name || user.email || "U")[0].toUpperCase()}
                     </span>
@@ -375,28 +355,18 @@ export default function UserManagement() {
             </div>
           )}
 
-          {/* Pagination */}
+          {/* Custom Pagination - Only show when NOT searching and has multiple pages */}
           {!isSearching && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex}–{endIndex} of {totalUsers}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={goToFirstPage} disabled={currentPage === 1}>
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="px-4 text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={goToLastPage} disabled={currentPage === totalPages}>
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
+            <div className="mt-8 pt-6 border-t">
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex}–{endIndex} of {totalUsers} users
+                </div>
+                <Pagination
+                  total={totalPages}
+                  current={currentPage}
+                  setPage={setCurrentPage}
+                />
               </div>
             </div>
           )}
@@ -419,7 +389,7 @@ export default function UserManagement() {
             <AlertDialogAction
               onClick={confirmAction}
               disabled={blockClientMutation.isPending || unblockClientMutation.isPending}
-              className={alertDialog.type === "block" ? "bg-destructive" : "bg-green-600"}
+              className={alertDialog.type === "block" ? "bg-destructive hover:bg-destructive/90" : "bg-green-600 hover:bg-green-700"}
             >
               {blockClientMutation.isPending || unblockClientMutation.isPending
                 ? "Processing..."

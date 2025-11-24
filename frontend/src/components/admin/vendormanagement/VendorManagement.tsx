@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,8 +25,6 @@ import {
   Shield,
   ShieldOff,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   Search,
   X,
 } from "lucide-react";
@@ -38,9 +36,10 @@ import {
   useSearchVendors,
 } from "@/hooks/adminCustomHooks";
 import { toast } from "react-toastify";
+import { useDebounce } from "@/hooks/useDebounce";
 
+import Pagination from "@/components/other components/Pagination";
 
-import { useDebounce } from "@/hooks/useDebounce"; 
 interface Vendor {
   _id: string;
   name: string;
@@ -104,10 +103,8 @@ export default function VendorManagement() {
   const [showDialog, setShowDialog] = useState(false);
   const [actionType, setActionType] = useState<"block" | "unblock">("block");
 
-  // This is the missing piece!
   const [vendors, setVendors] = useState<Vendor[]>([]);
 
-  // Debounced search
   const debouncedSearchQuery = useDebounce(searchInput.trim(), 300);
 
   const { data: vendorData, isLoading } = useFetchVendorAdmin(currentPage);
@@ -118,7 +115,7 @@ export default function VendorManagement() {
 
   const isSearching = debouncedSearchQuery.length > 0;
 
-  // Sync vendors from API (paginated list or search results)
+  // Sync vendors from API
   useEffect(() => {
     if (isSearching) {
       setVendors(searchResults?.vendors || []);
@@ -129,7 +126,7 @@ export default function VendorManagement() {
 
   const totalPages = isSearching ? 1 : vendorData?.totalPages || 1;
 
-  // Reset page when starting search
+  // Reset page on search
   useEffect(() => {
     if (isSearching) setCurrentPage(1);
   }, [isSearching]);
@@ -145,7 +142,7 @@ export default function VendorManagement() {
 
     const vendorId = selectedVendor._id;
 
-    // Optimistic UI update
+    // Optimistic update
     setVendors((prev) =>
       prev.map((v) =>
         v._id === vendorId
@@ -165,7 +162,7 @@ export default function VendorManagement() {
         toast.success("Vendor unblocked successfully");
       }
     } catch (err: any) {
-      // Rollback on error
+      // Rollback
       setVendors((prev) =>
         prev.map((v) =>
           v._id === vendorId ? { ...v, status: selectedVendor.status } : v
@@ -214,7 +211,7 @@ export default function VendorManagement() {
               onClick={clearSearch}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
-              <X className="h-5 w-5 text-muted-foreground" />
+              <X className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
             </button>
           )}
           {isSearching && isSearchLoading && (
@@ -223,17 +220,12 @@ export default function VendorManagement() {
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle>Vendor List</CardTitle>
-            {!isSearching && (
-              <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
-            )}
           </CardHeader>
           <CardContent>
             {vendors.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground">
+              <p className="py-12 text-center text-muted-foreground">
                 {isSearching
                   ? `No vendors found for "${debouncedSearchQuery}"`
                   : "No vendors available"}
@@ -263,28 +255,18 @@ export default function VendorManagement() {
                   </TableBody>
                 </Table>
 
+                {/* Custom Yellow Pagination */}
                 {!isSearching && totalPages > 1 && (
-                  <div className="mt-6 flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" /> Previous
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        Next <ChevronRight className="h-4 w-4" />
-                      </Button>
+                  <div className="mt-8 pt-6 border-t">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </div>
+                      <Pagination
+                        total={totalPages}
+                        current={currentPage}
+                        setPage={setCurrentPage}
+                      />
                     </div>
                   </div>
                 )}
