@@ -21,7 +21,7 @@ import { useFindAdminWallet,useFindTransactionsByPaymentStatus } from "@/hooks/a
 
 
 import Pagination from "@/components/other components/Pagination";
-import { Transaction, AdminWalletData } from "@/types/admin/TransactionType";
+import { Transaction, WalletData } from "@/types/admin/TransactionType";
 
 type FilterType = "all" | "credit" | "debit";
 
@@ -32,22 +32,22 @@ const AdminWallet = () => {
 
   // Main wallet data (for balance & stats)
   const { data: walletData, isLoading: loadingWallet } = useFindAdminWallet(userId, 1) as {
-    data: AdminWalletData | null;
+    data: WalletData | null;
     isLoading: boolean;
   };
 
-  // Filtered transactions using your new hook
+  
   const { 
     data: filteredData, 
     isLoading: loadingTransactions,
     isPreviousData // from keepPreviousData
   } = useFindTransactionsByPaymentStatus(
-    filter === "all" ? "credit" : filter, // dummy value when "all" — will be ignored
+    filter === "all" ? "credit" : filter, 
     currentPage,
     "newest"
   );
 
-  // Choose which data to display
+  
   const transactions = filter === "all" 
     ? walletData?.transactions || [] 
     : filteredData?.transactions || [];

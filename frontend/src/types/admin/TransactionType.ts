@@ -8,7 +8,7 @@ export interface Transaction {
   date: string;
 }
 
-export interface AdminWalletData {
+export interface WalletData {
   message: string;
   wallet: {
     _id: string;

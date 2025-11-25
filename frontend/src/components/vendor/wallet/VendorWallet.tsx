@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wallet, Eye, EyeOff, ArrowUpRight, ArrowDownLeft, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wallet, Eye, EyeOff, ArrowUpRight, ArrowDownLeft, Filter } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,43 +7,22 @@ import { useFindWalletDetailsVendor } from '@/hooks/vendorCustomHooks';
 import { RootState } from '@/redux/Store';
 import { useSelector } from 'react-redux';
 
-// Transaction interface matching your actual data structure
-interface Transaction {
-  _id: string;
-  amount: number;
-  currency: string;
-  paymentStatus: 'credit' | 'debit';
-  paymentType: string;
-  walletId: string;
-  date: string;
-}
+import { Transaction } from '@/types/admin/TransactionType';
+import { WalletData } from '@/types/admin/TransactionType';
 
-interface WalletData {
-  message: string;
-  wallet: {
-    _id: string;
-    balance: number;
-    createdAt: string;
-    updatedAt: string;
-    userId: string;
-    userModel: string;
-    walletId: string;
-    __v: number;
-  };
-  transactions: Transaction[];
-  totalPages: number;
-}
+
+import Pagination from '@/components/other components/Pagination';
 
 const VendorWallet = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [transactionFilter, setTransactionFilter] = useState('all'); // 'all', 'credit', 'debit'
+  const [transactionFilter, setTransactionFilter] = useState('all'); 
+
   const { data: walletData, isLoading } = useFindWalletDetailsVendor(vendorId, currentPage) as {
     data: WalletData | null;
     isLoading: boolean;
   };
-  console.log(walletData)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -94,13 +73,13 @@ const VendorWallet = () => {
   const transactions = walletData.transactions;
   const totalPages = walletData.totalPages;
 
-  // Filter transactions based on selected filter - using paymentStatus
+  // Filter transactions
   const filteredTransactions = transactions.filter((transaction: Transaction) => {
     if (transactionFilter === 'all') return true;
     return transaction.paymentStatus === transactionFilter;
   });
 
-  // Calculate summary stats - using paymentStatus
+  // Summary stats
   const creditTransactions = transactions.filter((t: Transaction) => t.paymentStatus === 'credit');
   const debitTransactions = transactions.filter((t: Transaction) => t.paymentStatus === 'debit');
   const totalCredits = creditTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
@@ -200,8 +179,6 @@ const VendorWallet = () => {
             {filteredTransactions && filteredTransactions.length > 0 ? (
               filteredTransactions.map((transaction: Transaction) => {
                 const isCredit = transaction.paymentStatus === 'credit';
-                
-                // Create display description from paymentType
                 const displayDescription = transaction.paymentType.charAt(0).toUpperCase() + transaction.paymentType.slice(1);
                 
                 return (
@@ -274,33 +251,18 @@ const VendorWallet = () => {
             )}
           </div>
 
-          {/* Pagination */}
+          {/* Custom Yellow Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-              <div className="text-sm text-gray-600">
-                Showing page {currentPage} of {totalPages} ({transactions.length} total transactions)
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="flex items-center gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="flex items-center gap-1"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  Showing page {currentPage} of {totalPages} ({transactions.length} transactions this page)
+                </div>
+                <Pagination
+                  total={totalPages}
+                  current={currentPage}
+                  setPage={setCurrentPage}
+                />
               </div>
             </div>
           )}
