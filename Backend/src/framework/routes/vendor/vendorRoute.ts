@@ -99,5 +99,8 @@ export class VendorRoute{
         this.vendorRoute.post('/verifyTicket', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedTicketVendorController.handleTicketConfirmation(req, res)
         })
+        this.vendorRoute.get('/transactions', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedWalletVendorController.handleFindTransactionsByPaymentStatus(req, res)
+        })
     }
 }

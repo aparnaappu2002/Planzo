@@ -51,6 +51,7 @@ import { RejectBookingInVendorUseCase } from "../../useCases/vendor/booking/reje
 import { UpdateBookingAsCompleteUseCase } from "../../useCases/vendor/booking/updateBookingAsCompletedUseCase";
 import { BookingsVendorController } from "../../adapters/controllers/vendor/booking/bookingVendorController";
 import { TicketVerificationUseCase } from "../../useCases/vendor/ticket/ticketVerificationUseCase";
+import { FindTransactionByPaymentUseCase } from "../../useCases/transaction/findTransactionByPaymentStatusUseCase";
 
 
 const EmailService  = new emailService()
@@ -97,7 +98,8 @@ const walletRepository=new WalletRepository()
 const transactionRepository=new TransactionRepository()
 const findWalletUseCase=new FindWalletUseCase(walletRepository)
 const findTransactionUseCase=new FindTransactionsUseCase(transactionRepository)
-export const injectedWalletVendorController = new WalletVendorController(findWalletUseCase,findTransactionUseCase)
+const findTransactionByPaymentStatusUseCase=new FindTransactionByPaymentUseCase(transactionRepository)
+export const injectedWalletVendorController = new WalletVendorController(findWalletUseCase,findTransactionUseCase,findTransactionByPaymentStatusUseCase)
 
 //ticket
 const ticketRepository=new TicketRepository()
