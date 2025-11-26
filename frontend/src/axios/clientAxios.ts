@@ -12,8 +12,7 @@ instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = store.getState().token.token
         const storeToken = store.getState().token.token;
-console.log('🔍 Token from store after dispatch:', storeToken);
-console.log('🔍 Store state:', store.getState().token);
+
 
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -59,7 +58,7 @@ instance.interceptors.response.use(
 
                 
 
-                console.log('this is the refreshResponse', refreshResponse)
+                
                 const newAccessToken = refreshResponse.data.newAccessToken;
                 
 
