@@ -108,7 +108,7 @@ export class TicketRepository implements IticketRepositoryInterface {
         };
     }
 
-    // Use aggregation with $lookup to get real-time count
+    
     const result = await ticketModel.aggregate([
         {
             $match: {
@@ -185,7 +185,7 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
                 clientId: '$client'
             }
         },
-        // Add sorting stage BEFORE pagination - sorts by creation time (newest first)
+        
         { $sort: { _id: -1 } },
         {
             $project: {
@@ -315,7 +315,6 @@ async getTicketsByStatus(
                 clientId: '$client'
             }
         },
-        // Add sorting stage BEFORE pagination
         { $sort: sort },
         {
             $project: {
@@ -354,7 +353,6 @@ async getTicketsByStatus(
         { $limit: limit }
     ]);
     
-    // Count total documents with the same filter
     const countResult = await ticketModel.aggregate([
         {
             $match: matchStage
