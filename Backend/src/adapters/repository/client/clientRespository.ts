@@ -65,13 +65,11 @@ export class clientRepository implements IClientDatabaseRepository{
             { email: { $regex: search, $options: 'i' } }
         ];
         
-        // If search is a number, search phone field directly
         const phoneNumber = parseInt(search, 10);
         if (!isNaN(phoneNumber)) {
             orConditions.push({ phone: phoneNumber });
         }
         
-        // Also search for partial phone matches by converting to string
         orConditions.push({
             $expr: {
                 $regexMatch: {
