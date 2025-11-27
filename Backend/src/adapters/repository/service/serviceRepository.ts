@@ -4,11 +4,9 @@ import { IserviceRepository } from "../../../domain/interfaces/repositoryInterfa
 import { serviceModal } from "../../../framework/database/models/serviceModel";
 import { VendorDTO } from "../../../domain/entities/VendorDTO";
 import { Types } from "mongoose";
+import { Filter } from "../../../domain/interfaces/repositoryInterfaces/service/Ifilter";
 
-interface Filter {
-    status: string
-    categoryId?: string
-}
+
 export class ServiceRepository implements IserviceRepository {
     async createService(service: ServiceEntity): Promise<ServiceEntity> {
         return await serviceModal.create(service)
