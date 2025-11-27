@@ -236,15 +236,7 @@ export const EventDetailModal = ({ event, isOpen, onClose }: EventDetailModalPro
             >
               Close
             </Button>
-            <Button 
-              className="flex-1 bg-gradient-primary hover:shadow-glow transition-all duration-300"
-              onClick={() => {
-                // Add edit functionality here
-                console.log('Edit event:', event._id);
-              }}
-            >
-              Edit Event
-            </Button>
+            
           </div>
         </div>
       </DialogContent>
