@@ -7,10 +7,14 @@ export class JwtService implements IjwtInterface {
     userId: string,
     role: string
   ): string {
-    return jwt.sign({ userId, role }, accessSecretKey, { expiresIn: "30m" });
+    const expiresIn = Number(process.env.ACCESS_TOKEN_EXPIRES_IN)
+
+
+    return jwt.sign({ userId, role }, accessSecretKey, { expiresIn });
   }
   createRefreshToken(refreshSecretKey: string, userId: string): string {
-    return jwt.sign({ userId }, refreshSecretKey, { expiresIn: "1d" });
+    const expiresIn = Number(process.env.REFRESH_TOKEN_EXPIRES_IN)
+    return jwt.sign({ userId }, refreshSecretKey, { expiresIn });
   }
   verifyAccessToken(accessToken: string, accessSecretKey: string) {
     try {
@@ -37,10 +41,11 @@ export class JwtService implements IjwtInterface {
     userId: string,
     email: string
   ): string {
+    const expiresIn = Number(process.env.RESET_TOKEN_EXPIRES_IN )
     return jwt.sign(
       { userId, email, purpose: "password_reset" },
       resetSecretKey,
-      { expiresIn: "15m" }
+      { expiresIn }
     );
   }
   verifyPasswordResetToken(
