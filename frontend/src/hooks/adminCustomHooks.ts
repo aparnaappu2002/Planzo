@@ -1,6 +1,7 @@
 import { adminLogin,unblockClient,blockClient,fetchClientsAdmin,
     fetchVendorsAdmin,blockVendor,unblockVendor,fetchPendingVendorsAdmin,approvePendingVendor,rejectPendingVendor,searchClients,searchVendors,
-    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory,findEventsInAdminSide,findTransactionsByPaymentStatus
+    findWalletAdmin,createCategory,findAllCategory,updateCategory,changeStatusCategory,findEventsInAdminSide,findTransactionsByPaymentStatus,
+    dashBoardAdminDetatils
  } from "@/services/ApiServiceAdmin";
 import { useMutation,useQuery } from "@tanstack/react-query";
 import { CategoryUpdate } from "@/types/CategoryUpdate";
@@ -172,3 +173,9 @@ export const useFindTransactionsByPaymentStatus = (
     
   });
 };
+export const useFindDashboardAdminDetails = (adminId: string) => {
+    return useQuery({
+        queryKey: ['adminDashboardDetails', adminId],
+        queryFn: () => dashBoardAdminDetatils(adminId)
+    })
+}

@@ -3,6 +3,7 @@ import { EventEntity } from "../../../entities/event/eventEntity";
 import { EventUpdateEntity } from "../../../entities/event/eventUpdateEntity";
 import { SearchLocationOptions } from "../../../entities/event/searchLocationOptionsDTO";
 import { SearchEventsResult } from "../../../entities/event/searchResultDTO";
+import { EventDashboardDTO } from "../../../entities/event/eventDashboardDTO";
 
 export interface IeventRepository{
     createEvent(event: EventEntity): Promise<EventEntity>
@@ -20,4 +21,5 @@ export interface IeventRepository{
     updateVariantTicketsSold(eventId: string | ObjectId, variantType: string, ticketCount: number): Promise<EventEntity | null>;
     listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
     findEventByIdForTicketVerification(eventId: string): Promise<EventEntity | null>
+    eventDetailsForAdminDashboard(): Promise<EventDashboardDTO>
 }

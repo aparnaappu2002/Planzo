@@ -5,6 +5,7 @@ import { eventModal } from "../../../framework/database/models/eventModel";
 import { ObjectId } from "mongoose";
 import { SearchLocationOptions } from "../../../domain/entities/event/searchLocationOptionsDTO";
 import { SearchEventsResult } from "../../../domain/entities/event/searchResultDTO";
+import { EventDashboardDTO } from "../../../domain/entities/event/eventDashboardDTO";
 
 export class EventRepository implements IeventRepository{
     async createEvent(event: EventEntity): Promise<EventEntity> {
@@ -167,5 +168,47 @@ async listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] 
     }
 async findEventByIdForTicketVerification(eventId: string): Promise<EventEntity | null> {
         return eventModal.findById(eventId).select('hostedBy date')
+    }
+    async eventDetailsForAdminDashboard(): Promise<EventDashboardDTO> {
+        const totalEvents = await eventModal.countDocuments()
+        const activeEvents = await eventModal.countDocuments({ isActive: true })
+        const inactiveEvents = await eventModal.countDocuments({ isActive: false })
+
+        const statusAgg = await eventModal.aggregate([
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 }
+                }
+            }
+        ])
+
+        const statusCount = statusAgg.reduce((acc, item) => {
+            acc[item._id] = item.count
+            return acc
+        }, {
+            upcoming: 0,
+            completed: 0,
+            cancelled: 0
+        })
+
+        const totalTicketsAgg = await eventModal.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: "$ticketPurchased" }
+                }
+            }
+        ])
+
+        const totalTicketsSold = totalTicketsAgg[0]?.total || 0
+
+        return {
+            totalEvents,
+            activeEvents,
+            inactiveEvents,
+            statusCount,
+            totalTicketsSold
+        }
     }
 }

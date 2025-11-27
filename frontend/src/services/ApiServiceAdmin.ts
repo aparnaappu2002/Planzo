@@ -251,4 +251,13 @@ export const findTransactionsByPaymentStatus = async (
   }
 };
 
+export const dashBoardAdminDetatils = async (adminId: string) => {
+    try {
+        const response = await axios.get('/dashboard', { params: { adminId } })
+        return response.data
+    } catch (error) {
+        console.log('error while finding admin dashboard details', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while finding amdin dashboard details')
+    }
+}
 

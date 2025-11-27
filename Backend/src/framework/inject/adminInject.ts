@@ -35,6 +35,10 @@ import { FindEventsInAdminSideUseCase } from "../../useCases/admin/eventManageme
 import { FindEventsInAdminSideController } from "../../adapters/controllers/admin/eventManagement/findEventsInAdminController";
 import { EventRepository } from "../../adapters/repository/event/eventRepository";
 import { FindTransactionByPaymentUseCase } from "../../useCases/transaction/findTransactionByPaymentStatusUseCase";
+import { DashBoardDetailsUseCase } from "../../useCases/admin/dashboard/dashboardDataUseCase";
+import { EventGraphUseCase } from "../../useCases/admin/dashboard/eventGraphUseCase";
+import { DashboardAdminController } from "../../adapters/controllers/admin/dahsboard/dashboardController";
+import { BookingRepository } from "../../adapters/repository/booking/bookingRepository";
 
 
 
@@ -96,3 +100,9 @@ export const injectedCategoryController=new CategoryController(createCategoryUse
 const eventRepository=new EventRepository()
 const findEventsInAdminSideUseCase=new FindEventsInAdminSideUseCase(eventRepository)
 export const injectedFindEventsInAdminSideController = new FindEventsInAdminSideController(findEventsInAdminSideUseCase)
+
+
+const bookingRepository=new BookingRepository()
+const dashboardDataUseCase=new DashBoardDetailsUseCase(walletRepository,VendorRepository,ClientRepository,bookingRepository,eventRepository)
+const eventGraphUseCase=new EventGraphUseCase(eventRepository)
+export const injectedDashboardAdminController=new DashboardAdminController(dashboardDataUseCase,eventGraphUseCase)

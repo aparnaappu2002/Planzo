@@ -16,5 +16,6 @@ export interface IvendorDatabaseRepositoryInterface{
     findStatusForMiddleware(vendorId: string): Promise<{ status: string, vendorStatus: string } | null>
     searchVendors(search: string): Promise<VendorEntity[]>
     findVendorsForCarousal(): Promise<VendorEntity[] | []>
+    findTotalVendor(): Promise<number>
 
 }

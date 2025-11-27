@@ -91,5 +91,7 @@ export class clientRepository implements IClientDatabaseRepository{
     return clients;
 }
 
-
+async totalClient(): Promise<number> {
+        return ClientModel.countDocuments()
+    }
 }

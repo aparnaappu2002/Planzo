@@ -16,6 +16,6 @@ export interface IClientDatabaseRepository{
     changePassword(clientId: string, password: string): Promise<clientEntity | null>
     findStatusForMiddleware(clientId: string): Promise<string>
     searchClients(search: string): Promise<clientEntity[]>;
-
+    totalClient(): Promise<number>
     
 }

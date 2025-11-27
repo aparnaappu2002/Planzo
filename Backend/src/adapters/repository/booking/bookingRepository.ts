@@ -7,6 +7,7 @@ import { PopulatedBooking } from "../../../domain/entities/populatedBookingInCli
 import { BookingListingEntityVendor } from "../../../domain/entities/vendor/bookingListingEntityVendor";
 import { PopulatedBookingEntityVendor } from "../../../domain/entities/vendor/populateBookingEntity";
 import { BookingPaymentEntity } from "../../../domain/entities/bookingPayment/bookingPaymentEntity";
+import { PopulatedBookingForAdmin } from "../../../domain/entities/bookingDetailsAdminDTO";
 
 
 export class BookingRepository implements IbookingRepository {
@@ -149,5 +150,63 @@ export class BookingRepository implements IbookingRepository {
     }
     async cancelBooking(bookingId: string): Promise<BookingEntity | null> {
         return await bookingModel.findByIdAndUpdate(bookingId, { status: 'Cancelled' }, { new: true })
+    }
+    async showAllBookingsInAdmin(pageNo: number): Promise<{ bookings: PopulatedBookingForAdmin[] | [], totalPages: number }> {
+        const page = Math.max(pageNo, 1)
+        const limit = 4
+        const skip = (page - 1) * limit
+        const bookingsRaw = await bookingModel.find().populate({
+            path: 'serviceId',
+            populate: {
+                path: 'categoryId',
+                select: 'name'
+            },
+            select: 'serviceTitle servicePrice'
+
+        }).populate({
+            path: 'clientId',
+            select: 'name profileImage'
+        }).populate({
+            path: 'vendorId',
+            select: 'name profileImage'
+        }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean()
+
+        const totalPages = Math.ceil(await bookingModel.countDocuments() / limit)
+        const bookings: PopulatedBookingForAdmin[] = bookingsRaw.map((b: any) => ({
+            _id: b._id,
+            serviceId: {
+                _id: b.serviceId._id,
+                serviceTitle: b.serviceId.serviceTitle,
+                servicePrice: b.serviceId.servicePrice,
+                categoryId: {
+                    _id: b.serviceId.categoryId._id,
+                    name: b.serviceId.categoryId.name,
+                },
+            },
+            clientId: {
+                _id: b.clientId._id,
+                name: b.clientId.name,
+                profileImage: b.clientId.profileImage,
+            },
+            vendorId: {
+                _id: b.vendorId._id,
+                name: b.vendorId.name,
+                profileImage: b.vendorId.profileImage,
+            },
+            date: b.date,
+            email: b.email,
+            phone: b.phone,
+            vendorApproval: b.vendorApproval,
+            paymentStatus: b.paymentStatus,
+            rejectionReason: b.rejectionReason,
+            status: b.status,
+            createdAt: b.createdAt,
+            isComplete: b.isComplete,
+        }));
+
+        return { bookings, totalPages }
+    }
+    async findTotalBookings(): Promise<number> {
+        return bookingModel.countDocuments({ status: 'Completed' })
     }
 }

@@ -1,6 +1,6 @@
 import { Request,Response, Router } from "express";
 import { injectedAdminLoginController,injectedUserManagementController,injectedBlockUnblockController,injectedVendorStatusController,injectedAdminWalletController,
-    injectedFindVendorsController,injectedCategoryController,injectedFindEventsInAdminSideController
+    injectedFindVendorsController,injectedCategoryController,injectedFindEventsInAdminSideController,injectedDashboardAdminController
  } from "../../inject/adminInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,checkAdminMiddleWare } from "../../inject/serviceInject";
 
@@ -68,6 +68,9 @@ export class AdminRoute{
         })
         this.adminRoute.get('/transactions', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
             injectedAdminWalletController.handleFindWalletByPaymentStatus(req, res)
+        })
+        this.adminRoute.get('/dashboard', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkAdminMiddleWare, (req: Request, res: Response) => {
+            injectedDashboardAdminController.handleAdminDashboardata(req, res)
         })
     }
 }
