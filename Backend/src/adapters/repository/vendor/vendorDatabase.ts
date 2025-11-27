@@ -1,11 +1,7 @@
 import { VendorEntity } from "../../../domain/entities/vendorEntitty";
 import { IvendorDatabaseRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/vendor/vendorDatabaseRepository";
 import { VendorModel } from "../../../framework/database/models/vendorModel";
-
-enum VendorStatus{
-    Approved = "approved",
-    Rejected="rejected"
-}
+import { VendorStatus } from "../../../domain/enums/vendorStatus";
 
 export class VendorDatabase implements IvendorDatabaseRepositoryInterface{
     async createVendor(vendor: VendorEntity): Promise<VendorEntity> {
