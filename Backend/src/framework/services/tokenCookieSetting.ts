@@ -1,8 +1,10 @@
 import { Response } from "express";
 export const setCookie = (res:Response,refreshToken:string)=>{
+    const maxAge = Number(process.env.REFRESH_TOKEN_MAX_AGE);
+
     res.cookie('refreshtoken',refreshToken,{
         httpOnly:true,
         secure:false,
-        maxAge:7 * 24 * 60 * 60 * 1000
+        maxAge:maxAge
     })
 }
