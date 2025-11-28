@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import socket from '@/hooks/socketHook';
 import { VendorChatList } from './VendorChatList';
@@ -16,9 +16,23 @@ interface Chat {
 
 export const VendorChatPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { clientId: stateClientId, vendorId: stateVendorId, selectedChat } = location.state || {};
   
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
+  const clientId = useSelector((state: RootState) => state.clientSlice.client?._id);
+  
+  // Check if client is trying to access vendor chat page
+  useEffect(() => {
+    if (clientId && !vendorId) {
+      // Client is logged in, redirect to client chat page
+      navigate('/chat', { 
+        state: location.state,
+        replace: true 
+      });
+    }
+  }, [clientId, vendorId, navigate, location.state]);
+  
   const [clientIdState, setClientIdState] = useState<string>(stateClientId || '');
   const stateRoomId = stateClientId && stateVendorId ? stateClientId + stateVendorId : '';
   const selectedRoomId = clientIdState + vendorId;
@@ -26,6 +40,24 @@ export const VendorChatPage: React.FC = () => {
   const [roomId, setRoomId] = useState<string>(stateRoomId || selectedRoomId);
   const [chatId, setChatId] = useState<string>('');
   const userId = vendorId;
+
+  // Don't render if client is logged in (will redirect)
+  if (clientId && !vendorId) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-yellow-600 animate-pulse">Redirecting...</div>
+      </div>
+    );
+  }
+
+  // Don't render if no vendor is logged in
+  if (!userId) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-600">Please log in as a vendor to view chats</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!socket.connected) socket.connect();

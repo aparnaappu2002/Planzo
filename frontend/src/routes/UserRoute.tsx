@@ -46,7 +46,7 @@ const UserRoute=()=>{
              <Route path='/services/:serviceId/:vendorId' element={ <ServiceDetails/>  }></Route>
              <Route path='/serviceBookings' element={<ProtectedRouteClient> <BookingsPage/> </ProtectedRouteClient> }></Route>
              <Route path='/bookingPayment' element={<ProtectedRouteClient> <BookingPayment/> </ProtectedRouteClient> }></Route>
-             <Route path='/chats' element={<ProtectedRouteClient> <ChatPage/> </ProtectedRouteClient> }></Route>
+             <Route path='/chat' element={<ProtectedRouteClient> <ChatPage/> </ProtectedRouteClient> }></Route>
              </Route>
 
             
