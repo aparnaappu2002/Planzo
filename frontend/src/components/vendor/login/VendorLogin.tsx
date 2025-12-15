@@ -46,7 +46,6 @@ export default function VendorLogin() {
   const onSubmit =async (data: FormValues) => {
    try{
     const response= await vendorLoginMutation.mutateAsync(data)
-    console.log(response)
     localStorage.setItem('vendorId',response.vendor._id)
     dispatch(addVendorToken(response.accessToken))
     dispatch(addVendor(response.vendor))

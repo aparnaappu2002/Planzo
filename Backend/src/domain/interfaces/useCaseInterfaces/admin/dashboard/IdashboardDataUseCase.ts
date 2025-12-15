@@ -1,4 +1,4 @@
-import { PopulatedBookingForAdmin } from "../../../../entities/bookingDetailsAdminDTO";
+import { PopulatedBookingForAdmin } from "../../../../dto/bookingDetailsAdminDTO";
 import { EventEntity } from "../../../../entities/event/eventEntity";
 
 export interface IdashBoardDataUseCase {

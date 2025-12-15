@@ -1,4 +1,4 @@
-import { TicketAndUserDTO } from "../../../domain/entities/ticket/ticketAndUseDTO";
+import { TicketAndUserDTO } from "../../../domain/dto/ticket/ticketAndUseDTO";
 import { IticketRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/ticket/IticketRepository";
 import { IticketAndUserDetailsOfEventUseCase } from "../../../domain/interfaces/useCaseInterfaces/vendor/ticket/ticketAndUserDetailsOfEventUseCase";
 

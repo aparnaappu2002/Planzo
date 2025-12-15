@@ -1,7 +1,7 @@
 import { IsearchEventsOnLocationUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/events/IsearchEventsOnLocationUseCase";
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
-import { SearchLocationOptions } from "../../../domain/entities/event/searchLocationOptionsDTO";
-import { SearchEventsResult } from "../../../domain/entities/event/searchResultDTO";
+import { SearchLocationOptions } from "../../../domain/dto/searchLocationOptionsDTO";
+import { SearchEventsResult } from "../../../domain/dto/searchResultDTO";
 
 
 export class SearchEventsOnLocationUseCase implements IsearchEventsOnLocationUseCase {

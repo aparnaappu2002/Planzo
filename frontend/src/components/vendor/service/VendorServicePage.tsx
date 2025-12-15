@@ -53,11 +53,7 @@ const VendorServicesPage: React.FC = () => {
   const changeStatusMutation = useChangeStatusServiceVendor();
   const queryClient = useQueryClient();
 
-  // Log data for debugging
-  console.log('Services Data:', servicesData);
-  console.log('Categories Data:', categoriesData);
-  console.log('isLoadingServices:', isLoadingServices);
-  console.log('servicesError:', servicesError);
+  
 
   // Form state for creating/editing service
   const [formData, setFormData] = useState<Service>({
@@ -172,7 +168,6 @@ const VendorServicesPage: React.FC = () => {
         toast.success('Service created successfully');
       }
       await queryClient.invalidateQueries(['vendorServices', vendorId, pageNo]);
-      console.log('Invalidated services query after mutation');
       setIsModalOpen(false);
       setFormData({
         serviceTitle: '',
@@ -234,8 +229,7 @@ const VendorServicesPage: React.FC = () => {
   const totalPages: number = servicesData?.totalPages || 1;
   const categories: Category[] = categoriesData?.categories || [];
 
-  // Log services array for debugging
-  console.log('Services Array:', services);
+  
 
   // Render main content
   const renderContent = () => {

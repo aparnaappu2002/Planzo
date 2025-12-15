@@ -1,4 +1,4 @@
-import { ReviewDetailsDTO } from "../../../../entities/reviewDetailsDTO";
+import { ReviewDetailsDTO } from "../../../../dto/reviewDetailsDTO";
 import { ServiceWithVendorEntity } from "../../../../entities/serviceWithVendorEntity";
 
 export interface IshowServiceWithVendorUseCase {

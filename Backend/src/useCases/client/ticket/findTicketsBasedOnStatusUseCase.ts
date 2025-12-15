@@ -1,7 +1,7 @@
 
 import { IticketRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/ticket/IticketRepository";
 import { IfindTicketsByStatus } from "../../../domain/interfaces/useCaseInterfaces/client/ticket/IfindTicketBasedOnStatusUseCase";
-import { TicketAndUserDTO } from "../../../domain/entities/ticket/ticketAndUseDTO";
+import { TicketAndUserDTO } from "../../../domain/dto/ticket/ticketAndUseDTO";
 
 
 

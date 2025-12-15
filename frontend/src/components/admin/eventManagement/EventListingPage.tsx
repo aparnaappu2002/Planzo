@@ -14,7 +14,6 @@ export const EventListingPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data, isLoading, error } = useFindEventsInAdmin(currentPage);
-  console.log("Events in Admin", data);
 
   const handleViewDetails = (event: EventType) => {
     setSelectedEvent(event);

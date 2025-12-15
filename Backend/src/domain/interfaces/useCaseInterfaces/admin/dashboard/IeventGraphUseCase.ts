@@ -1,4 +1,4 @@
-import { EventDashboardDTO } from "../../../../entities/event/eventDashboardDTO";
+import { EventDashboardDTO } from "../../../../dto/eventDashboardDTO";
 
 export interface IeventGraphUseCase {
     eventGraphDetails(): Promise<EventDashboardDTO>

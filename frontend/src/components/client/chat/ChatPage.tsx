@@ -73,27 +73,22 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (!socket.connected) socket.connect();
-    console.log('connecting chat websocket');
     
     const handleConnect = () => {
-      console.log('Connected with socket id', socket.id);
       
       // Register user when connected
       if (userId) {
         socket.emit('register', { userId, name: 'Client User' }, (notifications) => {
-          console.log('Registration successful, received notifications:', notifications);
         });
       }
       
       // Join room if available
       if (roomId) {
         socket.emit('joinRoom', { roomId });
-        console.log('Joined room:', roomId);
       }
     };
 
     const handleDisconnect = () => {
-      console.log('socket disconnected with', socket.id);
     };
 
     socket.on('connect', handleConnect);
@@ -103,13 +98,11 @@ export const ChatPage: React.FC = () => {
     if (socket.connected) {
       if (userId) {
         socket.emit('register', { userId, name: 'Client User' }, (notifications) => {
-          console.log('Registration successful, received notifications:', notifications);
         });
       }
       
       if (roomId) {
         socket.emit('joinRoom', { roomId });
-        console.log('Joined room:', roomId);
       }
     }
 
@@ -120,7 +113,6 @@ export const ChatPage: React.FC = () => {
   }, [roomId, userId]);
 
   const handleSelectChat = (chat: Chat) => {
-    console.log('Selecting chat:', chat);
     
     // Set the chat details
     setChatId(chat._id);
@@ -133,27 +125,14 @@ export const ChatPage: React.FC = () => {
     // Join the new room
     if (socket.connected) {
       socket.emit('joinRoom', { roomId: newRoomId });
-      console.log('Joined new room:', newRoomId);
     }
     
-    console.log('Selected chat details:', {
-      chatId: chat._id,
-      clientId: chat.clientId,
-      vendorId: chat.vendorId,
-      userId: userId,
-      roomId: newRoomId
-    });
+    
   };
 
   // Debug logs
   useEffect(() => {
-    console.log('Current state:', {
-      chatId,
-      userId,
-      vendorId: vendorIdState,
-      roomId,
-      isSelectedChat
-    });
+    
   }, [chatId, userId, vendorIdState, roomId, isSelectedChat]);
 
   return (

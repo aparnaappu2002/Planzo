@@ -1,4 +1,4 @@
-import { ChatEntityDTO } from "../../domain/entities/chat/chatEntityDTO";
+import { ChatEntityDTO } from "../../domain/dto/chatEntityDTO";
 import { IchatRepository } from "../../domain/interfaces/repositoryInterfaces/chat/IchatRepository";
 import { IfindChatsOfUserUseCase } from "../../domain/interfaces/useCaseInterfaces/chat/IfindChatsOfUserUseCase";
 

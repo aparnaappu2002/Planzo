@@ -29,7 +29,6 @@ const VendorProfile = () => {
   });
 
   const vendor = useSelector((state: RootState) => state.vendorSlice.vendor);
-  console.log(vendor)
  
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -58,7 +57,6 @@ const VendorProfile = () => {
       navigate('/vendor/login');
       return;
     }
-    console.log('Stastus',vendor.vendorStatus)
 
     if (vendor.vendorStatus !== 'approved') {
       navigate('/vendor/dashboard');
@@ -123,7 +121,6 @@ const VendorProfile = () => {
       
       uploadImage(formData, {
         onSuccess: (response) => {
-            console.log(response.url)
             const updatedClient = {
               ...vendor,
               profileImage: response.url

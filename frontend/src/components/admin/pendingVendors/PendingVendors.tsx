@@ -49,7 +49,6 @@ const PendingVendors = () => {
     data: searchResults,
     isLoading: isSearchingNow,
   } = useSearchVendors(debouncedSearch);
-  console.log("SearchResult:",searchResults)
 
   // Mutations
   const { mutate: approveVendor, isLoading: isApproving } = useApprovePendingVendor();

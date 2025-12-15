@@ -81,7 +81,6 @@ const VendorDetailModal = ({
         vendorId: vendor._id,
         newStatus: "approved",
       });
-      console.log(response);
       toast.success(response?.message || "Vendor approved successfully!");
       onClose();
       resetRejectionState();

@@ -38,7 +38,6 @@ const ForgotPassword = () => {
     
     try{
         const response=await sendMutation.mutateAsync(data.email)
-    console.log(response)
     
     toast.success("Send email successfully")
     

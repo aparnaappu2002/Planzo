@@ -1,4 +1,4 @@
-import { PopulatedBookingForAdmin } from "../../../domain/entities/bookingDetailsAdminDTO";
+import { PopulatedBookingForAdmin } from "../../../domain/dto/bookingDetailsAdminDTO";
 import { EventEntity } from "../../../domain/entities/event/eventEntity";
 import { IbookingRepository } from "../../../domain/interfaces/repositoryInterfaces/booking/IbookingRepository";
 import { IClientDatabaseRepository } from "../../../domain/interfaces/repositoryInterfaces/client/clientDatabaseRepository";

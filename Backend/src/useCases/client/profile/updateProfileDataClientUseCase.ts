@@ -1,4 +1,4 @@
-import { ClientUpdateProfileEntity } from "../../../domain/entities/profile/clientUpdateProfileDTO";
+import { ClientUpdateProfileEntity } from "../../../domain/dto/profile/clientUpdateProfileDTO";
 import { clientEntity } from "../../../domain/entities/clientEntity";
 import { IClientDatabaseRepository } from "../../../domain/interfaces/repositoryInterfaces/client/clientDatabaseRepository";
 import { IupdateProfileDataUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/profile/IupdateProfileClient";

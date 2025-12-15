@@ -1,4 +1,4 @@
-import { ReviewDetailsDTO } from "../../../domain/entities/reviewDetailsDTO";
+import { ReviewDetailsDTO } from "../../../domain/dto/reviewDetailsDTO";
 import { ServiceWithVendorEntity } from "../../../domain/entities/serviceWithVendorEntity";
 import { IreviewRepository } from "../../../domain/interfaces/repositoryInterfaces/review/IreviewRepository";
 import { IserviceRepository } from "../../../domain/interfaces/repositoryInterfaces/service/IserviceRepository";

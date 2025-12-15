@@ -3,7 +3,7 @@ import { BookingEntity } from "../../../entities/bookingEntity";
 import { BookingsInClientEntity } from "../../../entities/bookingsInClientEntity";
 import { BookingListingEntityVendor } from "../../../entities/vendor/bookingListingEntityVendor";
 import { BookingPaymentEntity } from "../../../entities/bookingPayment/bookingPaymentEntity";
-import { PopulatedBookingForAdmin } from "../../../entities/bookingDetailsAdminDTO";
+import { PopulatedBookingForAdmin } from "../../../dto/bookingDetailsAdminDTO";
 
 
 export interface IbookingRepository {

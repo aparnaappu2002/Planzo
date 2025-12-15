@@ -26,9 +26,7 @@ const TicketAndUserDetails: React.FC = () => {
   const tickets = data?.ticketAndEventDetails || [];
   const totalPages = data?.totalPages || 0;
 
-  console.log("API Response:", data);
-  console.log("Tickets:", tickets);
-  console.log("Total Pages:", totalPages);
+  
 
   const handleSearch = () => {
     if (!vendorId?.trim()) {

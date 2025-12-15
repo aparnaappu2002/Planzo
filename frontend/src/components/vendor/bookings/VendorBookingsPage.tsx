@@ -71,7 +71,6 @@ const VendorBookingsPage: React.FC = () => {
   };
 
   // Log data for debugging
-  console.log('Bookings Data:', data);
 
   // Handle error
   if (error) {
@@ -80,13 +79,11 @@ const VendorBookingsPage: React.FC = () => {
 
   // Handle view details
   const handleViewDetails = (booking: Booking) => {
-    console.log('View Details Clicked for Booking:', booking);
     setSelectedBooking(booking);
   };
 
   // Close modal
   const handleCloseModal = () => {
-    console.log('Closing Modal');
     setSelectedBooking(null);
   };
 

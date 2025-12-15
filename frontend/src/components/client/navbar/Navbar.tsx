@@ -59,7 +59,6 @@ export const Navbar: React.FC = () => {
   // Fix: Ensure we get notifications with proper fallback
   const notifications = useSelector((state: RootState) => {
     const notificationState = state.notificationSlice;
-    console.log('Navbar: Current notification state:', notificationState);
     // The state property is 'notification' (singular), not 'notifications' (plural)
     return notificationState?.notification || [];
   });
@@ -68,11 +67,7 @@ export const Navbar: React.FC = () => {
 
   // Debug effect to track notification changes
   useEffect(() => {
-    console.log('Navbar: Notifications updated:', {
-      count: notifications.length,
-      notifications,
-      client: client?._id
-    });
+    
   }, [notifications, client]);
 
   // Socket integration for real-time notifications
@@ -82,9 +77,7 @@ export const Navbar: React.FC = () => {
     if (!socket.connected) socket.connect();
 
     const handleConnect = () => {
-      console.log('Navbar: Connected with socket id', socket.id);
       socket.emit('register', { userId: client._id, name: client.name }, (data: Notification[]) => {
-        console.log('Navbar: Registration successful, received notifications:', data);
         if (Array.isArray(data) && data.length > 0) {
           dispatch(addNotifications(data));
         }
@@ -92,7 +85,6 @@ export const Navbar: React.FC = () => {
     };
 
     const handleNewNotification = (data: Notification) => {
-      console.log('Navbar: New notification received:', data);
       const notification: Notification = {
         ...data,
         type: 'info',

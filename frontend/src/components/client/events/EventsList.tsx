@@ -36,28 +36,18 @@ const isEventExpired = (event: any): boolean => {
   const eventDateString = eventDate.toISOString().split('T')[0];
   const todayDateString = today.toISOString().split('T')[0];
   const isExpired = eventDateString < todayDateString;
-  console.log('Date comparison for event:', {
-    title: event.title,
-    category: event.category,
-    eventDateRaw: dateToCheck,
-    eventDateString,
-    todayDateString,
-    isExpired,
-  });
+  
   return isExpired;
 };
 
 // Helper function to filter out expired events
 const filterActiveEvents = (events: any[]): any[] => {
-  console.log('Filtering events:', events.length);
   const filtered = events.filter(event => {
     const isExpired = isEventExpired(event);
     if (isExpired) {
-      console.log('Filtering out expired event:', event.title, event.date);
     }
     return !isExpired;
   });
-  console.log('Events after filtering:', filtered.length);
   return filtered;
 };
 
@@ -86,7 +76,6 @@ export const EventsList = () => {
   // Process categories data
   const categories = useMemo(() => {
     if (categoriesError || !categoriesData) {
-      console.log('No categories data or error occurred:', categoriesError?.message || 'No data');
       return ['All Categories'];
     }
     const rawCategories = categoriesData.categories || categoriesData;
@@ -103,14 +92,11 @@ export const EventsList = () => {
           .filter((title): title is string => typeof title === 'string' && title.trim() !== '')
       : [];
     const uniqueCategories = ['All Categories', ...new Set(fetchedCategories)];
-    console.log('Raw categories data:', rawCategories);
-    console.log('Processed categories:', uniqueCategories);
     return uniqueCategories;
   }, [categoriesData, categoriesError]);
 
   // Debug: Log categories passed to EventsHero
   useEffect(() => {
-    console.log('Categories passed to EventsHero:', categories);
   }, [categories]);
 
   // Determine data source and fetch strategy
@@ -139,66 +125,36 @@ export const EventsList = () => {
   // Log hook results and compare with regular events
   useEffect(() => {
     if (shouldFetchCategoryEvents) {
-      console.log('Fetching category events:', { categoryToFetch, sortToUse });
     }
     if (regularEventsData?.events && !isShowingSearchResults) {
       const entertainmentEvents = regularEventsData.events.filter(event => 
         event.category && event.category.toLowerCase().includes('entertainment')
       );
-      console.log('Entertainment events in regular data:', entertainmentEvents.length);
     }
   }, [categoryEventsData, categoryEventsLoading, categoryFetchError, categoryToFetch, sortToUse, shouldFetchCategoryEvents, regularEventsData, isShowingSearchResults]);
 
   // Debug logging for regular events
   useEffect(() => {
     if (enableDebugLogs && regularEventsData?.events && !isShowingSearchResults) {
-      console.log('=== DEBUG: All regular events with categories ===');
       regularEventsData.events.forEach((event, index) => {
-        console.log(`Event ${index + 1}:`, { title: event.title, category: event.category, date: event.date });
       });
-      console.log('=== END DEBUG ===');
     }
   }, [regularEventsData, isShowingSearchResults, enableDebugLogs]);
 
-  // Debug logging for component state
-  useEffect(() => {
-    console.log('EventsList state:', {
-      isShowingSearchResults,
-      isShowingCategoryResults,
-      shouldFetchCategoryEvents,
-      categoryToFetch,
-      sortToUse,
-      activeCategorySearch,
-      searchResults: searchResults?.searchType,
-      categoryEventsData: categoryEventsData?.events?.length,
-      categoryEventsLoading,
-      categoryHasOnlyExpiredEvents,
-      categories: categories.length,
-      categoriesList: categories,
-      categoriesLoading,
-    });
-  }, [isShowingSearchResults, isShowingCategoryResults, shouldFetchCategoryEvents, categoryToFetch, sortToUse, activeCategorySearch, searchResults, categoryEventsData, categoryEventsLoading, categoryHasOnlyExpiredEvents, categories, categoriesLoading]);
-
-  // Normalize and filter events data
+  
   const eventsToShow = useMemo(() => {
     let rawEvents: any[] = [];
     if (isShowingSearchResults) {
       if (isShowingCategoryResults && categoryEventsData?.events) {
-        console.log('Using category events data:', categoryEventsData.events.length);
         rawEvents = categoryEventsData.events;
       } else if (searchResults?.events) {
-        console.log('Using search results events:', searchResults.events.length);
         rawEvents = searchResults.events;
       }
     } else {
-      console.log('Using regular events data:', regularEventsData?.events?.length || 0);
       rawEvents = regularEventsData?.events || [];
     }
-    console.log('Raw events before filtering:', rawEvents.length);
     const filteredEvents = filterActiveEvents(rawEvents);
-    console.log('Events after filtering:', filteredEvents.length);
     if (isShowingCategoryResults && rawEvents.length > 0 && filteredEvents.length === 0) {
-      console.log('Category search returned only expired events');
       setCategoryHasOnlyExpiredEvents(true);
     } else {
       setCategoryHasOnlyExpiredEvents(false);
@@ -250,7 +206,6 @@ export const EventsList = () => {
 
   // Search handlers
   const handleSearchResults = useCallback((results: SearchResults) => {
-    console.log('Received search results:', results);
     if (results.searchType === 'query' && results.query && results.events) {
       const query = results.query.toLowerCase();
       const filteredEvents = results.events.filter(event => 
@@ -284,7 +239,6 @@ export const EventsList = () => {
         totalPages: results.totalPages === 0 && activeEvents.length > 0 ? 1 : (results.totalPages || 1)
       });
     } else if (results.searchType === 'category') {
-      console.log('Setting up category search:', results.category, results.sortBy);
       setActiveCategorySearch({
         category: results.category || 'All Categories',
         sortBy: results.sortBy || 'newest'
@@ -313,13 +267,11 @@ export const EventsList = () => {
   }, [refetchCategoryEvents]);
 
   const handleSearchStart = useCallback(() => {
-    console.log('Search started');
     setIsSearching(true);
     setSearchError(null);
   }, []);
 
   const handleSearchError = useCallback((error: any) => {
-    console.error('Search error:', error);
     setIsSearching(false);
     setSearchError(error?.message || 'Failed to search events');
     setSearchResults(null);
@@ -329,7 +281,6 @@ export const EventsList = () => {
   }, []);
 
   const clearSearchResults = useCallback(() => {
-    console.log('Clearing search results');
     setSearchResults(null);
     setActiveCategorySearch(null);
     setCategoryHasOnlyExpiredEvents(false);
@@ -350,7 +301,6 @@ export const EventsList = () => {
   // Handle category events data updates
   useEffect(() => {
     if (activeCategorySearch && activeCategorySearch.category !== 'All Categories') {
-      console.log('activeCategorySearch changed, forcing refetch:', activeCategorySearch);
       const timer = setTimeout(() => {
         refetchCategoryEvents();
       }, 300);
@@ -360,7 +310,6 @@ export const EventsList = () => {
 
   useEffect(() => {
     if (isCategorySearch && categoryEventsData?.events && activeCategorySearch) {
-      console.log('Category events data received:', categoryEventsData.events.length, 'events');
       setSearchResults(prev => prev ? {
         ...prev,
         events: categoryEventsData.events,

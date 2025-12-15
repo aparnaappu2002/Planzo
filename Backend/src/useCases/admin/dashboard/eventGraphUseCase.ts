@@ -1,4 +1,4 @@
-import { EventDashboardDTO } from "../../../domain/entities/event/eventDashboardDTO";
+import { EventDashboardDTO } from "../../../domain/dto/eventDashboardDTO";
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IeventGraphUseCase } from "../../../domain/interfaces/useCaseInterfaces/admin/dashboard/IeventGraphUseCase";
 

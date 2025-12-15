@@ -49,7 +49,6 @@ const AdminLogin = () => {
     setIsLoading(true);
     try {
       const response= await loginAdminMutation.mutateAsync({email:data.email,password:data.password})
-      console.log(response)
       dispatch(addAdminToken(response.accessToken))
       localStorage.setItem('adminId',response.id)
       toast.success("Admin login Successfull")

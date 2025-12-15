@@ -1,4 +1,4 @@
-import { ReviewDetailsDTO } from "../../../domain/entities/reviewDetailsDTO";
+import { ReviewDetailsDTO } from "../../../domain/dto/reviewDetailsDTO";
 import { IreviewRepository } from "../../../domain/interfaces/repositoryInterfaces/review/IreviewRepository";
 import { IshowReviewsUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/review/IshowReviewsUseCase";
 

@@ -37,7 +37,6 @@ const Events = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId, pageNo);
-  console.log(apiResponse);
   
   const events = localEvents.length > 0 ? localEvents : (apiResponse?.events || []);
   const totalPages = apiResponse?.totalPages || 1; // Extract totalPages from API response
@@ -50,7 +49,6 @@ const Events = () => {
 
   // DEBUG: Log when data changes
   React.useEffect(() => {
-    console.log('Events updated:', events.length, 'Page:', pageNo, 'Total pages:', totalPages);
   }, [events, pageNo, totalPages]);
 
   const filteredEvents = React.useMemo(() => {
@@ -99,7 +97,6 @@ const Events = () => {
   };
 
   const handleEventUpdated = async (updatedEvent: EventType) => {
-    console.log('🔄 Handling event update:', updatedEvent._id);
     
     try {
       // Update local state immediately for instant UI feedback

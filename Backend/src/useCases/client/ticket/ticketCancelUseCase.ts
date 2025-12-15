@@ -1,5 +1,5 @@
 
-import { TicketAndVendorDTO } from "../../../domain/entities/ticket/ticketAndVendorDTO";
+import { TicketAndVendorDTO } from "../../../domain/dto/ticket/ticketAndVendorDTO";
 import { TransactionsEntity } from "../../../domain/entities/wallet/transactionEntity";
 import { IticketRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/ticket/IticketRepository";
 import { ItransactionRepository } from "../../../domain/interfaces/repositoryInterfaces/transaction/ItransactionRepository";

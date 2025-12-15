@@ -75,7 +75,6 @@ const TicketPurchaseModal = ({
   
   // Store selected variants by type: variantType -> quantity
   const [selectedTicketVariants, setSelectedTicketVariants] = useState<{[key: string]: number}>({});
-  console.log("Event", event);
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -93,8 +92,6 @@ const TicketPurchaseModal = ({
   // Initialize data for retry payment scenario
   useEffect(() => {
     if (isRetryPayment && existingTicket) {
-      console.log('=== INITIALIZING RETRY PAYMENT ===');
-      console.log('Existing ticket data:', existingTicket);
       
       // Pre-fill customer information
       setCustomerInfo({
@@ -110,10 +107,8 @@ const TicketPurchaseModal = ({
           variantSelections[variant.variant] = variant.count;
         });
         setSelectedTicketVariants(variantSelections);
-        console.log('Initialized variant selections:', variantSelections);
       }
       
-      console.log('=== RETRY PAYMENT INITIALIZATION COMPLETE ===');
     }
   }, [isRetryPayment, existingTicket]);
 
@@ -174,7 +169,6 @@ const TicketPurchaseModal = ({
     
     const variant = event.ticketVariants?.find(v => v.type.toLowerCase() === variantType.toLowerCase());
     if (!variant) {
-      console.error('Variant not found:', variantType);
       return;
     }
 
@@ -196,7 +190,6 @@ const TicketPurchaseModal = ({
       }
     });
 
-    console.log(`Updated variant ${variantType} quantity to:`, newQuantity);
   };
 
   const handleInputChange = (field, value) => {
@@ -231,10 +224,7 @@ const TicketPurchaseModal = ({
 
   // Prepare ticket data for backend
   const prepareTicketData = () => {
-    console.log('=== PREPARING TICKET DATA FOR BACKEND ===');
-    console.log('isRetryPayment:', isRetryPayment);
-    console.log('existingTicket:', existingTicket);
-    console.log('selectedTicketVariants:', selectedTicketVariants);
+    
     
     if (isRetryPayment && existingTicket) {
       // For retry payments, use existing ticket data
@@ -253,7 +243,6 @@ const TicketPurchaseModal = ({
         originalTicketId: existingTicket.ticketId
       };
       
-      console.log('Retry payment ticket data:', ticketData);
       return ticketData;
     }
     
@@ -272,7 +261,6 @@ const TicketPurchaseModal = ({
       ticketVariants: selectedTicketVariants
     };
 
-    console.log('New purchase ticket data:', ticketData);
     return ticketData;
   };
 
@@ -302,7 +290,6 @@ const TicketPurchaseModal = ({
       existingTicket: isRetryPayment ? existingTicket : undefined // Include existingTicket for retry payments
     };
 
-    console.log('Wallet payment navigation data:', navigationData);
 
     navigate('/ticketPaymentWallet', {
       state: navigationData
@@ -335,7 +322,6 @@ const TicketPurchaseModal = ({
       existingTicket: isRetryPayment ? existingTicket : undefined // Include existingTicket for retry payments
     };
 
-    console.log('Stripe payment navigation data:', navigationData);
 
     navigate('/ticketPayment', {
       state: navigationData
@@ -376,14 +362,7 @@ const TicketPurchaseModal = ({
                      totalQuantity > 0;
 
   // Debug logging to diagnose issues
-  console.log('Debug isFormValid:', {
-    isFormValid,
-    customerInfo,
-    errors,
-    totalQuantity,
-    selectedTicketVariants,
-    existingTicket
-  });
+  
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date TBA';

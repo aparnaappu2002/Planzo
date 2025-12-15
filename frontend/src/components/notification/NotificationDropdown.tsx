@@ -44,7 +44,6 @@ class NotificationErrorBoundary extends Component<{ children: ReactNode }, Error
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('NotificationDropdown ErrorBoundary caught an error:', error, errorInfo);
   }
 
   render() {
@@ -67,11 +66,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   isToast = false,
   onClose,
 }) => {
-  console.log('NotificationDropdown: Rendering with notifications:', {
-    count: notifications.length,
-    notifications,
-    isToast,
-  });
+  
 
   // Ensure notifications is always an array and has valid data
   const validNotifications = Array.isArray(notifications) 
@@ -88,9 +83,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         })
     : [];
 
-  console.log('NotificationDropdown: Final sorted notifications:', 
-    validNotifications.map(n => ({ id: n._id, date: n.createdAt, message: n.message?.substring(0, 20) }))
-  );
 
   const unreadCount = validNotifications.filter((n) => !n.read).length;
 
@@ -136,7 +128,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 notification.read ? 'bg-yellow-50' : 'bg-yellow-100'
               } hover:bg-yellow-200 cursor-pointer transition-colors`}
               onClick={() => {
-                console.log('NotificationDropdown: Selected notification:', notification);
                 onSelectNotification(notification);
                 if (isToast && onClose) {
                   onClose();
@@ -159,7 +150,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                   className="text-xs text-yellow-500 hover:text-yellow-700 mt-2 font-medium"
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('NotificationDropdown: Marking as read:', notification._id);
                     onMarkAsRead(notification._id);
                   }}
                 >
@@ -185,7 +175,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           <div
             className="text-yellow-800 hover:bg-yellow-200 p-2 cursor-pointer text-center font-medium"
             onClick={() => {
-              console.log('NotificationDropdown: Viewing all notifications');
               onViewAllNotifications();
             }}
           >
@@ -199,7 +188,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           <button
             className="text-xs text-yellow-600 hover:text-yellow-800 font-medium"
             onClick={() => {
-              console.log('NotificationDropdown: Viewing all from toast');
               onViewAllNotifications();
               onClose();
             }}
@@ -209,7 +197,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           <button
             className="text-xs text-yellow-500 hover:text-yellow-700 font-medium"
             onClick={() => {
-              console.log('NotificationDropdown: Closing toast');
               onClose();
             }}
           >

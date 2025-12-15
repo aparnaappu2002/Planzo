@@ -16,13 +16,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
   onToggleStatus
 }) => {
   const handleEdit = () => {
-    console.log('Edit clicked for category:', category._id);
     onEdit(category);
   };
 
   const handleToggleStatus = () => {
-    console.log('Toggle status clicked for category:', category._id);
-    console.log('Category object:', category);
+    
     onToggleStatus(category._id);
   };
 

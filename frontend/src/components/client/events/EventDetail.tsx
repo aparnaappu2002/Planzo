@@ -36,7 +36,6 @@ const EventDetail = () => {
   
   // Try different ways to access event data
   const event = responseData?.event || responseData?.data?.event || responseData;
-  console.log("Final event object:", event);
 
   if (isLoading) {
     return (
