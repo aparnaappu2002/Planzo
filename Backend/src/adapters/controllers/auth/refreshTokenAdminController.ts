@@ -1,27 +1,26 @@
 import { Request, Response } from "express";
 import { IrefreshTokenUseCase } from "../../../domain/interfaces/useCaseInterfaces/auth/IrefreshTokenUseCase";
 import { HttpStatus } from "../../../domain/enums/httpStatus";
-import { Messages } from "../../../domain/enums/messages";
 
-export class RefreshTokenController {
+export class RefreshTokenAdminController {
     private refreshTokenUseCase: IrefreshTokenUseCase
     constructor(refreshTokenUseCase: IrefreshTokenUseCase) {
         this.refreshTokenUseCase = refreshTokenUseCase
     }
     async handleRefreshToken(req: Request, res: Response): Promise<void> {
         try {
-            const refreshToken = req.cookies.client_refresh 
+            const refreshToken = req.cookies.refreshtoken
             if (!refreshToken) {
-                res.status(HttpStatus.BAD_REQUEST).json({ error: Messages.TOKEN_NOT_FOUND })
+                res.status(HttpStatus.BAD_REQUEST).json({ error: "No refreshToken found" })
                 return
             }
             const newAccessToken = await this.refreshTokenUseCase.execute(refreshToken)
-            res.status(HttpStatus.OK).json({message:Messages.TOKEN_CREATED,newAccessToken})
+            res.status(HttpStatus.OK).json({message:'New Access Token Created',newAccessToken})
         } catch (error) {
             console.log('error while handling refresh Token', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.TOKEN_REFRESH_ERROR,
-                error: error instanceof Error ? error.message : Messages.TOKEN_REFRESH_ERROR
+                message: "error while handlling refresh Token",
+                error: error instanceof Error ? error.message : 'error while handling refresh Token'
             })
         }
     }

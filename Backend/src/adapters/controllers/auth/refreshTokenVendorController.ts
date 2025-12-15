@@ -3,14 +3,14 @@ import { IrefreshTokenUseCase } from "../../../domain/interfaces/useCaseInterfac
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { Messages } from "../../../domain/enums/messages";
 
-export class RefreshTokenController {
+export class RefreshTokenVendorController {
     private refreshTokenUseCase: IrefreshTokenUseCase
     constructor(refreshTokenUseCase: IrefreshTokenUseCase) {
         this.refreshTokenUseCase = refreshTokenUseCase
     }
     async handleRefreshToken(req: Request, res: Response): Promise<void> {
         try {
-            const refreshToken = req.cookies.client_refresh 
+            const refreshToken = req.cookies.vendor_refresh
             if (!refreshToken) {
                 res.status(HttpStatus.BAD_REQUEST).json({ error: Messages.TOKEN_NOT_FOUND })
                 return
