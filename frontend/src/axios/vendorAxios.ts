@@ -44,7 +44,7 @@ instance.interceptors.response.use(
         if(error.response?.status== 401 && !originalRequest._retry){
             originalRequest._retry=true
             try{
-                const refreshToken = await authAxios.post<{newAccessToken:string}>('/refreshToken')
+                const refreshToken = await authAxios.post<{newAccessToken:string}>('/vendor/refreshToken')
                 const newAccessToken=refreshToken.data.newAccessToken
                 store.dispatch(addVendorToken(newAccessToken))
 

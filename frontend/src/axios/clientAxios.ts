@@ -12,6 +12,7 @@ instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = store.getState().token.token
         const storeToken = store.getState().token.token;
+        
 
 
         if (token && config.headers) {
@@ -51,7 +52,7 @@ instance.interceptors.response.use(
 
             try {
                 const refreshResponse = await authAxios.post<{ newAccessToken: string }>(
-                    '/refreshToken',
+                    '/client/refreshToken',
                     {},
                     { withCredentials: true }
                 );
