@@ -76,7 +76,7 @@ const Login = () => {
     try{
       const response = await loginMutation.mutateAsync({email:email.trim(),password:password})
       console.log(response)
-      localStorage.setItem('clientId',response.client.clientId)
+      localStorage.setItem('clientId',response.client._id)
       dispatch(addToken(response?.accessToken))
       dispatch(addClient(response?.client))
       navigate('/')
