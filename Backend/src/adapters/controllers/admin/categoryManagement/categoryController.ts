@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { IcreateCategoryUseCase } from "../../../../domain/interfaces/useCaseInterfaces/category/IcreateCategory";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindCategoryUseCase } from "../../../../domain/interfaces/useCaseInterfaces/category/IfindCategoryUseCase";
 import { IupdateCategoryUseCase } from "../../../../domain/interfaces/useCaseInterfaces/category/IupdateCategoryUseCase";
 import { IchangeCategoryStatusUseCase } from "../../../../domain/interfaces/useCaseInterfaces/category/IchangeCategoryStatus";
+import { Messages } from "../../../../domain/enums/messages";
 
 export class CategoryController {
     private createCategoryUseCase: IcreateCategoryUseCase
@@ -21,12 +22,12 @@ export class CategoryController {
         try {
             const { title, image } = req.body
             const category = await this.createCategoryUseCase.createCategory(title, image)
-            res.status(HttpStatus.OK).json({ message: 'category created', category })
+            res.status(HttpStatus.OK).json({ message: Messages.CATEGORY_CREATED, category })
         } catch (error) {
-            console.log('error while creating category', error)
+            //console.log('error while creating category', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while creating category',
-                error: error instanceof Error ? error.message : 'error while creating category'
+                message: Messages.CATEGORY_CREATE_ERROR,
+                error: error instanceof Error ? error.message : Messages.CATEGORY_CREATE_ERROR
             })
         }
     }
@@ -34,26 +35,26 @@ export class CategoryController {
         try {
             const pageNo = parseInt(req.query.pageNo as string, 10) || 1;
             const { categories, totalPages } = await this.findCategoryUseCase.findAllCategory(pageNo)
-            res.status(HttpStatus.OK).json({ message: "categories fetched", categories, totalPages })
+            res.status(HttpStatus.OK).json({ message: Messages.CATEGORY_FETCHED, categories, totalPages })
         } catch (error) {
-            console.log('error while fetching categories', error)
+            //console.log('error while fetching categories', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while fetching categories",
-                error: error instanceof Error ? error.message : 'error while fetching categories'
+                message: Messages.CATEGORY_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.CATEGORY_FETCH_ERROR
             })
         }
     }
     async handleUpdateCategory(req: Request, res: Response): Promise<void> {
         try {
             const { categoryId, updates } = req.body
-            console.log(categoryId)
+            //console.log(categoryId)
             const updateCategory = await this.updateCategoryUseCase.updateCategory(categoryId, updates)
-            res.status(HttpStatus.OK).json({ message: "Category updated" })
+            res.status(HttpStatus.OK).json({ message: Messages.CATEGORY_UPDATED})
         } catch (error) {
-            console.log('error while changning titlle and image of category', error)
+            //console.log('error while changning titlle and image of category', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while changning titlle and image of category',
-                error: error instanceof Error ? error.message : 'error while changning titlle and image of category'
+                message: Messages.CATEGORY_UPDATE_ERROR,
+                error: error instanceof Error ? error.message : Messages.CATEGORY_UPDATE_ERROR
             })
         }
     }
@@ -61,12 +62,12 @@ export class CategoryController {
         try {
             const { categoryId } = req.body
             const changeStatusOfCategory = await this.changeCategoryStatusUseCase.changeStatusCategory(categoryId)
-            if (changeStatusOfCategory) res.status(HttpStatus.OK).json({ message: 'Category Status Changed' })
+            if (changeStatusOfCategory) res.status(HttpStatus.OK).json({ message: Messages.CATEGORY_STATUS_CHANGED })
         } catch (error) {
-            console.log('error while changing the status of the category', error)
+            //console.log('error while changing the status of the category', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while changing the status of the category',
-                error: error instanceof Error ? error.message : 'error while changing the status of the category'
+                message: Messages.CATEGORY_STATUS_ERROR,
+                error: error instanceof Error ? error.message : Messages.CATEGORY_STATUS_ERROR
             })
         }
     }

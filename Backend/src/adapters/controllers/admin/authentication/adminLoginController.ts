@@ -3,9 +3,8 @@ import { IadminLoginUseCase } from "../../../../domain/interfaces/useCaseInterfa
 import { IjwtInterface } from "../../../../domain/interfaces/serviceInterface/IjwtService";
 import { IredisService } from "../../../../domain/interfaces/serviceInterface/IredisService";
 import { setCookie } from "../../../../framework/services/tokenCookieSetting";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
-import { json } from "stream/consumers";
-
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
+import { Messages } from "../../../../domain/enums/messages";
 export class AdminLoginController {
   private adminLoginUseCase: IadminLoginUseCase;
   private jwtService: IjwtInterface;
@@ -24,21 +23,21 @@ export class AdminLoginController {
   async handleAdminLogin(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      console.log(req.body);
+      //console.log(req.body);
       if (!email) {
         res.status(HttpStatus.BAD_REQUEST).json({
-          message: "Invalid email",
+          message: Messages.INVALID_EMAIL,
         });
         return;
       } else if (!password) {
         res.status(HttpStatus.BAD_REQUEST).json({
-          message: "Invalid password",
+          message: Messages.INVALID_PASSWORD,
         });
       }
       const admin = await this.adminLoginUseCase.handleLogin(email, password);
       if (!admin) {
         res.status(HttpStatus.BAD_REQUEST).json({
-          message: "Invalid credentials",
+          message: Messages.INVALID_CREDENTIALS,
         });
         return;
       }
@@ -65,17 +64,17 @@ export class AdminLoginController {
       );
       setCookie(res, refreshToken);
       res.status(HttpStatus.OK).json({
-        message: "Admin logged",
+        message: Messages.LOGIN_SUCCESS,
         accessToken,
         id: admin._id,
       });
       return;
     } catch (error) {
-      console.log("Error while admin login", error);
+      //console.log("Error while admin login", error);
       res.status(HttpStatus.BAD_REQUEST).json({
-        message: "error while login admin",
+        message: Messages.LOGIN_ERROR,
         error:
-          error instanceof Error ? error.message : "error while login admin",
+          error instanceof Error ? error.message : Messages.LOGIN_ERROR,
       });
     }
   }
