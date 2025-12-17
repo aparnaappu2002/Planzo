@@ -7,6 +7,10 @@ interface Chat {
   vendorId: string;
   lastMessage?: string;
   lastMessageTime?: string;
+  clientName?: string;
+  vendorName?: string;
+  otherPartyName?: string;
+  otherPartyProfileImage?: string;
 }
 
 interface ChatListProps {
@@ -26,35 +30,48 @@ export const ChatList: React.FC<ChatListProps> = ({ userId, onSelectChat }) => {
 
   // Helper function to normalize chat data from API response
   const normalizeChat = (rawChat: any): Chat => {
-    console.log('Raw chat from API:', rawChat);
     
-    // Extract IDs from nested objects
+    // Extract IDs and names from nested objects
     const senderId = rawChat.senderId?._id || rawChat.senderId;
     const receiverId = rawChat.receiverId?._id || rawChat.receiverId;
+    const senderName = rawChat.senderId?.name || 'Unknown';
+    const receiverName = rawChat.receiverId?.name || 'Unknown';
+    const senderProfileImage = rawChat.senderId?.profileImage;
+    const receiverProfileImage = rawChat.receiverId?.profileImage;
     
-    console.log('Extracted IDs:', { senderId, receiverId, userId });
     
     // Determine which is client and which is vendor
     // The current user (userId) could be either sender or receiver
-    let clientId, vendorId;
+    let clientId, vendorId, clientName, vendorName, otherPartyName, otherPartyProfileImage;
     
     if (senderId === userId) {
       clientId = senderId;
       vendorId = receiverId;
+      clientName = senderName;
+      vendorName = receiverName;
+      otherPartyName = receiverName;
+      otherPartyProfileImage = receiverProfileImage;
     } else {
       clientId = receiverId;
       vendorId = senderId;
+      clientName = receiverName;
+      vendorName = senderName;
+      otherPartyName = senderName;
+      otherPartyProfileImage = senderProfileImage;
     }
     
     const normalizedChat = {
       _id: rawChat._id,
       clientId: clientId,
       vendorId: vendorId,
+      clientName: clientName,
+      vendorName: vendorName,
+      otherPartyName: otherPartyName,
+      otherPartyProfileImage: otherPartyProfileImage,
       lastMessage: rawChat.lastMessage,
       lastMessageTime: rawChat.lastMessageAt || rawChat.lastMessageTime
     };
     
-    console.log('Normalized chat:', normalizedChat);
     return normalizedChat;
   };
 
@@ -93,9 +110,6 @@ export const ChatList: React.FC<ChatListProps> = ({ userId, onSelectChat }) => {
           <>
             {chats.map(rawChat => {
               const normalizedChat = normalizeChat(rawChat);
-              const isClient = normalizedChat.clientId === userId;
-              const otherParty = isClient ? normalizedChat.vendorId : normalizedChat.clientId;
-              const otherPartyName = isClient ? `Vendor: ${normalizedChat.vendorId}` : `Client: ${normalizedChat.clientId}`;
               
               return (
                 <div
@@ -103,21 +117,27 @@ export const ChatList: React.FC<ChatListProps> = ({ userId, onSelectChat }) => {
                   className="p-4 bg-yellow-100 hover:bg-yellow-200 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-[1.02] shadow-sm border border-yellow-200"
                   onClick={() => handleChatClick(rawChat)}
                 >
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-3">
+                    {/* Profile Image */}
+                    {normalizedChat.otherPartyProfileImage && (
+                      <img 
+                        src={normalizedChat.otherPartyProfileImage} 
+                        alt={normalizedChat.otherPartyName}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-yellow-300"
+                      />
+                    )}
+                    
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-yellow-800 truncate">
-                        {otherPartyName}
+                      <div className="font-semibold text-yellow-800 truncate text-lg">
+                        {normalizedChat.otherPartyName}
                       </div>
                       <div className="text-sm text-yellow-600 truncate mt-1">
                         {rawChat.lastMessage || "No messages yet"}
                       </div>
-                      {/* Debug info - remove in production */}
-                      <div className="text-xs text-gray-400 mt-1">
-                        ID: {rawChat._id} | Client: {normalizedChat.clientId} | Vendor: {normalizedChat.vendorId}
-                      </div>
                     </div>
+                    
                     {rawChat.lastMessageAt && (
-                      <div className="text-xs text-yellow-500 ml-2 whitespace-nowrap">
+                      <div className="text-xs text-yellow-500 whitespace-nowrap">
                         {new Date(rawChat.lastMessageAt).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
