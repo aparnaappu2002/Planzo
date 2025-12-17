@@ -106,7 +106,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
 
   const handleChatNavigate = () => {
     console.log('Navigating to chat for booking:', booking._id);
-    navigate('/chats', {
+    navigate('/chat', {
       state: {
         clientId: clientId,
         vendorId: booking.vendor._id,
