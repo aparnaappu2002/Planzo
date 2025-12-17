@@ -161,7 +161,6 @@ const VendorSignup = () => {
         formData.append("file", file)
       formData.append("upload_preset", "Planzo")
       const response=await uploadImageMutation.mutateAsync(formData)
-      console.log(response)
       setUploadedImageUrl(response.url)
       }catch(error){
         console.error("Image upload error:",error)
@@ -204,7 +203,6 @@ const VendorSignup = () => {
 
   const handleResend = () => {
     
-    console.log("Resending OTP")
     return resendVendorOtpMutation.mutateAsync(formValues.email)
   }
 

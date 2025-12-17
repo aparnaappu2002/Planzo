@@ -75,7 +75,6 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
   const navigate=useNavigate()
 
   // Log booking for debugging
-  console.log('Booking in Modal:', booking);
 
   // Mutation hooks
   const approveBooking = useApproveBooking();
@@ -148,7 +147,6 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
   };
 
   const handleBookingPayment = (booking: Booking) => {
-    console.log('Initiating payment for booking:', booking._id);
     // Add payment logic here (e.g., redirect to payment gateway)
   };
 
