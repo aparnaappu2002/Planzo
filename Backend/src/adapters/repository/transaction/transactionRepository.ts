@@ -15,7 +15,7 @@ export class TransactionRepository implements ItransactionRepository {
   ): Promise<{ transactions: TransactionsEntity[] | []; totalPages: number }> {
     const page = Math.max(pageNo, 1);
     console.log(walletId);
-    const limit = 5;
+    const limit = 10;
     const skip = (page - 1) * limit;
     const formattedWalletId =
       typeof walletId === "string" ? new Types.ObjectId(walletId) : walletId;
