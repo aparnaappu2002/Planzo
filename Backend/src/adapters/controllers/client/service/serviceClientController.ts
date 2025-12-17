@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { IfindServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/service/IfindServiceUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindServiceOnCategorybasis } from "../../../../domain/interfaces/useCaseInterfaces/client/service/IfindServiceServiceOnCategory";
 import { IsearchServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/service/IsearchServiceUseCase";
+import { Messages } from "../../../../domain/enums/messages";
 
 export class ServiceClientController {
     private findServiceUseCase: IfindServiceUseCase
@@ -17,12 +18,12 @@ export class ServiceClientController {
         try {
             const pageNo = parseInt(req.params.pageNo as string, 10) || 1
             const { Services, totalPages } = await this.findServiceUseCase.findServiceForclient(pageNo)
-            res.status(HttpStatus.OK).json({ message: 'Services Fetched', Services, totalPages })
+            res.status(HttpStatus.OK).json({ message: Messages.SERVICE_FETCHED, Services, totalPages })
         } catch (error) {
             console.log('error while fetching service for client', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while fetching service for client",
-                error: error instanceof Error ? error.message : 'error while fetching service for client'
+                message: Messages.SERVICE_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.SERVICE_FETCH_ERROR
             })
         }
     }
@@ -39,12 +40,12 @@ export class ServiceClientController {
                     : null) as string | null;
             const sort = typeof sortBy === 'string' ? sortBy : 'a-z';
             const { Services, totalPages } = await this.findServiceOnCategory.findServiceBasedOnCatagory(catId, page, sort)
-            res.status(HttpStatus.OK).json({ message: 'Service fetched on cateogory basis', Services, totalPages })
+            res.status(HttpStatus.OK).json({ message: Messages.SERVICES_FETCHED_BY_CATEGORY, Services, totalPages })
         } catch (error) {
             console.log('error while finding services on basis of cateogry', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while finding services on basis of category',
-                error: error instanceof Error ? error.message : 'error while finding services on basis of category'
+                message: Messages.SERVICE_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.SERVICE_FETCH_ERROR
             })
         }
     }
@@ -53,17 +54,17 @@ export class ServiceClientController {
             const queryParam = req.query.query;
 
             if (typeof queryParam !== 'string') {
-                res.status(HttpStatus.BAD_REQUEST).json({ message: 'Query must be a string' });
+                res.status(HttpStatus.BAD_REQUEST).json({ message: Messages.INVALID_QUERY_PARAMETER });
                 return;
             }
 
             const searchedService = await this.searchServiceUseCase.searchService(queryParam)
-            res.status(HttpStatus.OK).json({ message: 'searched service', searchedService })
+            res.status(HttpStatus.OK).json({ message: Messages.SERVICE_SEARCHED, searchedService })
         } catch (error) {
             console.log('error while performing search service', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while performing search service",
-                error: error instanceof Error ? error.message : 'error while performing search service'
+                message: Messages.ERROR_SEARCHING_SERVICE,
+                error: error instanceof Error ? error.message : Messages.ERROR_SEARCHING_SERVICE
             })
         }
     }

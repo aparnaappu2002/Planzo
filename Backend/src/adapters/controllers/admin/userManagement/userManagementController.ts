@@ -1,10 +1,11 @@
 import { Request,Response } from "express";
 import { IClientBlockUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/userManagement/IClientBlockUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IredisService } from "../../../../domain/interfaces/serviceInterface/IredisService";
 import { IClientUnblockUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/userManagement/IClientUnblockUseCase";
 import { IfindAllClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/userManagement/IfindAllClientUseCase";
 import { ISearchClientsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/userManagement/ISearchClientUseCase";
+import { Messages } from "../../../../domain/enums/messages";
 
 export class UserManagementController{
     private clientBlockUseCase : IClientBlockUseCase
@@ -26,12 +27,12 @@ export class UserManagementController{
             const {clientId}=req.body
             await this.clientBlockUseCase.blockClient(clientId)
             const changeStatus = await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('block'))
-            res.status(HttpStatus.OK).json({message:'Client Blocked'})
+            res.status(HttpStatus.OK).json({message:Messages.CLIENT_BLOCKED})
         }catch(error){
-            console.log("Error while blocking user",error)
+            //console.log("Error while blocking user",error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message:'Error while blocking user',
-                error:error instanceof Error ? error.message : "Error while blocking user"
+                message:Messages.CLIENT_BLOCK_ERROR,
+                error:error instanceof Error ? error.message : Messages.CLIENT_BLOCK_ERROR
             })
         }
     }
@@ -40,12 +41,12 @@ export class UserManagementController{
             const {clientId}=req.body
             await this.clientUnblockUseCase.unblockClient(clientId)
             const changeStatus=await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('active'))
-            res.status(HttpStatus.OK).json({message:"Client Unblocked"})
+            res.status(HttpStatus.OK).json({message:Messages.CLIENT_UNBLOCKED})
         }catch(error){
-            console.log('Error while unblocking client',error)
+            //console.log('Error while unblocking client',error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message:"Error while unblocking client",
-                error: error instanceof Error ? error.message : 'Error while unblocking client'
+                message:Messages.CLIENT_UNBLOCK_ERROR,
+                error: error instanceof Error ? error.message : Messages.CLIENT_UNBLOCK_ERROR
             })
         }
     }
@@ -55,15 +56,15 @@ export class UserManagementController{
             const {clients,totalPages}=await this.findAllClientUseCase.findAllClient(pageNo)
             if(!clients){
                 res.status(HttpStatus.BAD_REQUEST).json({
-                    message:"Error whhile fetching the users"
+                    message:Messages.CLIENT_FETCH_ERROR
                 })
             }
-            res.status(HttpStatus.OK).json({message:"clients fetched successfully",clients,totalPages})
+            res.status(HttpStatus.OK).json({message:Messages.CLIENT_FETCHED,clients,totalPages})
         }catch(error){
-            console.log("Error while fetching all clients",error)
+            //console.log("Error while fetching all clients",error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message:"Error while fetching all clients",
-                error: error instanceof Error ? error.message : "Error while fetching all clients"
+                message:Messages.CLIENT_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.CLIENT_FETCH_ERROR
             })
         }
     }
@@ -73,7 +74,7 @@ export class UserManagementController{
 
         if (!search) {
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Search query is required"
+                message: Messages.SEARCH_QUERY_REQUIRED
             });
             return;
         }
@@ -81,14 +82,14 @@ export class UserManagementController{
         const clients = await this.searchClientUseCase.searchClients(search);
 
         res.status(HttpStatus.OK).json({
-            message: "Clients fetched successfully",
+            message: Messages.CLIENT_FETCHED,
             clients
         });
     } catch (error) {
-        console.log("Error while searching clients", error);
+        //console.log("Error while searching clients", error);
         res.status(HttpStatus.BAD_REQUEST).json({
-            message: "Error while searching clients",
-            error: error instanceof Error ? error.message : "Unknown error"
+            message: Messages.CLIENT_SEARCH_ERROR,
+            error: error instanceof Error ? error.message : Messages.CLIENT_SEARCH_ERROR
         });
     }
 }

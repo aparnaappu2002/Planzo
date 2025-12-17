@@ -1,9 +1,10 @@
 import { Request,Response } from "express";
 import { IvendorBlockUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/vendorManagement/IvendorBlockUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IredisService } from "../../../../domain/interfaces/serviceInterface/IredisService";
 import { IvendorUnblockUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/vendorManagement/IvendorUnblockUseCase";
 import { ISearchVendorsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/vendorManagement/IsearchVendorUseCase";
+import { Messages } from "../../../../domain/enums/messages";
 
 export class VendorBlockUnblockController{
     private vendorBlockUseCase:IvendorBlockUseCase
@@ -23,13 +24,13 @@ export class VendorBlockUnblockController{
             const blockVendor = await this.vendorBlockUseCase.blockVendor(vendorId)
             const changeStatusRedis= await this.redisService.set(`user:vendor:${vendorId}`,15 * 60,JSON.stringify({status:'block',vendorStatus:'approved'}))
             if(blockVendor) res.status(HttpStatus.OK).json({
-                message:"Vendor Blocked"
+                message:Messages.VENDOR_BLOCKED
             })
         }catch(error){
             console.log('error while blocking Vendor', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while blocking vendor",
-                error: error instanceof Error ? error.message : 'error while blocking vendor'
+                message: Messages.VENDOR_BLOCK_ERROR,
+                error: error instanceof Error ? error.message : Messages.VENDOR_BLOCK_ERROR
             })
         }
     }
@@ -38,12 +39,12 @@ export class VendorBlockUnblockController{
             const {vendorId}=req.body
             const unblockUser = await this.vendorUnblockUseCase.vendorUnblock(vendorId)
             const changeStatusRedis=  await this.redisService.set(`user:vendor:${vendorId}`,15*60,JSON.stringify({status:'active',vendorStatus:'approved'}))
-            if(unblockUser) res.status(HttpStatus.OK).json({message:"Vendor unblocked"})
+            if(unblockUser) res.status(HttpStatus.OK).json({message:Messages.VENDOR_UNBLOCKED})
         }catch(error){
-            console.log('error while unblocking vendor', error)
+            console.log(Messages.VENDOR_UNBLOCK_ERROR, error)
             res.status(HttpStatus.BAD_REQUEST).json({
                 message: "error while unblocking vendor",
-                error: error instanceof Error ? error.message : "error while unblocking vendor"
+                error: error instanceof Error ? error.message : Messages.VENDOR_UNBLOCK_ERROR
             })
         }
     }
@@ -53,7 +54,7 @@ export class VendorBlockUnblockController{
 
         if (!search) {
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Search query is required"
+                message: Messages.SEARCH_QUERY_REQUIRED
             });
             return;
         }
@@ -61,14 +62,14 @@ export class VendorBlockUnblockController{
         const vendors = await this.searchVendorUseCase.searchVendors(search);
 
         res.status(HttpStatus.OK).json({
-            message: "Vendors fetched successfully",
+            message: Messages.VENDOR_FETCHED,
             vendors
         });
     } catch (error) {
         console.log("Error while searching vendors", error);
         res.status(HttpStatus.BAD_REQUEST).json({
-            message: "Error while searching vendors",
-            error: error instanceof Error ? error.message : "Unknown error"
+            message: Messages.VENDOR_SEARCH_ERROR,
+            error: error instanceof Error ? error.message : Messages.VENDOR_SEARCH_ERROR
         });
     }
 }

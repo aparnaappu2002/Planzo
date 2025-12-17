@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IfindChatsOfUserUseCase } from "../../../domain/interfaces/useCaseInterfaces/chat/IfindChatsOfUserUseCase";
-import { HttpStatus } from "../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../domain/enums/httpStatus";
+import { Messages } from "../../../domain/enums/messages";
 
 export class FindChatOfUserController {
     private findChatOfUserUseCase: IfindChatsOfUserUseCase
@@ -13,12 +14,12 @@ export class FindChatOfUserController {
             const userId = req.query.userId as string
             const page = parseInt(pageNo, 10) || 1
             const { chats, hasMore } = await this.findChatOfUserUseCase.findChatsOfUser(userId, page)
-            res.status(HttpStatus.OK).json({ message: "Chats fetched", chats, hasMore })
+            res.status(HttpStatus.OK).json({ message: Messages.CHAT_FETCHED, chats, hasMore })
         } catch (error) {
             console.log('error while finding the chats of user', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while finding the chats of users",
-                error: error instanceof Error ? error.message : 'error while finding the chats of user'
+                message: Messages.CHAT_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.CHAT_FETCH_ERROR
             })
         }
     }

@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import { IcreateBookingUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/booking/IcreateBookingUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { BookingEntity } from "../../../../domain/entities/bookingEntity";
 import { IshowServiceWithVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/booking/IshowServiceWithVendorUseCase";
 import { IshowBookingsInClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/booking/IshowBookingInClientUseCase";
 import { IcreateBookingPaymentUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/booking/IcreateBookingPaymentUseCase";
 import { IconfirmBookingPaymentUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/booking/IconfirmBookingPaymentUseCase";
 import { IcancelBookingUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/booking/IcancelBookingUseCase";
+import { Messages } from "../../../../domain/enums/messages";
 
 
 export class BookingClientController {
@@ -32,17 +33,17 @@ export class BookingClientController {
             
             const { serviceId, pageNo, rating } = req.query
             if (!serviceId || !pageNo) {
-                res.status(HttpStatus.BAD_REQUEST).json({ error: "No service id is provided" })
+                res.status(HttpStatus.BAD_REQUEST).json({ error: Messages.SERVICE_ID_REQUIRED })
                 return
             }
             const page = parseInt(pageNo?.toString(), 10) || 1
             const { reviews, service, totalPages } = await this.showServiceWithVendorUseCase.showServiceWithVendorUseCase(serviceId.toString(), page)
-            res.status(HttpStatus.OK).json({ message: "service with vendor fetched", serviceWithVendor: service, reviews, totalPages })
+            res.status(HttpStatus.OK).json({ message: Messages.SERVICE_FETCHED, serviceWithVendor: service, reviews, totalPages })
         } catch (error) {
             console.log('error while fetching the service data with venodor', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while fetching the service data with venodor',
-                error: error instanceof Error ? error.message : 'error while fetching the service data with venodor'
+                message: Messages.SERVICE_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.SERVICE_FETCH_ERROR
             })
         }
     }
@@ -51,29 +52,27 @@ export class BookingClientController {
             const booking: BookingEntity = req.body.booking
             const createdBooking = await this.createBookingUseCase.createBooking(booking)
             console.log(createdBooking)
-            if (!createdBooking) res.status(HttpStatus.BAD_REQUEST).json({ message: "error while creating booking" })
-            res.status(HttpStatus.OK).json({ message: "Booking created", createdBooking })
+            if (!createdBooking) res.status(HttpStatus.BAD_REQUEST).json({ message: Messages.BOOKING_CREATE_ERROR })
+            res.status(HttpStatus.OK).json({ message: Messages.BOOKING_CREATED, createdBooking })
         } catch (error) {
             console.log('error while creating booking', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while creating booking',
-                error: error instanceof Error ? error.message : 'error while creating booking'
+                message: Messages.BOOKING_CREATE_ERROR,
+                error: error instanceof Error ? error.message : Messages.BOOKING_CREATE_ERROR
             })
         }
     }
     async handleShowBookingsInClient(req: Request, res: Response): Promise<void> {
         try {
             const { clientId, pageNo } = req.params
-            console.log("Params:",req.params)
             const page = parseInt(pageNo, 10) || 1
             const { Bookings, totalPages } = await this.showBookingsInClient.findBookings(clientId, page)
-            console.log("Bookings:",Bookings)
-            res.status(HttpStatus.OK).json({ message: 'Bookings fetched', Bookings, totalPages })
+            res.status(HttpStatus.OK).json({ message: Messages.BOOKING_FETCHED, Bookings, totalPages })
         } catch (error) {
             console.log('error while fetching bookings in client', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while fetching bookings in client',
-                error: error instanceof Error ? error.message : 'error while fetching bookings in client'
+                message: Messages.BOOKING_FETCH_ERROR,
+                error: error instanceof Error ? error.message : Messages.BOOKING_FETCH_ERROR
             })
         }
     }
@@ -81,12 +80,12 @@ export class BookingClientController {
         try {
             const { bookingId, paymentIntentId } = req.body
             const { clientStripeId, booking } = await this.createBookingPaymentUseCase.inititateBookingPayment(bookingId, paymentIntentId)
-            res.status(HttpStatus.OK).json({ message: "Payment inititaion done", clientStripeId, booking })
+            res.status(HttpStatus.OK).json({ message: Messages.PAYMENT_INITIATED, clientStripeId, booking })
         } catch (error) {
             console.log('error while initiating booking payment', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while initiating booking payment",
-                error: error instanceof Error ? error.message : 'error while initiating booking payment'
+                message: Messages.PAYMENT_INITIATE_ERROR,
+                error: error instanceof Error ? error.message : Messages.PAYMENT_INITIATE_ERROR
             })
         }
     }
@@ -94,12 +93,12 @@ export class BookingClientController {
         try {
             const { booking, paymentIntentId } = req.body
             const ConfirmBooking = await this.confirmBookingPaymentUseCase.confirmBookingPayment(booking, paymentIntentId)
-            res.status(HttpStatus.OK).json({message:"Payment confirm"})
+            res.status(HttpStatus.OK).json({message:Messages.PAYMENT_CONFIRMED})
         } catch (error) {
             console.log('error while confirming booking payment', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while confirming booking payment',
-                error: error instanceof Error ? error.message : 'error while confirming booking payment'
+                message: Messages.PAYMENT_CONFIRM_ERROR,
+                error: error instanceof Error ? error.message : Messages.PAYMENT_CONFIRM_ERROR
             })
         }
     }
@@ -107,12 +106,12 @@ export class BookingClientController {
         try {
             const { bookingId } = req.body
             const cancelBooking = await this.cancelBookingUseCase.cancelBooking(bookingId)
-            res.status(HttpStatus.OK).json({ message: "Booking cancelled", cancelBooking })
+            res.status(HttpStatus.OK).json({ message: Messages.BOOKING_CANCELLED, cancelBooking })
         } catch (error) {
             console.log('error while canceling the booking', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while canceling the booking',
-                error: error instanceof Error ? error.message : 'error while cancelling the booking'
+                message: Messages.BOOKING_CANCEL_ERROR,
+                error: error instanceof Error ? error.message : Messages.BOOKING_CANCEL_ERROR
             })
         }
     }

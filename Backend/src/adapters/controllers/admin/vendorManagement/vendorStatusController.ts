@@ -1,12 +1,9 @@
 import { Request,Response } from "express";
 import { IapproveVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/vendorManagement/IapproveVendorUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IrejectVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/vendorManagement/IrejectVendorUseCase";
-
-enum VendorStatus {
-    Approved = 'approved',
-    Rejected = 'rejected'
-}
+import { VendorStatus } from "../../../../domain/enums/vendorStatus";
+import { Messages } from "../../../../domain/enums/messages";
 export class VendorStatusController {
     private approveVendorUseCase: IapproveVendorUseCase
     private rejectVendorUseCase: IrejectVendorUseCase
@@ -19,7 +16,7 @@ export class VendorStatusController {
             const { vendorId, newStatus }: { vendorId: string, newStatus: VendorStatus } = req.body
             const updatedVendor = await this.approveVendorUseCase.approveVendor(vendorId, newStatus)
             if (!updatedVendor) {
-                res.status(HttpStatus.BAD_REQUEST).json({ message: 'error while  approving the vendor' })
+                res.status(HttpStatus.BAD_REQUEST).json({ message: Messages.VENDOR_APPROVE_ERROR })
                 return
             }
             res.status(HttpStatus.OK).json({ message: `Vendor ${newStatus}`, updatedVendor })
@@ -27,8 +24,8 @@ export class VendorStatusController {
         } catch (error) {
             console.log('error while  approving the vendor controller', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while approving the vendor",
-                error: error instanceof Error ? error.message : 'error while approving the vendor'
+                message: Messages.VENDOR_APPROVE_ERROR,
+                error: error instanceof Error ? error.message : Messages.VENDOR_APPROVE_ERROR
             })
         }
     }
@@ -36,12 +33,12 @@ export class VendorStatusController {
         try {
             const { vendorId, newStatus, rejectionReason } = req.body
             await this.rejectVendorUseCase.rejectVendor(vendorId, newStatus, rejectionReason)
-            res.status(HttpStatus.OK).json({ message: "Vendor rejected" })
+            res.status(HttpStatus.OK).json({ message: Messages.VENDOR_REJECTED })
         } catch (error) {
             console.log('error while rejecting vendor', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while rejecting venodr",
-                error: error instanceof Error ? error.message : 'error while rejecting vendor'
+                message: Messages.VENDOR_REJECT_ERROR,
+                error: error instanceof Error ? error.message : Messages.VENDOR_REJECT_ERROR
             })
         }
     }

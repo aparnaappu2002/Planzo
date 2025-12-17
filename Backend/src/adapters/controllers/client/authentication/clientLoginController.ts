@@ -4,8 +4,9 @@ import { IClientLoginUseCase } from "../../../../domain/interfaces/useCaseInterf
 import { IjwtInterface } from "../../../../domain/interfaces/serviceInterface/IjwtService";
 import { setCookie } from "../../../../framework/services/tokenCookieSetting";
 import { IredisService } from "../../../../domain/interfaces/serviceInterface/IredisService";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IgoogleLoginClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/authentication/IgoogleLoginClientUseCase";
+import { Messages } from "../../../../domain/enums/messages";
 
 export class ClientLoginController implements IloginClientControllerInterface{
     private jwtService : IjwtInterface
@@ -24,7 +25,7 @@ export class ClientLoginController implements IloginClientControllerInterface{
             console.log('this is the email and the password',email,password)
             const client = await this.clientLoginUseCase.loginClient(email,password)
             if(!client){
-                res.status(HttpStatus.BAD_REQUEST).json({message:'invalid credentials'})
+                res.status(HttpStatus.BAD_REQUEST).json({message:Messages.INVALID_CREDENTIALS})
                 return
             }
             const ACCESSTOKEN_SECRET_KEY=process.env.ACCESSTOKEN_SECRET_KEY as string
@@ -43,18 +44,17 @@ export class ClientLoginController implements IloginClientControllerInterface{
                 role:client.role,
                 status:client.status
             }
-            res.status(HttpStatus.OK).json({message:"user logged",client:selectedFields,accessToken})
+            res.status(HttpStatus.OK).json({message:Messages.LOGIN_SUCCESS,client:selectedFields,accessToken})
         }catch(error){
             console.log('error while login client',error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message:"error while login client",
-                error:error instanceof Error ? error.message : 'unknown error from login client controller'
+                message:Messages.LOGIN_ERROR,
+                error:error instanceof Error ? error.message : Messages.LOGIN_ERROR
             })
         }
     }
     async handleGoogleLogin(req: Request, res: Response): Promise<void> {
         try {
-            console.log('ajhsdfjhasf')
             const { client } = req.body
             const createdClient = await this.googleLoginClientUseCase.googleLogin(client)
             console.log(createdClient)
@@ -75,12 +75,12 @@ export class ClientLoginController implements IloginClientControllerInterface{
                 status: createdClient?.status,
                 googleVerified:createdClient?.googleVerified
             }
-            res.status(HttpStatus.OK).json({ message: 'Google login successFull', client: selectedFields, accessToken })
+            res.status(HttpStatus.OK).json({ message: Messages.GOOGLE_LOGIN_SUCCESS, client: selectedFields, accessToken })
         } catch (error) {
             console.log('error while google login', error)
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while google login',
-                error: error instanceof Error ? error.message : 'error while Google login'
+                message: Messages.GOOGLE_LOGIN_ERROR,
+                error: error instanceof Error ? error.message : Messages.GOOGLE_LOGIN_ERROR
             })
         }
 
