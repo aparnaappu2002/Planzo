@@ -8,6 +8,10 @@ interface Chat {
   vendorId: string;
   lastMessage?: string;
   lastMessageTime?: string;
+  clientName?: string;
+  vendorName?: string;
+  otherPartyName?: string;
+  otherPartyProfileImage?: string;
 }
 
 interface VendorChatListProps {
@@ -18,6 +22,7 @@ interface VendorChatListProps {
 export const VendorChatList: React.FC<VendorChatListProps> = ({ userId, onSelectChat }) => {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useLoadChatsInfiniteVendor(userId);
+    console.log("VendorChats:",data)
   const loaderRef = useRef<HTMLDivElement>(null);
   const { getObserverRef, disconnect } = useInfiniteScrollObserver();
   const chats = data?.pages.flatMap(page => page.chats) || [];
@@ -45,27 +50,44 @@ export const VendorChatList: React.FC<VendorChatListProps> = ({ userId, onSelect
   const normalizeChat = (rawChat: any): Chat => {
     console.log('Vendor - Raw chat from API:', rawChat);
 
-    // Extract IDs from nested objects
+    // Extract IDs and names from nested objects
     const senderId = rawChat.senderId?._id || rawChat.senderId;
     const receiverId = rawChat.receiverId?._id || rawChat.receiverId;
+    const senderName = rawChat.senderId?.name || 'Unknown';
+    const receiverName = rawChat.receiverId?.name || 'Unknown';
+    const senderProfileImage = rawChat.senderId?.profileImage;
+    const receiverProfileImage = rawChat.receiverId?.profileImage;
 
     console.log('Vendor - Extracted IDs:', { senderId, receiverId, userId });
 
     // For vendor side, determine which is client and which is vendor
     // The current user (userId) is the vendor, so the other party is the client
-    let clientId, vendorId;
+    let clientId, vendorId, clientName, vendorName, otherPartyName, otherPartyProfileImage;
+    
     if (senderId === userId) {
       vendorId = senderId;
       clientId = receiverId;
+      vendorName = senderName;
+      clientName = receiverName;
+      otherPartyName = receiverName;
+      otherPartyProfileImage = receiverProfileImage;
     } else {
       vendorId = receiverId;
       clientId = senderId;
+      vendorName = receiverName;
+      clientName = senderName;
+      otherPartyName = senderName;
+      otherPartyProfileImage = senderProfileImage;
     }
 
     const normalizedChat = {
       _id: rawChat._id,
       clientId: clientId,
       vendorId: vendorId,
+      clientName: clientName,
+      vendorName: vendorName,
+      otherPartyName: otherPartyName,
+      otherPartyProfileImage: otherPartyProfileImage,
       lastMessage: rawChat.lastMessage,
       lastMessageTime: rawChat.lastMessageAt || rawChat.lastMessageTime,
     };
@@ -125,12 +147,23 @@ export const VendorChatList: React.FC<VendorChatListProps> = ({ userId, onSelect
               onClick={() => handleChatClick(rawChat)}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center">
-                    <span className="text-yellow-700 text-sm font-semibold">👤</span>
-                  </div>
-                  <div className="font-medium text-yellow-800 truncate">
-                    Client: {normalizedChat.clientId}
+                <div className="flex items-center space-x-3">
+                  {normalizedChat.otherPartyProfileImage ? (
+                    <img 
+                      src={normalizedChat.otherPartyProfileImage} 
+                      alt={normalizedChat.otherPartyName}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-yellow-300"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center">
+                      <span className="text-yellow-700 text-sm font-semibold">👤</span>
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-yellow-800">
+                      {normalizedChat.otherPartyName}
+                    </div>
+                    <div className="text-xs text-yellow-600">Client</div>
                   </div>
                 </div>
                 {rawChat.lastMessageAt && (
@@ -142,12 +175,8 @@ export const VendorChatList: React.FC<VendorChatListProps> = ({ userId, onSelect
                   </div>
                 )}
               </div>
-              <div className="text-sm text-yellow-600 truncate">
+              <div className="text-sm text-yellow-600 truncate pl-13">
                 {rawChat.lastMessage || 'No messages yet'}
-              </div>
-              {/* Debug info - remove in production */}
-              <div className="text-xs text-gray-400 mt-1">
-                ID: {rawChat._id} | Client: {normalizedChat.clientId} | Vendor: {normalizedChat.vendorId}
               </div>
             </div>
           );
