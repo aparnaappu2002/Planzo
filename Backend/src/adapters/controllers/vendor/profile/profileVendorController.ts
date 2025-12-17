@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IchangePasswordVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/profile/IchangePasswordVendorUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IupdateDetailsVendor } from "../../../../domain/interfaces/useCaseInterfaces/vendor/profile/IupdateDetailsVendor";
 
 export class ProfileVendorController {

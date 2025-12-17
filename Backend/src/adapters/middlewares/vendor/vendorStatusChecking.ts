@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import { IredisService } from "../../../domain/interfaces/serviceInterface/IredisService"
 import { IvendorDatabaseRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/vendor/vendorDatabaseRepository"
-import { HttpStatus } from "../../../domain/entities/httpStatus"
+import { HttpStatus } from "../../../domain/enums/httpStatus"
 
 export const vendorStatusCheckingMiddleware = (redisService: IredisService, vendorDatabse: IvendorDatabaseRepositoryInterface) => {
     return async (req: Request, res: Response, next: NextFunction) => {

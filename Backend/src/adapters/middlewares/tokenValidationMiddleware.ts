@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ITokenService } from "../../domain/interfaces/serviceInterface/ITokenService";
-import { HttpStatus } from "../../domain/entities/httpStatus";
+import { HttpStatus } from "../../domain/enums/httpStatus";
 
 export const verifyTokenAndCheckBlackList = (TokenService: ITokenService) => {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {

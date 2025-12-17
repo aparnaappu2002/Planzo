@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { IloginVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IloginVendorUseCase";
 import { IjwtInterface } from "../../../../domain/interfaces/serviceInterface/IjwtService";
 import { IredisService } from "../../../../domain/interfaces/serviceInterface/IredisService";
-import { setCookie } from "../../../../framework/services/tokenCookieSetting";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { setCookieVendor } from "../../../../framework/services/tokenCookieSettingVendor";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IvendorLogoutUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IvendorLogoutUseCase";
 
 export class LoginLogoutVendorController {
@@ -52,7 +52,7 @@ export class LoginLogoutVendorController {
         refreshTokenSecretKey,
         vendor._id?.toString() || ""
       );
-      setCookie(res, refreshToken);
+      setCookieVendor(res, refreshToken);
       await this.redisService.set(
         `user:${vendor.role}:${vendor._id}`,
         15 * 60,

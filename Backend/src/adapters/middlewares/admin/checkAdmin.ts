@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { IjwtInterface } from "../../../domain/interfaces/serviceInterface/IjwtService";
 import { IredisService } from "../../../domain/interfaces/serviceInterface/IredisService";
 import { IadminRepository } from "../../../domain/interfaces/repositoryInterfaces/admin/IadminRepositoryInterface";
-import { HttpStatus } from "../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../domain/enums/httpStatus";
 
 export const checkAdminState = (jwtService: IjwtInterface, redisService: IredisService, adminDatabase: IadminRepository) => {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {

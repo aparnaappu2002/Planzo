@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express"
-import { HttpStatus } from "../../domain/entities/httpStatus";
+import { HttpStatus } from "../../domain/enums/httpStatus";
 import { IjwtInterface } from "../../domain/interfaces/serviceInterface/IjwtService";
 
 export const tokenTimeExpiryValidationMiddleware = (jwtService: IjwtInterface) => {

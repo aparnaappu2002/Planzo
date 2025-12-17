@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IticketAndUserDetailsOfEventUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/ticket/ticketAndUserDetailsOfEventUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IticketVerificationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/ticket/IticketVerificationUseCase";
 
 export class TicketVendorController {

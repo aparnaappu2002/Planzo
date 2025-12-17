@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IWorkSampleCreationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/workSamples/IworkSamplesCreationUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindWorkSamplesOfAVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/workSamples/IfindWorkSampleofVendorUseCase";
 
 export class WorkSampleController {

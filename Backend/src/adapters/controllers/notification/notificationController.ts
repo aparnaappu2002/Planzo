@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IreadNotificationUseCase } from "../../../domain/interfaces/useCaseInterfaces/notification/IreadNotificationUseCase";
-import { HttpStatus } from "../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { IdeleteSingleNotificationUseCase } from "../../../domain/interfaces/useCaseInterfaces/notification/IdeleteSingleNotification";
 import { IdeleteAllNotificationUseCase } from "../../../domain/interfaces/useCaseInterfaces/notification/IdeleteAllNotificationUseCase";
 

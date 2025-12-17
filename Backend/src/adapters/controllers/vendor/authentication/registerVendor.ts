@@ -1,7 +1,7 @@
 import { Request,Response } from "express";
 import { IvendorAuthenticationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IregisterVendorUseCase";
 import { IsendOtpVendorInterface } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IsendOtpVendorUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IresendOtpVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IresendOtpVendorUseCase";
 
 export class VendorAuthenticationController{

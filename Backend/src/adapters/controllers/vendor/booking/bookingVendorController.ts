@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IshowBookingsInVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IshowBookingsVendorUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IapproveBookingVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IapproveBookingVendorUseCase";
 import { IrejectBookingVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IrejectBookingVendorUseCase";
 import { IupdateBookingAsCompleteUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IupdateBookingAsCompleteUseCase";

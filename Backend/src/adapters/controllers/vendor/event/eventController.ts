@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IeventCreationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/event/IeventCreationUseCase";
-import { HttpStatus } from "../../../../domain/entities/httpStatus";
+import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindAllEventsVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/event/IfindAllEventsUseCase";
 import { IupdateEventUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/event/IupdateEventUseCase";
 
