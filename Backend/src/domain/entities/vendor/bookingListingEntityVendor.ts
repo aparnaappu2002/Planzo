@@ -1,6 +1,6 @@
 import { ObjectId } from "mongoose"
-import { ClientDTO } from "../ClientDTO"
-import { ServiceBookingDTO } from "../serviceBookingDTO"
+import { ClientDTO } from "../../dto/ClientDTO"
+import { ServiceBookingDTO } from "../../dto/serviceBookingDTO"
 
 export interface BookingListingEntityVendor {
     _id: string | ObjectId

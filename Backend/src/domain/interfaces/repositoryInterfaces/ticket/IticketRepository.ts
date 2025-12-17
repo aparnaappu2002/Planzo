@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { TicketEntity } from "../../../entities/ticket/ticketEntity";
-import { TicketAndEventDTO } from "../../../entities/ticket/ticketAndEventDTO";
-import { TicketAndVendorDTO } from "../../../entities/ticket/ticketAndVendorDTO";
+import { TicketAndEventDTO } from "../../../dto/ticket/ticketAndEventDTO";
+import { TicketAndVendorDTO } from "../../../dto/ticket/ticketAndVendorDTO";
 import { TicketAndUserDTO } from "../../../entities/ticket/ticketAndUseDTO";
 
 

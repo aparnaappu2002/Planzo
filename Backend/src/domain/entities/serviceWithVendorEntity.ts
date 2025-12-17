@@ -1,5 +1,5 @@
 import { ObjectId } from "mongoose";
-import { VendorDTO } from "./VendorDTO";
+import { VendorDTO } from "../dto/VendorDTO";
 
 export interface ServiceWithVendorEntity {
     _id: string | ObjectId;
