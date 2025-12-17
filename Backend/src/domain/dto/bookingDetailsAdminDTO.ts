@@ -1,23 +1,22 @@
-import { ObjectId } from "mongoose";
 
 export interface BookingDetailsInAdminEntity {
-  _id?: ObjectId;
+  _id?: string;
   serviceId: {
-    _id: ObjectId,
+    _id: string,
     serviceTitle: string,
     servicePrice: number,
     categoryId: {
-      _id: ObjectId,
+      _id: string,
       title: string
     }
   };
   clientId: {
-    _id: ObjectId,
+    _id: string,
     name: string,
     profileImage?: string
   };
   vendorId: {
-    _id: ObjectId,
+    _id: string,
     name: string,
     profileImage?: string
   };
@@ -35,21 +34,21 @@ export interface BookingDetailsInAdminEntity {
 
 export interface PopulatedBookingForAdmin extends Omit<BookingDetailsInAdminEntity, 'serviceId' | 'clientId' | 'vendorId'> {
   serviceId: {
-    _id: ObjectId;
+    _id: string;
     serviceTitle: string;
     servicePrice: number;
     categoryId: {
-      _id: ObjectId;
+      _id:string;
       name: string;
     };
   };
   clientId: {
-    _id: ObjectId;
+    _id: string;
     name: string;
     profileImage?: string;
   };
   vendorId: {
-    _id: ObjectId;
+    _id: string;
     name: string;
     profileImage?: string;
   };
