@@ -1,4 +1,4 @@
-import { NotificationDTO } from "../../../domain/entities/notificationDTO";
+import { NotificationDTO } from "../../../domain/dto/notificationDTO";
 import { NotificationEntity } from "../../../domain/entities/notificationEntity";
 import { InotificationRepository } from "../../../domain/interfaces/repositoryInterfaces/notification/InotificationRepository";
 import { notificationModal } from "../../../framework/database/models/notificationModel";

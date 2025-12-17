@@ -3,9 +3,9 @@ import { EventUpdateEntity } from "../../../domain/entities/event/eventUpdateEnt
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { eventModal } from "../../../framework/database/models/eventModel";
 import { ObjectId } from "mongoose";
-import { SearchLocationOptions } from "../../../domain/entities/event/searchLocationOptionsDTO";
-import { SearchEventsResult } from "../../../domain/entities/event/searchResultDTO";
-import { EventDashboardDTO } from "../../../domain/entities/event/eventDashboardDTO";
+import { SearchLocationOptions } from "../../../domain/dto/searchLocationOptionsDTO";
+import { SearchEventsResult } from "../../../domain/dto/searchResultDTO";
+import { EventDashboardDTO } from "../../../domain/dto/eventDashboardDTO";
 
 export class EventRepository implements IeventRepository{
     async createEvent(event: EventEntity): Promise<EventEntity> {

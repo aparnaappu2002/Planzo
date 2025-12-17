@@ -2,10 +2,10 @@ import { Types } from "mongoose";
 import { TicketEntity } from "../../../domain/entities/ticket/ticketEntity";
 import { IticketRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/ticket/IticketRepository";
 import { ticketModel } from "../../../framework/database/models/ticketModel";
-import { TicketAndEventDTO } from "../../../domain/entities/ticket/ticketAndEventDTO";
-import { TicketAndVendorDTO } from "../../../domain/entities/ticket/ticketAndVendorDTO";
+import { TicketAndEventDTO } from "../../../domain/dto/ticket/ticketAndEventDTO";
+import { TicketAndVendorDTO } from "../../../domain/dto/ticket/ticketAndVendorDTO";
 import { eventModal } from "../../../framework/database/models/eventModel";
-import { TicketAndUserDTO } from "../../../domain/entities/ticket/ticketAndUseDTO";
+import { TicketAndUserDTO } from "../../../domain/dto/ticket/ticketAndUseDTO";
 
 export class TicketRepository implements IticketRepositoryInterface {
     async createTicket(ticket: TicketEntity): Promise<TicketEntity> {

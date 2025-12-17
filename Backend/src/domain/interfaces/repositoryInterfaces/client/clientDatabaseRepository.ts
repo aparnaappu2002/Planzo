@@ -1,5 +1,5 @@
 import { clientEntity } from "../../../entities/clientEntity";
-import { ClientUpdateProfileEntity } from "../../../entities/profile/clientUpdateProfileDTO";
+import { ClientUpdateProfileEntity } from "../../../dto/profile/clientUpdateProfileDTO";
 export interface IClientDatabaseRepository{
     createClient(client:clientEntity):Promise<clientEntity | null>
     findByEmail(email:string):Promise<clientEntity | null>

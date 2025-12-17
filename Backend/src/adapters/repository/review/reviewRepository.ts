@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ReviewDetailsDTO } from "../../../domain/entities/reviewDetailsDTO";
+import { ReviewDetailsDTO } from "../../../domain/dto/reviewDetailsDTO";
 import { ReviewEntity } from "../../../domain/entities/reviewEntity";
 import { IreviewRepository } from "../../../domain/interfaces/repositoryInterfaces/review/IreviewRepository";
 import { reviewModel } from "../../../framework/database/models/reviewModel";

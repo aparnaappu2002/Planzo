@@ -2,7 +2,7 @@ import { ServiceEntity } from "../../../domain/entities/serviceEntity";
 import { ServiceWithVendorEntity } from "../../../domain/entities/serviceWithVendorEntity";
 import { IserviceRepository } from "../../../domain/interfaces/repositoryInterfaces/service/IserviceRepository";
 import { serviceModal } from "../../../framework/database/models/serviceModel";
-import { VendorDTO } from "../../../domain/entities/VendorDTO";
+import { VendorDTO } from "../../../domain/dto/VendorDTO";
 import { Types } from "mongoose";
 import { Filter } from "../../../domain/interfaces/repositoryInterfaces/service/Ifilter";
 
@@ -12,7 +12,7 @@ export class ServiceRepository implements IserviceRepository {
         return await serviceModal.create(service)
     }
     async findServiceOfAVendor(vendorId: string, pageNo: number): Promise<{ Services: ServiceEntity[] | [], totalPages: number }> {
-        const limit = 3
+        const limit = 1
         const page = Math.max(pageNo, 1)
         const skip = (page - 1) * limit
         const Services = await serviceModal.find({ vendorId }).sort({createdAt:-1}).skip(skip).limit(limit)

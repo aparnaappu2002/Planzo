@@ -7,7 +7,7 @@ import { PopulatedBooking } from "../../../domain/entities/populatedBookingInCli
 import { BookingListingEntityVendor } from "../../../domain/entities/vendor/bookingListingEntityVendor";
 import { PopulatedBookingEntityVendor } from "../../../domain/entities/vendor/populateBookingEntity";
 import { BookingPaymentEntity } from "../../../domain/entities/bookingPayment/bookingPaymentEntity";
-import { PopulatedBookingForAdmin } from "../../../domain/entities/bookingDetailsAdminDTO";
+import { PopulatedBookingForAdmin } from "../../../domain/dto/bookingDetailsAdminDTO";
 
 
 export class BookingRepository implements IbookingRepository {

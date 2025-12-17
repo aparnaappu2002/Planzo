@@ -1,7 +1,7 @@
 import { clientEntity } from "../../../domain/entities/clientEntity";
 import { IClientDatabaseRepository } from "../../../domain/interfaces/repositoryInterfaces/client/clientDatabaseRepository";
 import { ClientModel } from "../../../framework/database/models/clientModel";
-import { ClientUpdateProfileEntity } from "../../../domain/entities/profile/clientUpdateProfileDTO";
+import { ClientUpdateProfileEntity } from "../../../domain/dto/profile/clientUpdateProfileDTO";
 
 export class clientRepository implements IClientDatabaseRepository{
     async createClient(client: clientEntity): Promise<clientEntity | null> {

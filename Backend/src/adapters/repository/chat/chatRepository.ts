@@ -3,7 +3,7 @@ import { chatEntity } from "../../../domain/entities/chat/chatEntity";
 import { IchatRepository } from "../../../domain/interfaces/repositoryInterfaces/chat/IchatRepository";
 import { chatModel } from "../../../framework/database/models/chatModel";
 import { MessageEntity } from "../../../domain/entities/chat/messageEntity";
-import { ChatEntityDTO } from "../../../domain/entities/chat/chatEntityDTO";
+import { ChatEntityDTO } from "../../../domain/dto/chatEntityDTO";
 
 export class ChatRepository implements IchatRepository {
     async createChat(chat: chatEntity): Promise<chatEntity> {
