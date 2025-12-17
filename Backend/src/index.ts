@@ -13,6 +13,7 @@ import { SocketIoController } from "./adapters/controllers/chat/socketController
 import http from 'http'
 import { injectedCreateChatUseCase, injectedCreateMessageUseCase, injectedFindChatBetweenClientAndVendorUseCase, injectedUpdateLastMessageUseCase } from "./framework/inject/chatInject";
 import { NotificationRepository } from "./adapters/repository/notification/notificationRepository";
+import { errorHandler } from "./adapters/middlewares/errorHandlingMiddleware/error.middleware";
 
 export class App {
   private app: Express;
@@ -32,6 +33,7 @@ export class App {
     this.setAuthRoute()
     this.connectRedis()
     this.setSocketIo()
+    this.setErrorHandler()
   }
   private setMiddlewares() {
     this.app.use(
@@ -62,6 +64,9 @@ export class App {
   }
   private setSocketIo() {
         this.socketIoServer = new SocketIoController(this.server, injectedFindChatBetweenClientAndVendorUseCase, injectedCreateChatUseCase, injectedCreateMessageUseCase, injectedUpdateLastMessageUseCase, redisService, new NotificationRepository())
+    }
+    private setErrorHandler(){
+      this.app.use(errorHandler)
     }
   public listen() {
     const port = process.env.PORT;
