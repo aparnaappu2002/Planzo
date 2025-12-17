@@ -14,7 +14,7 @@ import { ForgotPasswordClient } from "../../adapters/controllers/client/authenti
 import { ResetPasswordClientUseCase } from "../../useCases/client/authentication/forgotPasswordUseCase";
 import { VendorDatabase } from "../../adapters/repository/vendor/vendorDatabase";
 import { GoogleLoginClientUseCase } from "../../useCases/client/authentication/googleLoginClientUseCase";
-import { ProfileClientController } from "../../adapters/controllers/client/profile/changePasswordClientController";
+import { ProfileClientController } from "../../adapters/controllers/client/profile/ClientProfileController";
 import { ChangePasswordClientUseCase } from "../../useCases/client/profile/changePasswordClientUseCase";
 import { hashPassword } from "../hashpassword/hashPassword";
 import { ChangeProfileImageClientUseCase } from "../../useCases/client/profile/changeProfileImageUseCase";
