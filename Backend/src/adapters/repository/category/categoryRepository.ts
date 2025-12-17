@@ -13,7 +13,7 @@ export class CategoryDatabaseRepository implements IcategoryRepository {
         return await categoryModel.create({ categoryId, title, image })
     }
     async findCategory(pageNo: number): Promise<{ categories: categoryEntity[] | []; totalPages: number; }> {
-        const limit = 5
+        const limit = 8
         const page = Math.max(pageNo, 1)
         const skip = (page - 1) * limit
         const categories = await categoryModel.find().skip(skip).limit(limit)
