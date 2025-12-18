@@ -145,7 +145,6 @@ export const ChatPage: React.FC = () => {
             </div>
             <div className="text-white">
               <h1 className="text-lg font-bold">Messages</h1>
-              <p className="text-yellow-100 text-sm">{userId}</p>
             </div>
           </div>
         </div>

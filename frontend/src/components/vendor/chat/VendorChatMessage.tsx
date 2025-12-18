@@ -46,6 +46,9 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState("");
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize infinite scroll observer
   const { getObserverRef, disconnect } = useInfiniteScrollObserver();
@@ -53,7 +56,6 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
   useEffect(() => {
     if (data) {
       const fetchedMessages = data.pages.flatMap(page => page.messages) || [];
-      // Sort messages by timestamp to ensure correct chronological order
       const sortedMessages = fetchedMessages.sort((a, b) =>
         new Date(a.sendedTime).getTime() - new Date(b.sendedTime).getTime()
       );
@@ -61,25 +63,20 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
       setMessages(prev => {
         const existingIds = new Set(prev.map(msg => msg._id));
         const newMessages = sortedMessages.filter(msg => !existingIds.has(msg._id || ''));
-
-        // Merge and sort all messages
         const allMessages = [...prev, ...newMessages].sort((a, b) =>
           new Date(a.sendedTime).getTime() - new Date(b.sendedTime).getTime()
         );
-
         return allMessages;
       });
     }
   }, [data]);
 
   useEffect(() => {
-    // Scroll to bottom for new messages, not when loading older messages
     if (messagesContainerRef.current && !isFetchingNextPage) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isFetchingNextPage]);
+  }, [messages, isFetchingNextPage, isTyping]);
 
-  // Set up infinite scroll observer
   useEffect(() => {
     if (loaderRef.current && hasNextPage) {
       try {
@@ -104,14 +101,12 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
     const handleConnect = () => {
       console.log('Connected with socket id', socket.id);
 
-      // Register user when connected
       if (userId) {
         socket.emit('register', { userId, name: 'Vendor User' }, (notifications) => {
           console.log('Registration successful, received notifications:', notifications);
         });
       }
 
-      // Join room when connected
       if (roomId) {
         socket.emit('joinRoom', { roomId });
       }
@@ -121,12 +116,25 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
       console.log('message from backend', data);
       setMessages(prev => {
         if (prev.some(msg => msg._id === data._id)) return prev;
-        // Add new message and sort by timestamp
         const updatedMessages = [...prev, data].sort((a, b) =>
           new Date(a.sendedTime).getTime() - new Date(b.sendedTime).getTime()
         );
         return updatedMessages;
       });
+    };
+
+    const handleTyping = (data: { username: string; roomId: string }) => {
+      if (data.roomId === roomId) {
+        setTypingUser(data.username);
+        setIsTyping(true);
+      }
+    };
+
+    const handleStoppedTyping = (data: { roomId: string }) => {
+      if (data.roomId === roomId) {
+        setTypingUser("");
+        setIsTyping(false);
+      }
     };
 
     const handleDisconnect = () => {
@@ -135,6 +143,8 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
 
     socket.on('connect', handleConnect);
     socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('typing', handleTyping);
+    socket.on('stopped-typing', handleStoppedTyping);
     socket.on('disconnect', handleDisconnect);
 
     // Register and join room immediately if already connected
@@ -153,6 +163,8 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
     return () => {
       socket.off('connect', handleConnect);
       socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('typing', handleTyping);
+      socket.off('stopped-typing', handleStoppedTyping);
       socket.off('disconnect', handleDisconnect);
     };
   }, [socket, roomId, userId]);
@@ -177,30 +189,50 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
     socket.emit('sendMessage', messageData, (response: Message | { error: boolean; message: string }) => {
       console.log('Server response:', response);
 
-      // Handle error response
       if (response && typeof response === 'object' && 'error' in response && response.error) {
         console.error('Error sending message:', response.message);
         alert('Failed to send message: ' + response.message);
         return;
       }
 
-      // Handle successful response
       const newMessage = response as Message;
       if (newMessage && newMessage._id) {
         setMessages(prev => {
-          // Prevent duplicates
           if (prev.some(msg => msg._id === newMessage._id)) return prev;
-          // Add new message and sort by timestamp
           const updatedMessages = [...prev, newMessage].sort((a, b) =>
             new Date(a.sendedTime).getTime() - new Date(b.sendedTime).getTime()
           );
           return updatedMessages;
         });
 
-        // Invalidate chat queries to refresh chat list
         queryClient.invalidateQueries({ queryKey: ['chats', userId] });
       }
     });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Emit typing event
+    if (value.length > 0 && roomId) {
+      socket.emit('typing', { username: 'Vendor User', roomId });
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set timeout to emit stopped typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('stopped-typing', { roomId });
+      }, 2000);
+    } else if (value.length === 0 && roomId) {
+      // Immediately emit stopped typing if input is cleared
+      socket.emit('stopped-typing', { roomId });
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -210,6 +242,12 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
     const content = input.value.trim();
 
     if (content && roomId && receiverId) {
+      // Emit stopped typing when sending message
+      socket.emit('stopped-typing', { roomId });
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
       sendMessage(content);
       input.value = '';
     } else {
@@ -285,6 +323,28 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
             ))
           )}
         </AnimatePresence>
+
+        {/* Typing Indicator */}
+        {isTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex justify-start"
+          >
+            <div className="bg-white text-yellow-800 rounded-2xl rounded-bl-sm border border-yellow-200 shadow-md p-3 max-w-xs">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-yellow-600">Typing</span>
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -305,6 +365,7 @@ export const VendorChatMessages: React.FC<VendorChatMessagesProps> = ({
             className="flex-1 p-3 rounded-xl border border-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-yellow-800 placeholder-yellow-500 transition-all duration-200"
             disabled={!receiverId || !roomId}
             autoComplete="off"
+            onChange={handleInputChange}
           />
           <button
             type="submit"

@@ -182,15 +182,22 @@ export class SocketIoController {
 
       // Replace your disconnect handler in the backend with this:
 
-      socket.on('typing', (data) => {
-    // Broadcast to all clients except the sender
-    socket.broadcast.emit('display', data);
-  });
+      // Inside setUpListeners(), add these handlers:
 
-  // Listen for 'stop_typing' event
-  socket.on('stop_typing', (data) => {
-    socket.broadcast.emit('display', data);
+socket.on('typing', (data) => {
+  // Broadcast to all clients in the room except the sender
+  socket.to(data.roomId).emit('typing', {
+    username: data.username,
+    roomId: data.roomId
   });
+});
+
+socket.on('stopped-typing', (data) => {
+  // Broadcast to all clients in the room except the sender
+  socket.to(data.roomId).emit('stopped-typing', {
+    roomId: data.roomId
+  });
+});
 
       socket.on("disconnect", async (reason) => {
         console.log(`Socket disconnected ${socket.id}, reason: ${reason}`);

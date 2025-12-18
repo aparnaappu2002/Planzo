@@ -136,7 +136,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             >
               <div className="flex justify-between w-full items-start">
                 <span className="font-medium text-yellow-800 text-sm">
-                  {notification.from?.name || 'Unknown Sender'}
+                  {notification.from?.name }
                 </span>
                 <span className="text-xs text-yellow-500 whitespace-nowrap ml-2">
                   {formatTime(notification.createdAt)}
