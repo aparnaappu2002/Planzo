@@ -32,7 +32,7 @@ export class TicketRepository implements IticketRepositoryInterface {
     const ticketAndEventDetails: TicketAndEventDTO[] = ticketAndEvent.map(ticket => {
         const event = ticket.eventId as any;
         return {
-            _id: ticket._id,
+            _id: ticket._id?.toString(),
             ticketId: ticket.ticketId,
             totalAmount: ticket.totalAmount,
             ticketCount: ticket.ticketCount,
@@ -64,7 +64,7 @@ export class TicketRepository implements IticketRepositoryInterface {
         if (!ticket) return null;
         console.log('ticket in the repo', ticket)
         const result: TicketAndVendorDTO = {
-            _id: ticket._id,
+            _id: ticket._id?.toString(),
             ticketId: ticket.ticketId,
             totalAmount: ticket.totalAmount,
             ticketCount: ticket.ticketCount,
@@ -76,9 +76,9 @@ export class TicketRepository implements IticketRepositoryInterface {
                 _id: (ticket.eventId as any)._id,
                 hostedBy: (ticket.eventId as any).hostedBy,
             },
-            clientId: ticket.clientId,
+            clientId: ticket.clientId?.toString(),
             ticketStatus: ticket.ticketStatus,
-            paymentTransactionId: ticket.paymentTransactionId,
+            paymentTransactionId: ticket.paymentTransactionId?.toString(),
         };
         return result
     }

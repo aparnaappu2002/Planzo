@@ -14,7 +14,7 @@ export class ChatRepository implements IchatRepository {
         const limit = 10
         const page = Math.max(pageNo, 1)
         const skip = (page - 1) * limit
-        const chats = await chatModel.find({
+        const chatsResult = await chatModel.find({
             $or: [
                 { senderId: userId },
                 { receiverId: userId }
@@ -32,7 +32,25 @@ export class ChatRepository implements IchatRepository {
             ]
         });
 
-        const hasMore = (skip + chats.length) < totalChats;
+        const hasMore = (skip + chatsResult.length) < totalChats;
+        const chats: ChatEntityDTO[] = chatsResult.map(chat => ({
+        _id: chat._id.toString(),
+        lastMessage: chat.lastMessage,
+        lastMessageAt: chat.lastMessageAt,
+        senderId: {
+            _id: (chat.senderId as any)._id.toString(),
+            name: (chat.senderId as any).name,
+            profileImage: (chat.senderId as any).profileImage
+        },
+        receiverId: {
+            _id: (chat.receiverId as any)._id.toString(),
+            name: (chat.receiverId as any).name,
+            profileImage: (chat.receiverId as any).profileImage
+        },
+        senderModel: chat.senderModel,
+        receiverModel: chat.receiverModel
+    }));
+
         return { chats, hasMore };
 
     }
