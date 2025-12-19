@@ -18,33 +18,9 @@ import {
 } from "@/components/ui/table";
 import Pagination from "@/components/other components/Pagination";
 
-interface Transaction {
-  _id: string;
-  amount: number;
-  currency: string;
-  paymentStatus: 'credit' | 'debit';
-  paymentType: string;
-  walletId: string;
-  date: string;
-  description?: string;
-  status?: string;
-  reference?: string;
-}
+import { Transaction } from "@/types/wallet/TransactionType";
 
-interface WalletData {
-  message: string;
-  wallet: {
-    _id: string;
-    walletId: string;
-    userId: string;
-    userModel: string;
-    balance: number;
-    createdAt: string;
-    updatedAt: string;
-  };
-  transactions: Transaction[];
-  totalPages: number;
-}
+import { WalletData } from "@/types/wallet/TransactionType";
 
 export default function ClientWallet() {
   const [pageNo, setPageNo] = useState(1);
@@ -56,7 +32,7 @@ export default function ClientWallet() {
     isLoading: boolean;
     error: any;
   };
-  
+  console.log("WalletData:",data)
 
   return (
     <div className="min-h-screen bg-gradient-subtle">

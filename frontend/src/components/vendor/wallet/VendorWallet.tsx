@@ -8,8 +8,8 @@ import { useFindTransactionsByPaymentStatus } from '@/hooks/vendorCustomHooks'; 
 import { RootState } from '@/redux/Store';
 import { useSelector } from 'react-redux';
 
-import { Transaction } from '@/types/admin/TransactionType';
-import { WalletData } from '@/types/admin/TransactionType';
+import { Transaction } from '@/types/wallet/TransactionType';
+import { WalletData } from '@/types/wallet/TransactionType';
 import Pagination from '@/components/other components/Pagination';
 
 type FilterType = 'all' | 'credit' | 'debit';

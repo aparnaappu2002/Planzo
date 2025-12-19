@@ -21,7 +21,7 @@ import { useFindAdminWallet,useFindTransactionsByPaymentStatus } from "@/hooks/a
 
 
 import Pagination from "@/components/other components/Pagination";
-import { Transaction, WalletData } from "@/types/admin/TransactionType";
+import { Transaction, WalletData } from "@/types/wallet/TransactionType";
 
 type FilterType = "all" | "credit" | "debit";
 
