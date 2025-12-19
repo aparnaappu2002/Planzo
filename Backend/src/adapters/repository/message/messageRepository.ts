@@ -18,4 +18,17 @@ export class MessageRepository implements ImessageRepostiory {
         const hasMore = (skip + messages.length) < totalMessages
         return { messages, hasMore }
     }
+    async updateMessagesSeenStatus(messageIds: string[], chatId: string): Promise<void> {
+        await messageModel.updateMany(
+            {
+                _id: { $in: messageIds },
+                chatId: chatId,
+                seen: false
+            },
+            {
+                $set: { seen: true }
+            }
+        );
+    }
+
 }

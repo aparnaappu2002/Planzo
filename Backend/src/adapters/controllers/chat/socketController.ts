@@ -9,6 +9,7 @@ import { IupdateLastMessageOfChatUseCase } from "../../../domain/interfaces/useC
 import { IredisService } from "../../../domain/interfaces/serviceInterface/IredisService";
 import { InotificationRepository } from "../../../domain/interfaces/repositoryInterfaces/notification/InotificationRepository";
 import { NotificationEntity } from "../../../domain/entities/notificationEntity";
+import { IupdateMessagesSeenStatusUseCase } from "../../../domain/interfaces/useCaseInterfaces/message/IupdateMessageSeenStatusUseCase";
 
 export class SocketIoController {
   private io: Server;
@@ -19,6 +20,7 @@ export class SocketIoController {
   private updateLastMessageUseCase: IupdateLastMessageOfChatUseCase;
   private redisService: IredisService;
   private notificationDatabase: InotificationRepository;
+  private updateMessageSeenStatusUseCase: IupdateMessagesSeenStatusUseCase;
   constructor(
     server: httpServer,
     FindChatsBetweenClientAndVendor: IfindChatsBetweenClientAndVendorUseCase,
@@ -26,7 +28,8 @@ export class SocketIoController {
     createMessageUseCase: IcreateMessageUseCase,
     updateLastMessageUseCase: IupdateLastMessageOfChatUseCase,
     redisService: IredisService,
-    notificationDatabase: InotificationRepository
+    notificationDatabase: InotificationRepository,
+    updateMessageSeeenStatusUseCase: IupdateMessagesSeenStatusUseCase
   ) {
     this.io = new Server(server, {
       cors: {
@@ -42,6 +45,7 @@ export class SocketIoController {
     this.redisService = redisService;
     this.updateLastMessageUseCase = updateLastMessageUseCase;
     this.notificationDatabase = notificationDatabase;
+    this.updateMessageSeenStatusUseCase = updateMessageSeeenStatusUseCase;
     this.setUpListeners();
   }
   private setUpListeners() {
@@ -170,13 +174,11 @@ export class SocketIoController {
             receiverModel: data.receiverModel,
             read: false,
           };
-          socket
-            .to(receiverData?.socketId)
-            .emit("notification", {
-              from: userData?.name,
-              message: data.sendMessage.messageContent.trim(),
-              notification,
-            });
+          socket.to(receiverData?.socketId).emit("notification", {
+            from: userData?.name,
+            message: data.sendMessage.messageContent.trim(),
+            notification,
+          });
         }
       });
 
@@ -184,20 +186,57 @@ export class SocketIoController {
 
       // Inside setUpListeners(), add these handlers:
 
-socket.on('typing', (data) => {
-  // Broadcast to all clients in the room except the sender
-  socket.to(data.roomId).emit('typing', {
-    username: data.username,
-    roomId: data.roomId
-  });
-});
+      socket.on("typing", (data) => {
+        // Broadcast to all clients in the room except the sender
+        socket.to(data.roomId).emit("typing", {
+          username: data.username,
+          roomId: data.roomId,
+        });
+      });
 
-socket.on('stopped-typing', (data) => {
-  // Broadcast to all clients in the room except the sender
-  socket.to(data.roomId).emit('stopped-typing', {
-    roomId: data.roomId
-  });
-});
+      socket.on("stopped-typing", (data) => {
+        // Broadcast to all clients in the room except the sender
+        socket.to(data.roomId).emit("stopped-typing", {
+          roomId: data.roomId,
+        });
+      });
+
+      socket.on("messagesSeen", async (data) => {
+        try {
+          const { chatId, roomId, userId, messageIds } = data;
+
+          console.log("📖 Messages seen event received:", {
+            chatId,
+            userId,
+            messageCount: messageIds?.length,
+            messageIds,
+          });
+
+          if (!chatId || !userId || !messageIds || messageIds.length === 0) {
+            console.error("❌ Invalid messagesSeen data");
+            return;
+          }
+
+          // Update messages in database
+          await this.updateMessageSeenStatusUseCase.updateSpecificMessages(
+            messageIds,
+            chatId
+          );
+
+          console.log("✅ Database updated successfully");
+
+          // Notify the sender that their messages were seen
+          socket.to(roomId).emit("messagesSeenUpdate", {
+            chatId,
+            seenBy: userId,
+            messageIds,
+          });
+
+          console.log(`📤 Emitted messagesSeenUpdate to room: ${roomId}`);
+        } catch (error) {
+          console.error("❌ Error in messagesSeen handler:", error);
+        }
+      });
 
       socket.on("disconnect", async (reason) => {
         console.log(`Socket disconnected ${socket.id}, reason: ${reason}`);

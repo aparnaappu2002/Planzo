@@ -48,6 +48,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // For tracking seen messages
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const markedAsSeenRef = useRef<Set<string>>(new Set());
 
   // Initialize infinite scroll observer
   const { getObserverRef, disconnect } = useInfiniteScrollObserver();
@@ -94,6 +99,76 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     };
   }, [getObserverRef, disconnect, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading]);
 
+  // Intersection Observer for detecting visible messages
+  useEffect(() => {
+    if (!chatId || !roomId || !userId) return;
+
+    // Clean up existing observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Create new observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const messagesToMarkAsSeen: string[] = [];
+
+        entries.forEach((entry) => {
+          // Check if message is visible (at least 50% in viewport)
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            const messageId = entry.target.getAttribute('data-message-id');
+            const senderId = entry.target.getAttribute('data-sender-id');
+            const isSeen = entry.target.getAttribute('data-seen') === 'true';
+
+            // Only mark as seen if:
+            // 1. Message has an ID
+            // 2. It's not from current user
+            // 3. It's not already seen
+            // 4. We haven't already marked it
+            if (
+              messageId && 
+              senderId !== userId && 
+              !isSeen &&
+              !markedAsSeenRef.current.has(messageId)
+            ) {
+              messagesToMarkAsSeen.push(messageId);
+              markedAsSeenRef.current.add(messageId);
+            }
+          }
+        });
+
+        // Emit to backend if there are messages to mark as seen
+        if (messagesToMarkAsSeen.length > 0) {
+          console.log('Marking messages as seen:', messagesToMarkAsSeen);
+          socket.emit('messagesSeen', {
+            chatId,
+            roomId,
+            userId,
+            messageIds: messagesToMarkAsSeen
+          });
+        }
+      },
+      {
+        root: messagesContainerRef.current,
+        threshold: 0.5, // 50% of message must be visible
+        rootMargin: '0px'
+      }
+    );
+
+    // Observe all existing message elements
+    messageRefs.current.forEach((element) => {
+      if (element && observerRef.current) {
+        observerRef.current.observe(element);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [messages, chatId, roomId, userId, socket]);
+
   // Socket connection and event handlers
   useEffect(() => {
     if (!socket.connected) socket.connect();
@@ -120,6 +195,21 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
       });
     };
 
+    const handleMessagesSeenUpdate = (data: { chatId: string; seenBy: string; messageIds: string[] }) => {
+      console.log('Received messagesSeenUpdate:', data);
+      if (data.chatId === chatId) {
+        setMessages(prev => 
+          prev.map(msg => {
+            // Mark message as seen if it's in the messageIds array and sent by current user
+            if (msg._id && data.messageIds.includes(msg._id) && msg.senderId === userId) {
+              return { ...msg, seen: true };
+            }
+            return msg;
+          })
+        );
+      }
+    };
+
     const handleTyping = (data: { username: string; roomId: string }) => {
       if (data.roomId === roomId) {
         setTypingUser(data.username);
@@ -140,6 +230,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     socket.on('connect', handleConnect);
     socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('messagesSeenUpdate', handleMessagesSeenUpdate);
     socket.on('typing', handleTyping);
     socket.on('stopped-typing', handleStoppedTyping);
     socket.on('disconnect', handleDisconnect);
@@ -160,11 +251,44 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     return () => {
       socket.off('connect', handleConnect);
       socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('messagesSeenUpdate', handleMessagesSeenUpdate);
       socket.off('typing', handleTyping);
       socket.off('stopped-typing', handleStoppedTyping);
       socket.off('disconnect', handleDisconnect);
     };
-  }, [socket, roomId, userId]);
+  }, [socket, roomId, userId, chatId]);
+
+  // Handle tab visibility - mark messages as seen when user returns
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && chatId && roomId) {
+        // Small delay to ensure messages are rendered
+        setTimeout(() => {
+          const unseenMessages = messages.filter(
+            msg => msg._id && msg.senderId !== userId && !msg.seen && !markedAsSeenRef.current.has(msg._id)
+          );
+
+          if (unseenMessages.length > 0) {
+            const messageIds = unseenMessages.map(m => m._id).filter(Boolean) as string[];
+            messageIds.forEach(id => markedAsSeenRef.current.add(id));
+            
+            socket.emit('messagesSeen', {
+              chatId,
+              roomId,
+              userId,
+              messageIds
+            });
+          }
+        }, 300);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [messages, chatId, roomId, userId, socket]);
 
   const sendMessage = (message: string) => {
     const sendMessage: MessageEntity = {
@@ -205,21 +329,17 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
 
-    // Emit typing event
     if (value.length > 0 && roomId) {
       socket.emit('typing', { username: 'Client User', roomId });
 
-      // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
 
-      // Set timeout to emit stopped typing after 2 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         socket.emit('stopped-typing', { roomId });
       }, 2000);
     } else if (value.length === 0 && roomId) {
-      // Immediately emit stopped typing if input is cleared
       socket.emit('stopped-typing', { roomId });
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -234,7 +354,6 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     const content = input.value.trim();
 
     if (content && roomId && vendorId) {
-      // Emit stopped typing when sending message
       socket.emit('stopped-typing', { roomId });
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -283,6 +402,18 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
             messages.map((message, index) => (
               <motion.div
                 key={message._id || `msg-${index}-${message.sendedTime}`}
+                ref={(el) => {
+                  if (el && message._id) {
+                    messageRefs.current.set(message._id, el);
+                    // Observe new messages
+                    if (observerRef.current) {
+                      observerRef.current.observe(el);
+                    }
+                  }
+                }}
+                data-message-id={message._id}
+                data-sender-id={message.senderId}
+                data-seen={message.seen}
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -297,26 +428,33 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                   }`}
                 >
                   <p className="text-sm break-words">{message.messageContent}</p>
-                  <p
-                    className={`text-xs mt-2 ${
-                      message.senderId === userId ? 'text-yellow-100' : 'text-yellow-500'
-                    }`}
-                  >
-                    {new Date(message.sendedTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                  {message.seen && (
-                    <p className="text-xs text-yellow-400">Seen</p>
-                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    <p
+                      className={`text-xs ${
+                        message.senderId === userId ? 'text-yellow-100' : 'text-yellow-500'
+                      }`}
+                    >
+                      {new Date(message.sendedTime).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                    {message.senderId === userId && (
+                      <div className="ml-2">
+                        {message.seen ? (
+                          <span className="text-xs text-blue-300" title="Seen">✓✓</span>
+                        ) : (
+                          <span className="text-xs text-yellow-200" title="Sent">✓</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))
           )}
         </AnimatePresence>
 
-        {/* Typing Indicator */}
         {isTyping && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
