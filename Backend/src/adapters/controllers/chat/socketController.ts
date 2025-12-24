@@ -52,7 +52,6 @@ export class SocketIoController {
     this.io.on("connect", (socket) => {
       console.log(`socket connected ${socket.id}`);
 
-      // Replace your register handler in the backend with this:
 
       socket.on("register", async (data, response) => {
         try {
@@ -61,24 +60,19 @@ export class SocketIoController {
             name: data?.name,
           });
 
-          // Validate input data
           if (!data || !data.userId || !data.name) {
             throw new Error(
               "Invalid registration data: userId and name are required"
             );
           }
 
-          // Ensure userId is a string
           const userId = String(data.userId);
           const userName = String(data.name);
 
-          console.log(`Registering user: ${userId} with name: ${userName}`);
 
-          // Get notifications for the user
           const notificationOfTheUser =
             await this.notificationDatabase.findNotifications(userId);
 
-          // Store user data in Redis
           try {
             await this.redisService.set(
               userId,
@@ -91,20 +85,14 @@ export class SocketIoController {
             console.log(`User ${userId} stored in Redis successfully`);
           } catch (redisError) {
             console.error("Redis storage error:", redisError);
-            // Continue with registration even if Redis fails
           }
 
-          // Store in in-memory map
           this.users.set(userId, { socketId: socket.id, name: userName });
 
-          // Store userId in socket data for cleanup
           socket.data.userId = userId;
 
-          console.log(
-            `User ${userId} registered successfully with socket ${socket.id}`
-          );
+          
 
-          // Send response back to client
           response(notificationOfTheUser);
         } catch (error) {
           console.error("Registration error:", error);
@@ -182,12 +170,9 @@ export class SocketIoController {
         }
       });
 
-      // Replace your disconnect handler in the backend with this:
 
-      // Inside setUpListeners(), add these handlers:
 
       socket.on("typing", (data) => {
-        // Broadcast to all clients in the room except the sender
         socket.to(data.roomId).emit("typing", {
           username: data.username,
           roomId: data.roomId,
@@ -195,7 +180,6 @@ export class SocketIoController {
       });
 
       socket.on("stopped-typing", (data) => {
-        // Broadcast to all clients in the room except the sender
         socket.to(data.roomId).emit("stopped-typing", {
           roomId: data.roomId,
         });
@@ -217,7 +201,6 @@ export class SocketIoController {
             return;
           }
 
-          // Update messages in database
           await this.updateMessageSeenStatusUseCase.updateSpecificMessages(
             messageIds,
             chatId
@@ -225,14 +208,12 @@ export class SocketIoController {
 
           console.log("✅ Database updated successfully");
 
-          // Notify the sender that their messages were seen
           socket.to(roomId).emit("messagesSeenUpdate", {
             chatId,
             seenBy: userId,
             messageIds,
           });
 
-          console.log(`📤 Emitted messagesSeenUpdate to room: ${roomId}`);
         } catch (error) {
           console.error("❌ Error in messagesSeen handler:", error);
         }
@@ -241,17 +222,14 @@ export class SocketIoController {
       socket.on("disconnect", async (reason) => {
         console.log(`Socket disconnected ${socket.id}, reason: ${reason}`);
 
-        // Check if userId exists before attempting cleanup
         if (socket.data && socket.data.userId) {
           const userId = socket.data.userId;
           console.log(`Cleaning up user: ${userId}`);
 
           try {
-            // Remove from in-memory users map
             this.users.delete(userId);
             console.log(`Removed user ${userId} from users map`);
 
-            // Remove from Redis with proper error handling
             await this.redisService.del(userId);
             console.log(`Successfully removed user ${userId} from Redis`);
           } catch (error) {
