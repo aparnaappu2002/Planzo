@@ -10,11 +10,9 @@ import { toast } from 'react-toastify'
 function TicketPaymentForm() {
     const [updatedTicket, setUpdatedTicket] = useState<TicketBackendEntity>()
     const [isOpen, setIsOpen] = useState<boolean>(false)
-    // Changed from array to single ticket
     const [createdTicket, setCreatedTicket] = useState<TicketBackendEntity | null>(null) 
     const [confirmedTicket, setConfirmedTicket] = useState<TicketBackendEntity | null>(null) 
     
-    // Keep ref for single ticket
     const createdTicketRef = useRef<TicketBackendEntity | null>(null)
     
     const location = useLocation()
@@ -22,23 +20,31 @@ function TicketPaymentForm() {
     const createTicket = useCreateTicket()
     const confirmTicket = useConfirmTicketAndPayment()
 
-    const handleCreatePaymentIntent = async (paymentMethodId: string) => {
+    const handleCreatePaymentIntent = async () => {
         try {
+            console.log('🚀 Starting ticket creation...');
+            
             if (!data.ticketData.ticketVariants || typeof data.ticketData.ticketVariants !== 'object') {
                 throw new Error('Invalid ticket variants data');
             }
 
-            const response = await createTicket.mutateAsync({
+            const axiosResponse = await createTicket.mutateAsync({
                 ticket: data.ticketData,
-                paymentIntentId: paymentMethodId,
                 totalAmount: data.amount,
                 totalCount: data.totalTicketCount,
                 vendorId: data.vendorId,
             });
             
-            console.log('Create ticket response:', response);
+            console.log('📦 Full Axios response:', axiosResponse);
             
-            if (response.error || !response.stripeClientId) {
+            // ✅ Handle both Axios wrapped response and direct response
+            const response = axiosResponse.data || axiosResponse;
+            
+            console.log('📦 Extracted response data:', response);
+            console.log('🔍 Response keys:', Object.keys(response));
+            
+            // Check for errors in response
+            if (response.error) {
                 if (response.message === "Ticket booking limit exceeded" && response.details) {
                     const limitDetails = response.details.map(detail => 
                         `• ${detail.variant.toUpperCase()}: You requested ${detail.requested} ticket${detail.requested > 1 ? 's' : ''}, but only ${detail.remainingLimit} remaining (limit: ${detail.maxPerUser} per user)`
@@ -48,39 +54,85 @@ function TicketPaymentForm() {
                     throw new Error(formattedMessage);
                 }
                 
-                throw new Error(response.message || 'Failed to create ticket - no client secret received');
+                throw new Error(response.message || 'Failed to create ticket');
+            }
+
+            // ✅ Extract data from response
+            const clientSecret = response.clientSecret;
+            const paymentIntentId = response.paymentIntentId;
+            const ticket = response.createdTicket;
+            const summary = response.summary;
+            
+            console.log('🔑 Client Secret:', clientSecret);
+            console.log('💳 Payment Intent ID:', paymentIntentId);
+            console.log('🎫 Created Ticket:', ticket);
+            console.log('📊 Summary:', summary);
+
+            // Validate we have required data
+            if (!clientSecret) {
+                console.error('❌ No client secret found in response');
+                throw new Error('No client secret received from server. Payment cannot be processed.');
+            }
+
+            if (!paymentIntentId) {
+                console.error('❌ No payment intent ID found in response');
+                throw new Error('No payment intent ID received from server.');
+            }
+
+            if (!ticket) {
+                console.error('❌ No ticket data in response');
+                throw new Error('No ticket data received from server');
             }
             
-            console.log('✅ Consolidated ticket created successfully, got stripeClientId:', response.stripeClientId);
+            console.log('✅ Ticket created successfully');
             
-            // Handle single consolidated ticket
-            let ticket = null;
-            if (response.createdTicket) {
-                ticket = response.createdTicket;
-            } else {
-                throw new Error('No ticket found in response');
+            // Validate ticket structure
+            if (!ticket.ticketId || !ticket.eventId) {
+                console.error('❌ Invalid ticket structure:', ticket);
+                throw new Error('Invalid ticket data received - missing required fields');
+            }
+
+            if (!ticket.ticketVariants || !Array.isArray(ticket.ticketVariants) || ticket.ticketVariants.length === 0) {
+                console.error('❌ Invalid ticket variants:', ticket.ticketVariants);
+                throw new Error('Invalid ticket data received - no variants found');
             }
             
+            // Store ticket in state and ref
             setCreatedTicket(ticket);
             createdTicketRef.current = ticket;
 
-            // Calculate total QR codes across all variants
-            const totalQRCodes = ticket.ticketVariants?.reduce((sum, variant) => 
-                sum + (variant.qrCodes?.length || 0), 0) || 0;
+            // Log ticket details from summary
+            if (summary) {
+                console.log(`✅ Created ticket with:
+- Ticket ID: ${summary.ticketId}
+- Variants: ${summary.totalVariants}
+- Total Tickets: ${summary.totalTickets}
+- Total QR Codes: ${summary.totalQRCodes}
+- Total Amount: ₹${summary.totalAmount}
+- Payment Status: ${summary.paymentStatus}
+- Ticket Status: ${summary.ticketStatus}`);
+                
+                console.log('📋 Variants breakdown:');
+                summary.variants?.forEach((v: any) => {
+                    console.log(`  - ${v.type}: ${v.quantity} ticket(s) @ ₹${v.pricePerTicket} = ₹${v.subtotal} (${v.qrCodesCount} QR codes)`);
+                });
+            }
 
-            console.log(`✅ Ticket created with ${ticket.ticketVariants?.length || 0} variants and ${totalQRCodes} total QR codes`);
-
+            // ✅ Return all required data for PaymentForm
             return {
-                clientSecret: response.stripeClientId, 
+                clientSecret: clientSecret,  // For Stripe to confirm payment
+                paymentIntentId: paymentIntentId,  // The actual pi_... ID
                 payload: ticket,
-                tickets: [ticket], // Wrap single ticket in array for compatibility
+                tickets: [ticket],
+                summary: summary
             };
         } catch (error) {
-            console.error('Error creating ticket:', error);
-            let errorMessage = "Error creating ticket";
+            console.error('❌ Error creating ticket:', error);
             
             if (error instanceof Error) {
-                errorMessage = error.message;
+                toast.error(error.message);
+            } else {
+                toast.error("Error creating ticket");
             }
             
             throw error; 
@@ -88,99 +140,120 @@ function TicketPaymentForm() {
     };
 
     const handleConfirmSuccess = (ticketData: TicketEntity, paymentIntentId: string, paymentResult?: any) => {
-        console.log('🔍 handleConfirmSuccess called with:', {
-            ticketData,
-            paymentIntentId,
-            paymentResult,
-            createdTicket,
-            createdTicketRef: createdTicketRef.current
-        });
+        console.log('🎉 Payment confirmed, preparing ticket confirmation...');
+        console.log('💳 Payment Intent ID:', paymentIntentId);
+        console.log('📦 Payment Result:', paymentResult);
 
         let ticketToConfirm = null;
         
-        // Handle single ticket confirmation
+        // Priority order for getting ticket data
         if (paymentResult && paymentResult.payload) {
+            console.log('✅ Using ticket from payment result');
             ticketToConfirm = paymentResult.payload;
         }
         else if (createdTicketRef.current) {
+            console.log('✅ Using ticket from ref');
             ticketToConfirm = createdTicketRef.current;
         }
         else if (createdTicket) {
+            console.log('✅ Using ticket from state');
             ticketToConfirm = createdTicket;
         }
         else if (ticketData && ticketData.eventId) {
+            console.log('⚠️ Using ticket from ticketData (fallback)');
             ticketToConfirm = ticketData;
         }
         
         if (!ticketToConfirm) {
+            console.error('❌ No ticket found to confirm');
             toast.error('No ticket found to confirm. Please try again.');
             return;
         }
 
+        console.log('📋 Ticket to confirm:', ticketToConfirm);
+
         // Validate ticket has required fields
         if (!ticketToConfirm.eventId || !ticketToConfirm.ticketId) {
-            toast.error('Invalid ticket data. Please try again.');
+            console.error('❌ Invalid ticket data - missing required fields:', {
+                hasEventId: !!ticketToConfirm.eventId,
+                hasTicketId: !!ticketToConfirm.ticketId
+            });
+            toast.error('Invalid ticket data. Missing required fields.');
             return;
         }
 
-        // Calculate total QR codes for validation
-        const totalQRCodes = ticketToConfirm.ticketVariants?.reduce((sum, variant) => 
-            sum + (variant.qrCodes?.length || 0), 0) || ticketToConfirm.ticketCount || 1;
-
-        if (totalQRCodes !== data.totalTicketCount) {
-            console.warn(`QR codes count (${totalQRCodes}) doesn't match expected total (${data.totalTicketCount})`);
+        // Validate ticketVariants
+        if (!ticketToConfirm.ticketVariants || !Array.isArray(ticketToConfirm.ticketVariants) || ticketToConfirm.ticketVariants.length === 0) {
+            console.error('❌ Invalid ticket variants:', ticketToConfirm.ticketVariants);
+            toast.error('Invalid ticket data. No ticket variants found.');
+            return;
         }
 
-        console.log('✅ Confirming consolidated ticket:', {
+        // Calculate total QR codes for logging
+        const totalQRCodes = ticketToConfirm.ticketVariants.reduce((sum, variant) => 
+            sum + (variant.qrCodes?.length || 0), 0);
+
+        console.log('✅ Confirming ticket:', {
             ticketId: ticketToConfirm.ticketId,
-            variants: ticketToConfirm.ticketVariants?.map(v => ({
+            eventId: ticketToConfirm.eventId,
+            paymentIntentId: paymentIntentId,
+            totalAmount: ticketToConfirm.totalAmount,
+            ticketCount: ticketToConfirm.ticketCount,
+            variantCount: ticketToConfirm.ticketVariants.length,
+            totalQRCodes,
+            variants: ticketToConfirm.ticketVariants.map(v => ({
                 variant: v.variant,
                 count: v.count,
+                pricePerTicket: v.pricePerTicket,
+                subtotal: v.subtotal,
                 qrCodes: v.qrCodes?.length || 0
-            })) || [],
-            totalQRCodes,
-            eventId: ticketToConfirm.eventId
+            }))
         });
 
+        // ✅ Send confirmation to backend with payment intent ID
         confirmTicket.mutate({
-            tickets: [ticketToConfirm], // Send as array for API compatibility
-            allTickets: [ticketToConfirm],
             ticket: ticketToConfirm,
-            paymentIntent: paymentIntentId,
+            paymentIntent: paymentIntentId,  // ✅ This is the pi_... ID from Stripe
             vendorId: data.vendorId,
-            totalTickets: totalQRCodes, // Use total QR codes count
         }, {
             onSuccess: (responseData) => {
-                console.log('🔍 Confirm ticket response:', responseData);
+                console.log('🎉 Confirm ticket response:', responseData);
                 
-                // Extract the actual ticket data from the API response
+                // Handle potential Axios wrapper
+                const response = responseData.data || responseData;
+                
+                // Extract confirmed ticket from response
                 let finalConfirmedTicket = null;
                 
-                // Handle the actual API response structure based on your logs
-                if (responseData.confirmedTicket) {
-                    finalConfirmedTicket = responseData.confirmedTicket;
-                } else if (responseData.confirmTicketAndPayment) {
-                    finalConfirmedTicket = responseData.confirmTicketAndPayment;
-                } else if (Array.isArray(responseData)) {
-                    finalConfirmedTicket = responseData[0];
+                if (response.confirmedTicket) {
+                    finalConfirmedTicket = response.confirmedTicket;
+                } else if (Array.isArray(response)) {
+                    finalConfirmedTicket = response[0];
                 } else {
-                    finalConfirmedTicket = responseData;
+                    finalConfirmedTicket = response;
                 }
 
                 if (!finalConfirmedTicket) {
-                    toast.error('No confirmed ticket found. Please contact support.');
+                    console.error('❌ No confirmed ticket found in response:', response);
+                    toast.error('No confirmed ticket found in response. Please contact support.');
                     return;
                 }
 
-                console.log('🔍 Final confirmed ticket:', finalConfirmedTicket);
+                console.log('✅ Final confirmed ticket:', finalConfirmedTicket);
+                if (response.ticketDetails) {
+                    console.log('📋 Ticket details:', response.ticketDetails);
+                }
 
-                // Set the states
+                // Update states
                 setUpdatedTicket(finalConfirmedTicket);
                 setConfirmedTicket(finalConfirmedTicket);
                 
-                // Calculate total tickets from variants or use ticketCount
-                const totalTickets = finalConfirmedTicket.ticketVariants?.reduce((sum, variant) => 
-                    sum + variant.count, 0) || finalConfirmedTicket.ticketCount || 1;
+                // Get total tickets from ticketDetails or calculate from variants
+                const totalTickets = response.ticketDetails?.totalTickets || 
+                    finalConfirmedTicket.ticketVariants?.reduce((sum, variant) => sum + variant.count, 0) || 
+                    finalConfirmedTicket.ticketCount || 1;
+                
+                console.log(`✅ Successfully confirmed ${totalTickets} ticket(s)`);
                 
                 // Show success message
                 if (totalTickets === 1) {
@@ -189,27 +262,28 @@ function TicketPaymentForm() {
                     toast.success(`${totalTickets} tickets confirmed successfully!`);
                 }
 
-                // Open modal after a brief delay to ensure state is updated
+                // Open modal after brief delay
                 setTimeout(() => {
-                    console.log('🔍 Opening modal with ticket:', finalConfirmedTicket);
+                    console.log('🎫 Opening confirmation modal');
                     setIsOpen(true);
                 }, 100);
             },
             onError: (error) => {
+                console.error('❌ Error confirming ticket:', error);
                 
                 let errorMessage = "Failed to confirm ticket";
-      
-      if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    
-    toast.error(errorMessage); 
+                
+                if (error instanceof Error) {
+                    errorMessage = error.message;
+                }
+                
+                toast.error(errorMessage); 
             }
         });
     };
 
     const handleCloseModal = () => {
-        console.log('🔍 Closing modal');
+        console.log('🔒 Closing modal');
         setIsOpen(false);
     };
 
@@ -221,7 +295,7 @@ function TicketPaymentForm() {
         return confirmedTicket?.ticketCount || createdTicket?.ticketCount || data.totalTicketCount || 1;
     };
 
-    // Create confirmation data structure that matches modal expectations
+    // Create confirmation data structure for modal
     const createConfirmationData = () => {
         const ticket = updatedTicket || confirmedTicket;
         if (!ticket) {
@@ -229,7 +303,7 @@ function TicketPaymentForm() {
             return null;
         }
 
-        console.log('🔍 Creating confirmation data from ticket:', ticket);
+        console.log('📋 Creating confirmation data from ticket:', ticket);
 
         // Calculate total QR codes
         const totalQRCodes = ticket.ticketVariants?.reduce((sum, variant) => 
@@ -271,18 +345,11 @@ function TicketPaymentForm() {
             }
         };
 
-        console.log('🔍 Created confirmation data:', confirmationData);
+        console.log('✅ Created confirmation data:', confirmationData);
         return confirmationData;
     };
 
     const confirmationData = createConfirmationData();
-
-    console.log('🔍 Render state:', { 
-        isOpen, 
-        hasUpdatedTicket: !!updatedTicket, 
-        hasConfirmedTicket: !!confirmedTicket,
-        hasConfirmationData: !!confirmationData
-    });
 
     return (
         <div className='h-screen'>

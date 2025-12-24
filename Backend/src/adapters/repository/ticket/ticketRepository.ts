@@ -6,6 +6,7 @@ import { TicketAndEventDTO } from "../../../domain/dto/ticket/ticketAndEventDTO"
 import { TicketAndVendorDTO } from "../../../domain/dto/ticket/ticketAndVendorDTO";
 import { eventModal } from "../../../framework/database/models/eventModel";
 import { TicketAndUserDTO } from "../../../domain/dto/ticket/ticketAndUseDTO";
+import { paymentModel } from "../../../framework/database/models/paymentModel";
 
 export class TicketRepository implements IticketRepositoryInterface {
     async createTicket(ticket: TicketEntity): Promise<TicketEntity> {
@@ -21,9 +22,14 @@ export class TicketRepository implements IticketRepositoryInterface {
     const filter = { clientId: userId }
     
     const [ticketAndEvent, totalItems] = await Promise.all([
-        ticketModel.find(filter).select('_id ticketId ticketCount phone email paymentStatus totalAmount ticketStatus qrCodeLink ticketVariants')
+        ticketModel.find(filter)
+            .select('_id ticketId ticketCount phone email paymentStatus totalAmount ticketStatus qrCodeLink ticketVariants paymentTransactionId')
             .populate('eventId', '_id title description date startTime endTime status address pricePerTicket posterImage')
-            .skip(skip).limit(limit).sort({ createdAt: -1 }).lean(),
+            .populate('paymentTransactionId', 'paymentId status purpose') // Populate payment details
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 })
+            .lean(),
         ticketModel.countDocuments(filter)
     ])
     
@@ -31,6 +37,8 @@ export class TicketRepository implements IticketRepositoryInterface {
     
     const ticketAndEventDetails: TicketAndEventDTO[] = ticketAndEvent.map(ticket => {
         const event = ticket.eventId as any;
+        const payment = ticket.paymentTransactionId as any;
+        
         return {
             _id: ticket._id?.toString(),
             ticketId: ticket.ticketId,
@@ -41,7 +49,8 @@ export class TicketRepository implements IticketRepositoryInterface {
             paymentStatus: ticket.paymentStatus,
             ticketStatus: ticket.ticketStatus,
             qrCodeLink: ticket.qrCodeLink,
-            ticketVariants: ticket.ticketVariants || [], 
+            ticketVariants: ticket.ticketVariants || [],
+            paymentIntentId: payment?.paymentId || null, 
             event: {
                 _id: event._id,
                 title: event.title,
@@ -59,29 +68,59 @@ export class TicketRepository implements IticketRepositoryInterface {
     
     return { ticketAndEventDetails, totalPages, totalItems }
 }
-    async ticketCancel(ticketId: string): Promise<TicketAndVendorDTO | null> {
-        const ticket = await ticketModel.findByIdAndUpdate(ticketId, { ticketStatus: 'refunded' }, { new: true }).populate('eventId', 'hostedBy').lean()
-        if (!ticket) return null;
-        console.log('ticket in the repo', ticket)
-        const result: TicketAndVendorDTO = {
-            _id: ticket._id?.toString(),
-            ticketId: ticket.ticketId,
-            totalAmount: ticket.totalAmount,
-            ticketCount: ticket.ticketCount,
-            phone: ticket.phone,
-            email: ticket.email,
-            paymentStatus: ticket.paymentStatus,
-            qrCodeLink: ticket.qrCodeLink,
-            eventId: {
-                _id: (ticket.eventId as any)._id,
-                hostedBy: (ticket.eventId as any).hostedBy,
-            },
-            clientId: ticket.clientId?.toString(),
-            ticketStatus: ticket.ticketStatus,
-            paymentTransactionId: ticket.paymentTransactionId?.toString(),
-        };
-        return result
+    async ticketCancel(
+    ticketId: string, 
+    refundMethod?: 'wallet' | 'bank'
+): Promise<TicketAndVendorDTO | null> {
+    // Update ticket status and store refund method
+    const ticket = await ticketModel.findByIdAndUpdate(
+        ticketId, 
+        { 
+            ticketStatus: 'refunded',
+            refundMethod: refundMethod || 'wallet',
+            refundedAt: new Date()
+        }, 
+        { new: true }
+    )
+    .populate('eventId', 'hostedBy')
+    .lean()
+    
+    if (!ticket) return null;
+    console.log('ticket in the repo', ticket)
+    
+    // Fetch payment details from payment entity
+    let paymentId = null;
+    if (ticket.paymentTransactionId) {
+        const payment = await paymentModel.findById(ticket.paymentTransactionId)
+            .select('paymentId status purpose')
+            .lean();
+        
+        if (payment) {
+            paymentId = payment.paymentId;
+        }
     }
+    
+    const result: TicketAndVendorDTO = {
+        _id: ticket._id?.toString(),
+        ticketId: ticket.ticketId,
+        totalAmount: ticket.totalAmount,
+        ticketCount: ticket.ticketCount,
+        phone: ticket.phone,
+        email: ticket.email,
+        paymentStatus: ticket.paymentStatus,
+        qrCodeLink: ticket.qrCodeLink,
+        eventId: {
+            _id: (ticket.eventId as any)._id,
+            hostedBy: (ticket.eventId as any).hostedBy,
+        },
+        clientId: ticket.clientId?.toString(),
+        ticketStatus: ticket.ticketStatus,
+        paymentTransactionId: ticket.paymentTransactionId?.toString(),
+        paymentId: paymentId || undefined, // Payment ID from payment entity
+        refundMethod: refundMethod || 'wallet',
+    };
+    return result
+}
     async checkUserTicketLimit(
     clientId: string,
     eventId: string,

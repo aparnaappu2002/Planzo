@@ -9,7 +9,11 @@ export class PaymentService implements IStripeService {
             apiVersion: "2025-07-30.basil"
         })
     }
-    async createPaymentIntent(amount: number, purpose: "ticket" | "service", metadata: Record<string, any>): Promise<string> {
+    async createPaymentIntent(
+        amount: number, 
+        purpose: "ticket" | "service", 
+        metadata: Record<string, any>
+    ): Promise<{ clientSecret: string; paymentIntentId: string }>  {
 
         try {
             const paymentIntent = await this.stripe.paymentIntents.create({
@@ -23,7 +27,12 @@ export class PaymentService implements IStripeService {
             if (!paymentIntent.client_secret) {
                 throw new Error("Payment intent creation failed: Missing client_secret.");
             }
-            return paymentIntent.client_secret
+            console.log("paymentIntent:",paymentIntent)
+            return {
+                clientSecret: paymentIntent.client_secret,
+                paymentIntentId: paymentIntent.id
+            };
+
         } catch (error) {
             console.error("[StripePaymentService] Failed to create payment intent:", error);
             throw new Error("Stripe payment intent creation failed.");

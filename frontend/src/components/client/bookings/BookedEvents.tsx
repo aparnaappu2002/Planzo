@@ -41,6 +41,7 @@ export default function BookedEvents() {
     isFetching: originalFetching,
     isError: originalIsError
   } = useFindTicketAndEventsDetails(clientId, currentPage, { enabled: !useFilteredData && !!clientId });
+  console.log("Bookings:",originalData)
 
   const { 
     data: filteredData, 

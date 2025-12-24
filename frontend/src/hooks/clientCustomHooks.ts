@@ -34,6 +34,12 @@ type Client={
   profileImage:string
 }
 
+interface TicketCancelParams {
+  ticketId: string;
+  refundMethod?: string;
+}
+
+
 export const useClientSignupMutation = () => {
   return useMutation({
     mutationFn: (values: FormValues) => clientSignup(values),
@@ -128,16 +134,14 @@ export const useCreateTicket = () => {
       ticket,
       totalCount,
       totalAmount,
-      paymentIntentId,
       vendorId,
     }: {
       ticket: TicketEntity;
       totalCount: number;
       totalAmount: number;
-      paymentIntentId: string;
       vendorId: string;
     }) =>
-      createTicket(ticket, totalCount, totalAmount, paymentIntentId, vendorId),
+      createTicket(ticket, totalCount, totalAmount, vendorId),
   });
 };
 
@@ -211,7 +215,7 @@ export const useFindTicketAndEventsDetails = (
 
 export const useTicketCancellation = () => {
   return useMutation({
-    mutationFn: (ticketId: string) => ticketCancel(ticketId),
+    mutationFn: (params: TicketCancelParams) => ticketCancel(params),
   });
 };
 

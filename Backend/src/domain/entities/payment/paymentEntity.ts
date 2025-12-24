@@ -8,8 +8,9 @@ export interface PaymentEntity {
     ticketId?:string;
     amount: number;
     currency: string;
-    purpose: 'ticketBooking' | 'serviceBooking'
+    purpose: 'ticketBooking' | 'serviceBooking' | 'cancelTicket'
     status: 'pending' | 'success' | 'failed';
     paymentId: string;
+    paymentIntentId?:string;
     createdAt?: Date
 }

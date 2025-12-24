@@ -4,7 +4,7 @@ export interface IStripeService {
       amount: number,
       purpose: 'ticket' | 'service',
       metadata: Record<string, any>
-    ): Promise<string>;
+    ): Promise<{clientSecret: string; paymentIntentId: string}>;
   
     confirmPayment(paymentIntentId: string): Promise<any>;
   }

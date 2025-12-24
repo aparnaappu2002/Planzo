@@ -3,10 +3,13 @@ import { TicketFromFrontend } from "../../../../entities/ticket/ticketFromFronte
 
 export interface IcreateTicketUseCase {
     createTicket(
-        ticket: TicketFromFrontend, 
-        totalCount: number, 
-        totalAmount: number, 
-        paymentIntentId: string, 
+        ticketData: TicketFromFrontend,
+        totalCount: number,
+        totalAmount: number,
         vendorId: string
-    ): Promise<{ createdTicket: TicketEntity; stripeClientId: string }>;
+    ): Promise<{ 
+        createdTicket: TicketEntity; 
+        clientSecret: string; 
+        paymentIntentId: string 
+    }>;
 }

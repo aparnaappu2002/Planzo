@@ -24,6 +24,12 @@ type Client={
     profileImage:string
 }
 
+interface TicketCancelParams {
+  ticketId: string;
+  refundMethod?: string;
+}
+
+
 export const clientSignup = async (values:FormValues)=>{
     try{
         const response=await axios.post('/signup',values)
@@ -162,23 +168,17 @@ export const findEventById = async (eventId: string) => {
     }
 }
 
-export const createTicket = async (ticket: TicketEntity, totalCount: number, totalAmount: number, paymentIntentId: string, vendorId: string) => {
+export const createTicket = async (ticket: TicketEntity, totalCount: number, totalAmount: number, vendorId: string) => {
     try {
         const response = await axios.post('/createTicket', { 
             ticket, 
             totalCount, 
             totalAmount, 
-            paymentIntentId, 
             vendorId 
         });
         
         // The response now contains a single createdTicket instead of createdTickets array
-        return {
-            message: response.data.message,
-            stripeClientId: response.data.stripeClientId,
-            createdTicket: response.data.createdTicket, // Single ticket object
-            summary: response.data.summary // Enhanced summary with variant details
-        };
+        return response
     } catch (error) {
         console.log('error while creating ticket', error);
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while creating ticket');
@@ -240,9 +240,9 @@ export const findTicketAndEventDetailsClient = async (clientId: string, pageNo: 
     }
 }
 
-export const ticketCancel = async (ticketId: string) => {
+export const ticketCancel = async ({ticketId,refundMethod} : TicketCancelParams) => {
     try {
-        const response = await axios.patch('/ticketCancel', { ticketId })
+        const response = await axios.patch('/ticketCancel', { ticketId,refundMethod  })
         return response.data
     } catch (error) {
         console.log('error while ticket cancellation', error)

@@ -14,5 +14,8 @@ export interface TicketAndVendorDTO {
     }
     clientId:   string;
     ticketStatus: 'used' | 'refunded' | 'unused'
-    paymentTransactionId: string
+    paymentTransactionId: string,
+    refundMethod?: string; // Add this field
+    paymentId?:string
+
 }

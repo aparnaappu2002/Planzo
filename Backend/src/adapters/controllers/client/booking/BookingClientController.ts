@@ -78,9 +78,11 @@ export class BookingClientController {
     }
     async handleCreateBookingPayment(req: Request, res: Response): Promise<void> {
         try {
-            const { bookingId, paymentIntentId } = req.body
-            const { clientStripeId, booking } = await this.createBookingPaymentUseCase.inititateBookingPayment(bookingId, paymentIntentId)
-            res.status(HttpStatus.OK).json({ message: Messages.PAYMENT_INITIATED, clientStripeId, booking })
+            const { bookingId } = req.body
+            const { clientSecret, paymentIntentId, booking  } = await this.createBookingPaymentUseCase.inititateBookingPayment(bookingId)
+            res.status(HttpStatus.OK).json({ message: Messages.PAYMENT_INITIATED, clientSecret,
+      paymentIntentId,
+      booking, })
         } catch (error) {
             console.log('error while initiating booking payment', error)
             res.status(HttpStatus.BAD_REQUEST).json({

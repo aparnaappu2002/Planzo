@@ -26,9 +26,9 @@ export class TicketClientController {
     }
 async handleCreateUseCase(req: Request, res: Response): Promise<void> {
     try {
-        const { ticket, totalCount, totalAmount, paymentIntentId, vendorId } = req.body;
+        const { ticket, totalCount, totalAmount, vendorId } = req.body;
 
-        // ... existing validation code remains the same ...
+        // Validation
         if (!ticket) {
             res.status(HttpStatus.BAD_REQUEST).json({
                 message: "Ticket data is required"
@@ -75,59 +75,63 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        if (!paymentIntentId || !vendorId) {
+        if (!vendorId) {
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Missing paymentIntentId or vendorId"
+                message: "Missing vendorId"
             });
             return;
         }
 
-        // APPROACH 1: Quick fix - Add retry mechanism with exponential backoff
+        // Get selected variants for limit checking
         const selectedVariants = Object.entries(ticket.ticketVariants)
             .filter(([variant, quantity]) => typeof quantity === 'number' && quantity > 0);
 
+        // Check ticket limits before creation
+        const limitCheckPromises = selectedVariants.map(([variant, quantity]) => 
+            this.checkTicketLimitUseCase.checkTicketLimit(
+                ticket.clientId,
+                ticket.eventId,
+                variant as 'standard' | 'premium' | 'vip',
+                quantity as number
+            )
+        );
+
+        const limitCheckResults = await Promise.all(limitCheckPromises);
+        
+        const failedChecks = limitCheckResults
+            .map((result, index) => ({ 
+                result, 
+                variant: selectedVariants[index][0], 
+                requested: selectedVariants[index][1] 
+            }))
+            .filter(({ result }) => !result.canBook);
+        
+        if (failedChecks.length > 0) {
+            console.log("Ticket limit exceeded");
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: "Ticket booking limit exceeded",
+                details: failedChecks.map(({ result, variant, requested }) => ({
+                    variant,
+                    maxPerUser: result.maxPerUser,
+                    remainingLimit: result.remainingLimit,
+                    requested
+                }))
+            });
+            return;
+        }
+
+        // Create ticket with retry mechanism
         let retryCount = 0;
         const maxRetries = 3;
         let ticketCreationResult;
 
         while (retryCount < maxRetries) {
             try {
-                // Check limits right before creation
-                const limitCheckPromises = selectedVariants.map(([variant, quantity]) => 
-                    this.checkTicketLimitUseCase.checkTicketLimit(
-                        ticket.clientId,
-                        ticket.eventId,
-                        variant as 'standard' | 'premium' | 'vip',
-                        quantity as number
-                    )
-                );
-
-                const limitCheckResults = await Promise.all(limitCheckPromises);
-                
-                const failedChecks = limitCheckResults
-                    .map((result, index) => ({ result, variant: selectedVariants[index][0], requested: selectedVariants[index][1] }))
-                    .filter(({ result }) => !result.canBook);
-                
-                if (failedChecks.length > 0) {
-                    console.log("Ticket limit exceeded")
-                    res.status(HttpStatus.BAD_REQUEST).json({
-                        message: "Ticket booking limit exceeded",
-                        details: failedChecks.map(({ result, variant, requested }) => ({
-                            variant,
-                            maxPerUser: result.maxPerUser,
-                            remainingLimit: result.remainingLimit,
-                            requested
-                        }))
-                    });
-                    return;
-                }
-
-                // Immediately create ticket after limit check
+                // Create ticket - this now creates the payment intent internally
                 ticketCreationResult = await this.createTicketUseCase.createTicket(
                     ticket,
                     totalCount,
                     totalAmount,
-                    paymentIntentId,
                     vendorId
                 );
 
@@ -149,10 +153,11 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
         if (!ticketCreationResult) {
             throw new Error('Failed to create ticket after multiple attempts');
         }
+        console.log("TicketCreationResult:",ticketCreationResult)
 
-        const { stripeClientId, createdTicket } = ticketCreationResult;
+        const { clientSecret, paymentIntentId, createdTicket } = ticketCreationResult;
 
-        // Calculate summary from the single consolidated ticket
+        // Calculate summary from the consolidated ticket
         const variantsSummary = createdTicket.ticketVariants.map(variant => ({
             type: variant.variant,
             quantity: variant.count,
@@ -166,8 +171,9 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
         );
 
         res.status(HttpStatus.CREATED).json({ 
-            message: "Consolidated ticket and payment created successfully", 
-            stripeClientId, 
+            message: "Ticket and payment intent created successfully", 
+            clientSecret,           // For Stripe payment confirmation on frontend
+            paymentIntentId,        // For reference/tracking
             createdTicket,
             summary: {
                 ticketId: createdTicket.ticketId,
@@ -191,15 +197,11 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
     }
 }
 
-
     async handleConfirmTicketAndPayment(req: Request, res: Response): Promise<void> {
     try {
         const { ticket, paymentIntent, vendorId } = req.body;
 
-        console.log('=== CONTROLLER: CONFIRM TICKET AND PAYMENT ===');
-        console.log('Request body keys:', Object.keys(req.body));
-        console.log('Vendor ID:', vendorId);
-        console.log('Payment Intent:', paymentIntent);
+        
 
         // Validate required fields
         if (!ticket) {
@@ -298,18 +300,35 @@ async handleCreateUseCase(req: Request, res: Response): Promise<void> {
         }
     }
     async handleTicketCancel(req: Request, res: Response): Promise<void> {
-        try {
-            const { ticketId } = req.body
-            const cancelledTicket = await this.ticketCancelUseCase.ticketCancel(ticketId)
-            res.status(HttpStatus.OK).json({ message: 'Ticket cancelled', cancelledTicket })
-        } catch (error) {
-            console.log('error while cancelling the ticket', error)
+    try {
+        const { ticketId, refundMethod } = req.body
+        
+        // Validate refundMethod
+        if (refundMethod && !['wallet', 'bank'].includes(refundMethod)) {
             res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while cancelling the ticket',
-                error: error instanceof Error ? error.message : 'error while cancelling the ticket'
+                message: 'Invalid refund method. Must be either "wallet" or "bank"'
             })
+            return
         }
+        
+        const cancelledTicket = await this.ticketCancelUseCase.ticketCancel(
+            ticketId, 
+            refundMethod || 'wallet' // Default to wallet if not specified
+        )
+        
+        res.status(HttpStatus.OK).json({ 
+            message: 'Ticket cancelled successfully', 
+            cancelledTicket,
+            refundMethod: refundMethod || 'wallet'
+        })
+    } catch (error) {
+        console.log('error while cancelling the ticket', error)
+        res.status(HttpStatus.BAD_REQUEST).json({
+            message: 'Error while cancelling the ticket',
+            error: error instanceof Error ? error.message : 'Error while cancelling the ticket'
+        })
     }
+}
     async handleFindTicketsByStatus(req: Request, res: Response): Promise<void> {
     try {
         const { ticketStatus, paymentStatus, pageNo, sortBy } = req.params;

@@ -14,15 +14,20 @@ export class CreateBookingPaymentUseCase implements IcreateBookingPaymentUseCase
         this.paymentService = paymentService
         this.paymentDatabase = paymentDatabase
     }
-    async inititateBookingPayment(bookingId: string, paymentIntentId: string): Promise<{ booking: BookingPaymentEntity, clientStripeId: string }> {
+    async inititateBookingPayment(bookingId: string): Promise<{ booking: BookingPaymentEntity;
+  clientSecret: string;
+  paymentIntentId: string;
+ }> {
         const booking = await this.bookingDatabase.findBookingByIdForPayment(bookingId)
         console.log(booking)
         if (!booking) throw new Error('No booking found in this ID')
         if (booking.status != 'Completed') throw new Error('This Booking is not completed')
         if (booking.paymentStatus == "Successfull") throw new Error('This booking is Already paid')
         const totalAmount = booking.date.length * booking.service.servicePrice
-        const clientStripeId = await this.paymentService.createPaymentIntent(totalAmount, 'service', { booking: booking })
-        if (!clientStripeId) throw new Error("Error while creating stripe client id")
+        const { clientSecret, paymentIntentId }  = await this.paymentService.createPaymentIntent(totalAmount, 'service', { booking: booking })
+if (!clientSecret || !paymentIntentId) {
+            throw new Error("Error while creating stripe payment intent");
+        }
         const paymentDetails: PaymentEntity = {
             amount: totalAmount,
             currency: 'inr',
@@ -35,6 +40,10 @@ export class CreateBookingPaymentUseCase implements IcreateBookingPaymentUseCase
         }
         const createPayment = await this.paymentDatabase.createPayment(paymentDetails)
         if (!createPayment) throw new Error('Error while creating payment document')
-        return { booking, clientStripeId }
+return { 
+            booking, 
+            clientSecret,
+            paymentIntentId 
+        };
     }
 }

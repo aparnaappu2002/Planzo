@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Ticket, MapPin, Users, CreditCard, Phone, Mail, X, AlertTriangle } from "lucide-react";
+import { Calendar, Ticket, MapPin, Users, CreditCard, Phone, Mail, X, AlertTriangle, Wallet, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TicketAndEventType } from "@/types/TicketAndEventType";
@@ -18,9 +18,14 @@ export interface ReviewEntity {
   comment: string;
 }
 
+type RefundMethod = 'wallet' | 'bank' | null;
+
 export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketAndEventType; onCancelTicket: (ticketId: string) => void }) {
   const { event } = ticket;
+  console.log("Ticket:",ticket)
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  const [showRefundMethodDialog, setShowRefundMethodDialog] = useState(false);
+  const [selectedRefundMethod, setSelectedRefundMethod] = useState<RefundMethod>(null);
   const queryClient = useQueryClient();
   const ticketCancellation = useTicketCancellation();
 
@@ -99,19 +104,44 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
     }
   };
 
+  const calculateRefundAmount = () => {
+    const refundAmountToVendor = ticket.totalAmount * 0.29;
+    const refundAmountToClient = ticket.totalAmount - (refundAmountToVendor + ticket.totalAmount * 0.01);
+    return refundAmountToClient.toFixed(2);
+  };
+
   const handleCancelTicket = () => {
+    if (!selectedRefundMethod) {
+      toast.error('Please select a refund method');
+      return;
+    }
+
     console.log('Initiating ticket cancellation for ID:', ticket._id);
-    ticketCancellation.mutate(ticket._id, {
+    
+    const cancellationData = {
+      ticketId: ticket._id,
+      refundMethod: selectedRefundMethod
+    };
+
+    ticketCancellation.mutate(cancellationData, {
       onSuccess: () => {
         console.log('Ticket cancellation successful');
         queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails', ticket._id] });
         queryClient.invalidateQueries({ queryKey: ['ticketAndEventDetails'] });
-        toast.success('Booking cancelled successfully');
+        
+        const refundMethodText = selectedRefundMethod === 'wallet' 
+          ? 'Refund will be credited to your wallet' 
+          : 'Refund will be processed to your bank account within 5-7 business days';
+        
+        toast.success(`Booking cancelled successfully. ${refundMethodText}`);
+        setShowRefundMethodDialog(false);
+        setSelectedRefundMethod(null);
         onCancelTicket(ticket._id);
       },
       onError: (err: any) => {
         console.error('Cancellation error:', err);
         toast.error(err.message || 'Failed to cancel booking');
+        setSelectedRefundMethod(null);
       },
     });
   };
@@ -251,7 +281,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
         <div className="border-t border-border pt-4">
           <div className="flex gap-3">
             {ticket.ticketStatus === 'unused' && (
-              <AlertDialog>
+              <AlertDialog open={showRefundMethodDialog} onOpenChange={setShowRefundMethodDialog}>
                 <AlertDialogTrigger asChild>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -265,44 +295,107 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
                     {ticketCancellation.isPending ? 'Cancelling...' : 'Cancel Booking'}
                   </motion.button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="max-w-md">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-destructive" />
-                      Cancel Booking Confirmation
+                      Select Refund Method
                     </AlertDialogTitle>
-                    <div className="space-y-2">
-                      <p>Are you sure you want to cancel this booking for <strong>"{event.title}"</strong>?</p>
-                      <div className="bg-muted rounded-lg p-3 mt-3">
-                        <p className="text-sm font-medium">Ticket Details:</p>
-                        <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                          <li>• Ticket ID: {ticket.ticketId}</li>
-                          <li>• Quantity: {ticket.ticketCount} ticket{ticket.ticketCount > 1 ? 's' : ''}</li>
-                          <li>• Total Amount: ₹{ticket.totalAmount}</li>
-                          <li>• Event Date: {formatDate(event.date)}</li>
-                        </ul>
+                    <div className="space-y-4 pt-2">
+                      <p className="text-sm text-muted-foreground">
+                        Choose how you'd like to receive your refund for <strong>"{event.title}"</strong>
+                      </p>
+                      
+                      <div className="bg-muted rounded-lg p-3">
+                        <p className="text-sm font-medium mb-2">Refund Amount:</p>
+                        <p className="text-2xl font-bold text-primary">₹{calculateRefundAmount()}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          (After deducting cancellation charges)
+                        </p>
                       </div>
-                      <p className="text-sm text-destructive font-medium mt-3">
-                        ⚠️ This action cannot be undone and may affect your refund eligibility.
+
+                      {/* Refund Method Options */}
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setSelectedRefundMethod('wallet')}
+                          className={`w-full p-4 rounded-lg border-2 transition-all ${
+                            selectedRefundMethod === 'wallet'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-muted hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${
+                              selectedRefundMethod === 'wallet' ? 'bg-primary' : 'bg-muted'
+                            }`}>
+                              <Wallet className={`h-5 w-5 ${
+                                selectedRefundMethod === 'wallet' ? 'text-white' : 'text-muted-foreground'
+                              }`} />
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="font-semibold text-foreground">Wallet Transfer</p>
+                              <p className="text-xs text-muted-foreground">Instant refund to your wallet</p>
+                            </div>
+                            {selectedRefundMethod === 'wallet' && (
+                              <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                <div className="h-2 w-2 rounded-full bg-white"></div>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => setSelectedRefundMethod('bank')}
+                          className={`w-full p-4 rounded-lg border-2 transition-all ${
+                            selectedRefundMethod === 'bank'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-muted hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${
+                              selectedRefundMethod === 'bank' ? 'bg-primary' : 'bg-muted'
+                            }`}>
+                              <Building2 className={`h-5 w-5 ${
+                                selectedRefundMethod === 'bank' ? 'text-white' : 'text-muted-foreground'
+                              }`} />
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="font-semibold text-foreground">Bank Transfer</p>
+                              <p className="text-xs text-muted-foreground">Refund to original payment method (5-7 days)</p>
+                            </div>
+                            {selectedRefundMethod === 'bank' && (
+                              <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                <div className="h-2 w-2 rounded-full bg-white"></div>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-destructive font-medium">
+                        ⚠️ This action cannot be undone
                       </p>
                     </div>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setSelectedRefundMethod(null)}>
+                      Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleCancelTicket}
                       className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700"
-                      disabled={ticketCancellation.isPending}
+                      disabled={ticketCancellation.isPending || !selectedRefundMethod}
                     >
                       {ticketCancellation.isPending ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Cancelling...
+                          Processing...
                         </>
                       ) : (
                         <>
                           <X className="h-4 w-4 mr-2" />
-                          Yes, Cancel Booking
+                          Confirm Cancellation
                         </>
                       )}
                     </AlertDialogAction>

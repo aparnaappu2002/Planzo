@@ -68,6 +68,8 @@ import { ReviewController } from "../../adapters/controllers/client/review/revie
 import { AddReviewUseCase } from "../../useCases/client/review/addReviewUseCase";
 import { ShowReviewsUseCase } from "../../useCases/client/review/showReviewsUseCase";
 import { FindTicketsByStatusUseCase } from "../../useCases/client/ticket/findTicketsBasedOnStatusUseCase";
+import { StripePayoutService } from "../services/payoutService";
+
 
 const otpService=new OtpService()
 const EmailService=new emailService()
@@ -112,6 +114,7 @@ export const injectedEventClientController = new EventsClientController(findAllE
 //ticket 
 const ticketRepository=new TicketRepository()
 const paymentService = new PaymentService()
+const payoutService=new StripePayoutService()
 const qrService=new QrService()
 const paymentRepository=new PaymentRepository()
 const walletRepository=new WalletRepository()
@@ -119,7 +122,7 @@ const transactionRepository=new TransactionRepository()
 const createTicketUseCase=new CreateTicketUseCase(eventRepository,ticketRepository,paymentService,qrService,paymentRepository)
 const confirmTicketAndPaymentUseCase=new ConfirmTicketAndPaymentUseCase(paymentService,eventRepository,ticketRepository,walletRepository,transactionRepository)
 const showTicketAndEventUseCase=new ShowTicketAndEventClientUseCase(ticketRepository)
-const ticketCancelUseCase=new TicketCancelUseCase(ticketRepository,walletRepository,transactionRepository)
+const ticketCancelUseCase=new TicketCancelUseCase(ticketRepository,walletRepository,transactionRepository,payoutService)
 const checkTicketLimitUseCase=new CheckTicketLimitUseCase(ticketRepository)
 const findTicketByStatusUseCase=new FindTicketsByStatusUseCase(ticketRepository)
 export const injectedTicketClientController = new TicketClientController(createTicketUseCase,confirmTicketAndPaymentUseCase,showTicketAndEventUseCase,ticketCancelUseCase,checkTicketLimitUseCase,findTicketByStatusUseCase)
