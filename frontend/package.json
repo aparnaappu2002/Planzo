@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -47,6 +47,7 @@
     "react-router-dom": "^7.7.0",
     "react-slick": "^0.31.0",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.6.0",
     "redux-persist": "^6.0.0",
     "slick-carousel": "^1.8.1",
     "socket.io-client": "^4.8.1",

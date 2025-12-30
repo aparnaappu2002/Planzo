@@ -14,7 +14,7 @@ interface CategoryFormModalProps {
   onClose: () => void;
   onSubmit: (data: CreateCategoryData | { categoryId: string; updates: CategoryUpdate }) => void;
   category?: Category | null;
-  isLoading?: boolean;
+  isPending?: boolean;
 }
 
 export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
@@ -22,7 +22,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   onClose,
   onSubmit,
   category,
-  isLoading = false
+  isPending = false
 }) => {
   const [title, setTitle] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -192,7 +192,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     }
   };
 
-  const isSubmitDisabled = isLoading || uploadImageMutation.isPending || !title.trim();
+  const isSubmitDisabled = isPending || uploadImageMutation.isPending || !title.trim();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -271,7 +271,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
               className="flex-1 bg-primary hover:bg-primary/90"
             >
               {uploadImageMutation.isPending ? 'Uploading...' : 
-               isLoading ? 'Saving...' : 
+               isPending ? 'Saving...' : 
                category ? 'Update' : 'Create'}
             </Button>
           </div>

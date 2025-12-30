@@ -20,10 +20,10 @@ const WorkSamplesPage: React.FC = () => {
   });
 
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
-  const { mutate: createWorkSample, isLoading: isCreating } = useCreateWorkSample();
-  const { data: workSamplesResponse, isLoading: isLoadingSamples } = useFindWorkSamples(vendorId, pageNo);
+  const { mutate: createWorkSample, isPending: isCreating } = useCreateWorkSample();
+  const { data: workSamplesResponse, isLoading: isLoadingSamples } = useFindWorkSamples(vendorId || '', pageNo);
   const uploadImageMutation = useUploadImageMutation();
-  const { mutateAsync: uploadImage, isLoading: isUploading } = uploadImageMutation;
+  const { mutateAsync: uploadImage, isPending: isUploading } = uploadImageMutation;
 
   // Extract workSamples array from response
   const workSamples = (workSamplesResponse as WorkSamplesResponse)?.workSamples || [];

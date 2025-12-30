@@ -167,7 +167,10 @@ const VendorServicesPage: React.FC = () => {
         await createServiceMutation.mutateAsync({ ...formData, vendorId });
         toast.success('Service created successfully');
       }
-      await queryClient.invalidateQueries(['vendorServices', vendorId, pageNo]);
+      await queryClient.invalidateQueries({ 
+  queryKey: ['services', vendorId] 
+})
+
       setIsModalOpen(false);
       setFormData({
         serviceTitle: '',
@@ -212,7 +215,10 @@ const VendorServicesPage: React.FC = () => {
     try {
       await changeStatusMutation.mutateAsync(confirmServiceId);
       toast.success('Service status updated successfully');
-      await queryClient.invalidateQueries(['vendorServices', vendorId, pageNo]);
+      await queryClient.invalidateQueries({ 
+  queryKey: ['services', vendorId] 
+})
+
       console.log('Invalidated services query after status change');
     } catch (err) {
       console.error('Error changing service status:', err);
@@ -389,7 +395,7 @@ const VendorServicesPage: React.FC = () => {
                       fieldErrors.categoryId ? 'border-red-500' : 'border-yellow-400'
                     }`}
                     required
-                    disabled={isLoadingCategories || categoriesError}
+                    disabled={isLoadingCategories || !!categoriesError}
                   >
                     {isLoadingCategories ? (
                       <option value="" disabled className="bg-yellow-50 text-gray-700">
@@ -584,7 +590,7 @@ const VendorServicesPage: React.FC = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                    disabled={createServiceMutation.isLoading || editServiceMutation.isLoading || !vendorId || isLoadingCategories}
+                    disabled={createServiceMutation.isPending || editServiceMutation.isPending || !vendorId || isLoadingCategories}
                   >
                     {editingService ? 'Update' : 'Create'}
                   </button>
@@ -624,7 +630,7 @@ const VendorServicesPage: React.FC = () => {
                   type="button"
                   onClick={handleStatusChange}
                   className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                  disabled={changeStatusMutation.isLoading}
+                  disabled={changeStatusMutation.isPending}
                 >
                   Confirm
                 </button>

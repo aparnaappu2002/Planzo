@@ -41,6 +41,8 @@ import { removeVendorToken } from "@/redux/slices/vendor/vendorTokenSlice"
 import { useDispatch } from "react-redux"
 
 const vendorItems = [
+  
+  { title: "Dashboard", url: "/vendor/dashboard", icon: BarChart3 },
   { title: "Profile", url: "/vendor/profile", icon: BarChart3 },
   { title: "Create Event", url: "/vendor/createEvent", icon: Package },
   { title: "Event Management", url: "/vendor/events", icon: ShoppingCart },

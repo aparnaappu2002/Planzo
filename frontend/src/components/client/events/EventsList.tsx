@@ -110,7 +110,7 @@ export const EventsList = () => {
     data: regularEventsData, 
     isLoading: regularEventsLoading, 
     error: regularFetchError 
-  } = useFindEvents(currentPage, shouldFetchRegularEvents);
+  } = useFindEvents(currentPage);
 
   // Category-based events fetch
   const categoryToFetch = shouldFetchCategoryEvents ? activeCategorySearch.category : '';

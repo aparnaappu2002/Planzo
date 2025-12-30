@@ -33,16 +33,15 @@ const VendorProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
- 
-  const { mutate: uploadImage, isLoading: isUploadingImage } = useUploadImageMutation();
-  const { mutate: changePassword, isLoading: isChangingPass } = useVendorChangePassword();
-  const { mutate: updateDetails, isLoading: isUpdating } = useUpdateVendorDetailsMutation();
+  const { mutate: uploadImage, isPending: isUploadingImage } = useUploadImageMutation();
+  const { mutate: changePassword, isPending: isChangingPass } = useVendorChangePassword();
+  const { mutate: updateDetails, isPending: isUpdating } = useUpdateVendorDetailsMutation();
 
   const [profileData, setProfileData] = useState({
     name: vendor?.name || '',
     phone: vendor?.phone || '',
-    about: vendor?.about || '',
-    idProof:vendor.idProof
+    idProof: vendor?.idProof,
+    about: vendor?.about
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -51,7 +50,6 @@ const VendorProfile = () => {
     confirmPassword: ''
   });
 
- 
   useEffect(() => {
     if (!vendor) {
       navigate('/vendor/login');
@@ -63,12 +61,11 @@ const VendorProfile = () => {
       return;
     }
 
-    
     setProfileData({
-      name: vendor.name || '',
-      phone: vendor.phone || '',
-      about: vendor.about || '',
-      
+      name: vendor?.name || '',
+      phone: vendor?.phone || '',
+      idProof: vendor?.idProof || undefined,
+      about: vendor.about
     });
 
     setLoading(false);
@@ -101,6 +98,27 @@ const VendorProfile = () => {
     return error === '';
   };
 
+  const handleSaveProfile = () => {
+    const updateData = {
+      id: vendor?._id || '',
+      name: profileData.name,
+      phone: String(profileData.phone),
+      about: profileData.about || '',
+    };
+
+    updateDetails(updateData, {
+      onSuccess: (response) => {
+        setIsEditing(false);
+        dispatch(addVendor(response.updatedVendor));
+        toast.success('Profile updated successfully!');
+      },
+      onError: (error) => {
+        toast.error('Failed to update profile. Please try again.');
+        console.error('Profile update error:', error);
+      }
+    });
+  };
+
   const handlePasswordChange = (field: string, value: string) => {
     setPasswordData(prev => ({
       ...prev,
@@ -121,12 +139,12 @@ const VendorProfile = () => {
       
       uploadImage(formData, {
         onSuccess: (response) => {
-            const updatedClient = {
-              ...vendor,
-              profileImage: response.url
-            };
-            dispatch(addVendor(updatedClient));
-            toast.success('Profile image updated successfully!');
+          const updatedClient = {
+            ...vendor,
+            profileImage: response.url
+          };
+          dispatch(addVendor(updatedClient));
+          toast.success('Profile image updated successfully!');
         },
         onError: (error) => {
           toast.error('Failed to upload image. Please try again.');
@@ -136,27 +154,7 @@ const VendorProfile = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    const updateData = {
-      id: vendor._id,
-      ...profileData
-    };
-
-    updateDetails(updateData, {
-      onSuccess: (response) => {
-        setIsEditing(false);
-        dispatch(addVendor(response.updatedVendor))
-        toast.success('Profile updated successfully!');
-      },
-      onError: (error) => {
-        toast.error('Failed to update profile. Please try again.');
-        console.error('Profile update error:', error);
-      }
-    });
-  };
-
   const handleChangePassword = () => {
-   
     const isNewPasswordValid = validatePassword('newPassword', passwordData.newPassword);
     const isConfirmPasswordValid = validatePassword('confirmPassword', passwordData.confirmPassword);
     
@@ -176,9 +174,13 @@ const VendorProfile = () => {
       toast.error("New passwords don't match.");
       return;
     }
-    
+    if (!vendor?._id) {
+    toast.error('User ID not found. Please log in again.');
+    return;
+  }
+
     const passwordChangeData = {
-      userId: vendor._id,
+      userId: vendor?._id,
       oldPassword: passwordData.oldPassword,
       newPassword: passwordData.newPassword
     };
@@ -190,18 +192,18 @@ const VendorProfile = () => {
         setIsChangingPassword(false);
         toast.success('Password changed successfully!');
       },
-      onError: (error) => {
-        let errorMessage 
+      onError: (error:any) => {
+        let errorMessage: string = 'An error occurred';
             
-            if (error?.response?.data?.message) {
-              errorMessage = error.response.data.message;
-            } else if (error?.message) {
-              errorMessage = error.message;
-            } else if (typeof error === 'string') {
-              errorMessage = error;
-            }
-            
-            toast.error(errorMessage);
+        if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        toast.error(errorMessage);
       }
     });
   };
@@ -218,7 +220,7 @@ const VendorProfile = () => {
         </div>
 
         {/* Status Alert for non-approved vendors */}
-        {vendor.vendorStatus === 'pending' && (
+        {vendor?.vendorStatus === 'pending' && (
           <Alert className="border-warning/50 bg-warning/10">
             <AlertCircle className="h-4 w-4 text-warning" />
             <AlertDescription className="text-warning-foreground">
@@ -227,7 +229,7 @@ const VendorProfile = () => {
           </Alert>
         )}
 
-        {vendor.vendorStatus === 'rejected' && (
+        {vendor?.vendorStatus === 'rejected' && (
           <Alert className="border-destructive/50 bg-destructive/10">
             <AlertCircle className="h-4 w-4 text-destructive" />
             <AlertDescription className="text-destructive-foreground">
@@ -263,9 +265,9 @@ const VendorProfile = () => {
                 <div className="flex flex-col items-center">
                   <div className="relative">
                     <Avatar className="w-32 h-32 border-4 border-primary/20">
-                      <AvatarImage src={vendor?.profileImage} alt={vendor.name} />
+                      <AvatarImage src={vendor?.profileImage} alt={vendor?.name} />
                       <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                        {vendor.name.charAt(0).toUpperCase()}
+                        {vendor?.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <label className={`absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-2 cursor-pointer shadow-lg transition-colors ${isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -306,7 +308,7 @@ const VendorProfile = () => {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    value={vendor.email}
+                    value={vendor?.email}
                     disabled
                     className="mt-1 bg-muted"
                   />

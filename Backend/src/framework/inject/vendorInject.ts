@@ -52,6 +52,10 @@ import { UpdateBookingAsCompleteUseCase } from "../../useCases/vendor/booking/up
 import { BookingsVendorController } from "../../adapters/controllers/vendor/booking/bookingVendorController";
 import { TicketVerificationUseCase } from "../../useCases/vendor/ticket/ticketVerificationUseCase";
 import { FindTransactionByPaymentUseCase } from "../../useCases/transaction/findTransactionByPaymentStatusUseCase";
+import { PdfGenerateVendorUseCase } from "../../useCases/vendor/dashboard/vendorPdfGenerateUseCase";
+import { VendorDashboardUseCase } from "../../useCases/vendor/dashboard/vendorDashboardUseCase";
+import { VendorDashboardController } from "../../adapters/controllers/vendor/dashboard/vendorDashboardController";
+import { PdfServiceVendor } from "../services/pdfServiceVendor";
 
 
 const EmailService  = new emailService()
@@ -130,3 +134,10 @@ const approveBookingVendorUseCase=new ApproveBookingUseCase(bookingRepository)
 const rejectBookingVendorUseCase=new RejectBookingInVendorUseCase(bookingRepository)
 const updateBookingAsCompleteUseCase=new UpdateBookingAsCompleteUseCase(bookingRepository)
 export const injectedBookingVendorController = new BookingsVendorController(showBookingsInVendorUseCase,approveBookingVendorUseCase,rejectBookingVendorUseCase,updateBookingAsCompleteUseCase)
+
+
+//dashboard
+const vendorDashboardUseCase=new VendorDashboardUseCase(walletRepository,transactionRepository,eventRepository,bookingRepository)
+const pdfServiceVendor=new PdfServiceVendor()
+const pdfGenerateVendorUseCase=new PdfGenerateVendorUseCase(eventRepository,bookingRepository,pdfServiceVendor)
+export const injectedVendorDashboardController = new VendorDashboardController(vendorDashboardUseCase,pdfGenerateVendorUseCase)

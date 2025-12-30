@@ -8,6 +8,7 @@ import { BookingListingEntityVendor } from "../../../domain/entities/vendor/book
 import { PopulatedBookingEntityVendor } from "../../../domain/entities/vendor/populateBookingEntity";
 import { BookingPaymentEntity } from "../../../domain/entities/bookingPayment/bookingPaymentEntity";
 import { PopulatedBookingForAdmin } from "../../../domain/dto/bookingDetailsAdminDTO";
+import { BookingPdfDTO } from "../../../domain/dto/bookingPdfDTO";
 
 
 export class BookingRepository implements IbookingRepository {
@@ -208,5 +209,27 @@ export class BookingRepository implements IbookingRepository {
     }
     async findTotalBookings(): Promise<number> {
         return bookingModel.countDocuments({ status: 'Completed' })
+    }
+    async findTotalCountOfBookings(vendorId: string, datePeriod: Date | null): Promise<number> {
+        const query: Record<string, any> = { vendorId }
+
+        if (datePeriod) {
+            query.createdAt = { $gte: datePeriod }
+        }
+
+        return bookingModel.countDocuments(query)
+    }
+    async findRecentsBooking(vendorId: string): Promise<BookingListingEntityVendor[] | []> {
+        return await bookingModel.find({ vendorId }).select('-__v -updatedAt')
+    }
+    async findBookingsOfAVendor(vendorId: string): Promise<BookingPdfDTO[] | []> {
+        const bookings = await bookingModel.find({
+            vendorId,
+            vendorApproval: "Approved"
+        })
+            .populate("serviceId") 
+            .populate("clientId", "email name") 
+            .sort({ createdAt: -1 }).lean<BookingPdfDTO[]>()
+        return bookings
     }
 }

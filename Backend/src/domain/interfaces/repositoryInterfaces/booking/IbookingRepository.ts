@@ -4,6 +4,7 @@ import { BookingsInClientEntity } from "../../../entities/bookingsInClientEntity
 import { BookingListingEntityVendor } from "../../../entities/vendor/bookingListingEntityVendor";
 import { BookingPaymentEntity } from "../../../entities/bookingPayment/bookingPaymentEntity";
 import { PopulatedBookingForAdmin } from "../../../dto/bookingDetailsAdminDTO";
+import { BookingPdfDTO } from "../../../dto/bookingPdfDTO";
 
 
 export interface IbookingRepository {
@@ -22,4 +23,7 @@ export interface IbookingRepository {
     cancelBooking(bookingId: string): Promise<BookingEntity | null>
     showAllBookingsInAdmin(pageNo: number): Promise<{ bookings: PopulatedBookingForAdmin[] | [], totalPages: number }>
     findTotalBookings(): Promise<number>
+    findTotalCountOfBookings(vendorId: string, datePeriod: Date | null): Promise<number>
+    findRecentsBooking(vendorId: string): Promise<BookingListingEntityVendor[] | []>
+    findBookingsOfAVendor(vendorId: string): Promise<BookingPdfDTO[] | []>
 }

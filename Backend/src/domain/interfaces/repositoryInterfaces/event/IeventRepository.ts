@@ -2,7 +2,7 @@ import { ObjectId } from "mongoose";
 import { EventEntity } from "../../../entities/event/eventEntity";
 import { EventUpdateEntity } from "../../../entities/event/eventUpdateEntity";
 import { SearchLocationOptions } from "../../../dto/searchLocationOptionsDTO";
-import { SearchEventsResult } from "../../../entities/event/searchResultDTO";
+import { SearchEventsResult } from "../../../dto/searchResultDTO";
 import { EventDashboardDTO } from "../../../dto/eventDashboardDTO";
 
 export interface IeventRepository{
@@ -22,4 +22,8 @@ export interface IeventRepository{
     listingEventsInAdminSide(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
     findEventByIdForTicketVerification(eventId: string): Promise<EventEntity | null>
     eventDetailsForAdminDashboard(): Promise<EventDashboardDTO>
+    findTotalEvents(vendorId: string, datePeriod: Date | null): Promise<number>
+    findRecentEvents(vendorId: string): Promise<EventEntity[] | []>
+    findTotalticketsSold(vendorId: string, datePeriod: Date | null): Promise<number>
+    findAllEventsOfAVendor(vendorId: string): Promise<EventEntity[] | []>
 }

@@ -8,5 +8,6 @@ export interface ItransactionRepository {
     paymentStatus: "credit" | "debit" | string,
     pageNo: number,
     sortBy?: string): Promise<{ transactions: TransactionsEntity[] | []; totalPages: number; total?: number }>
+    revenueChart(walletId:string,datePeriod:Date | null): Promise<{ month: string, revenue: number }[]>
     
 }

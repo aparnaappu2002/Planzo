@@ -1,5 +1,6 @@
 export interface Category {
   id: string;
+  _id: string;        // ✅ Add this
   title: string;
   image?: string;
   status: 'active' | 'inactive';
@@ -9,7 +10,7 @@ export interface Category {
 
 export interface CreateCategoryData {
   title: string;
-  image: File | null;
+  image: File | string;
 }
 
 

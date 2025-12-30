@@ -21,7 +21,7 @@ const VendorWallet = () => {
   const [filter, setFilter] = useState<FilterType>('all');
 
   // Always get wallet balance + basic data
-  const { data: walletData, isLoading: loadingWallet } = useFindWalletDetailsVendor(vendorId, 1) as {
+  const { data: walletData, isLoading: loadingWallet } = useFindWalletDetailsVendor(vendorId || '', 1) as {
     data: WalletData | null;
     isLoading: boolean;
   };
@@ -30,7 +30,6 @@ const VendorWallet = () => {
   const {
     data: filteredData,
     isLoading: loadingFiltered,
-    isPreviousData,
   } = useFindTransactionsByPaymentStatus(
     filter === 'all' ? 'credit' : filter, // dummy when "all"
     currentPage,
@@ -78,7 +77,7 @@ const VendorWallet = () => {
     };
   })() : { totalCredits: 0, totalDebits: 0, creditCount: 0, debitCount: 0 };
 
-  if (isLoading && !isPreviousData) {
+  if (isLoading ) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">

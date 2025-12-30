@@ -67,7 +67,7 @@ const TicketPurchaseModal = ({
   event, 
   isOpen, 
   onOpenChange, 
-  children, 
+  children,
   existingTicket = null, 
   isRetryPayment = false 
 }) => {

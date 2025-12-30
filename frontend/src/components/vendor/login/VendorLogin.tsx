@@ -50,7 +50,7 @@ export default function VendorLogin() {
     dispatch(addVendorToken(response.accessToken))
     dispatch(addVendor(response.vendor))
     toast.success("Login Successfull")
-    navigate('/vendor/profile')
+    navigate('/vendor/dashboard')
    }catch(error){
     console.log("Error while login vendor")
     const errorMessage = error instanceof Error ? error.message : "Login failed. Please try again.";

@@ -7,7 +7,7 @@ import { useVerifyTicket } from '@/hooks/vendorCustomHooks';
 
 const TicketScanner: React.FC = () => {
     const [scannerInitialized, setScannerInitialized] = useState(false);
-    const { mutate: verifyTicket, isLoading, error, data } = useVerifyTicket();
+    const { mutate: verifyTicket, isPending, error, data } = useVerifyTicket();
 
     useEffect(() => {
         const scanner = new Html5QrcodeScanner(
@@ -48,7 +48,7 @@ const TicketScanner: React.FC = () => {
                         }
                     );
                 } catch (error) {
-                    toast.error('Invalid QR code: ' + error.message, {
+                    toast.error('Invalid QR code: ' + (error as Error).message, {
                         position: 'top-center',
                         theme: 'colored',
                         style: { backgroundColor: '#fef08a' },
@@ -72,7 +72,7 @@ const TicketScanner: React.FC = () => {
             <h1 className="text-3xl font-bold text-yellow-800 mb-6">Ticket Scanner</h1>
             <div className="bg-yellow-200 p-6 rounded-lg shadow-lg w-full max-w-md">
                 <div id="qr-reader" className="w-full"></div>
-                {isLoading && (
+                {isPending && (
                     <p className="text-yellow-800 mt-4 text-center">Verifying ticket...</p>
                 )}
                 {error && (

@@ -1,10 +1,10 @@
 import { boolean, email, number } from 'zod'
 import axios from '../axios/vendorAxios'
 import clodAxios,{ isAxiosError } from 'axios'
-import { EventType } from 'react-hook-form'
+import { EventEntity } from '@/types/EventType'
 import { EventUpdateEntity } from '@/types/EventUpdateEntity'
 import { WorkSamplesEntity } from '@/types/WorkSampleEntity'
-
+import { Period } from '@/types/DatePeriodType'
 
 
 interface Vendor{
@@ -134,7 +134,7 @@ export const changePasswordVendor = async (userId: string, newPassword: string, 
     }
 }
 
-export const createEvent = async (event: EventType, vendorId: string) => {
+export const createEvent = async (event: EventEntity, vendorId: string) => {
     try {
         const response = await axios.post(`/createEvent/${vendorId}`, { event })
         return response.data
@@ -395,3 +395,32 @@ export const findTransactionsByPaymentStatus = async (
     );
   }
 };
+
+export const loadVendorDashboard = async (vendorId: string, datePeriod: Period) => {
+    try {
+        const response = await axios.get('/vendorDashboard', { params: { vendorId, datePeriod } })
+        return response.data
+    } catch (error) {
+        console.log('error while fetching vendor dashboard details', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching vendor dashboard details')
+    }
+}
+export const pdfDownloadVendor = async (vendorId: string) => {
+    try {
+        const response = await axios.post('/pdfDownload', { vendorId }, { responseType: 'blob' })
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'vendor_report.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.log('error while downloading pdf for the vendor', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while downloading pdf for the vendor')
+    }
+}

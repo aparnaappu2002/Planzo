@@ -40,8 +40,8 @@ instance.interceptors.response.use(
         const data = error.response?.data as CustomErrorResponse;
         console.log('this is error', error.response)
         if (error.response?.status === 403 && data?.code === "USER_BLOCKED") {
-            store.dispatch(removeClient(null))
-            store.dispatch(removeToken(null))
+            store.dispatch(removeClient())
+            store.dispatch(removeToken())
             localStorage.removeItem('id')
             window.location.href = '/userBlockNotice';
             return Promise.reject(error);

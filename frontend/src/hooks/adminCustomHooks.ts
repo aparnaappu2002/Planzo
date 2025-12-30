@@ -5,6 +5,7 @@ import { adminLogin,unblockClient,blockClient,fetchClientsAdmin,
  } from "@/services/ApiServiceAdmin";
 import { useMutation,useQuery } from "@tanstack/react-query";
 import { CategoryUpdate } from "@/types/CategoryUpdate";
+import { CreateCategoryData } from "@/types/Category";
 
 interface Login{
     email:string,
@@ -136,7 +137,7 @@ interface Category { title: string; image: File | null; }
 
 export const useCreateCategory = () => {
     return useMutation({
-        mutationFn: ({ title, image }: Category) => createCategory({ title, image }),
+        mutationFn: ({ title, image }: CreateCategoryData) => createCategory({ title, image }),
 
     })
 }

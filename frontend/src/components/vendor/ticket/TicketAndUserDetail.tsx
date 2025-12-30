@@ -20,7 +20,7 @@ const TicketAndUserDetails: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<TicketAndUserDTO | null>(null);
   const navigate = useNavigate();
 
-  const { data, isLoading, error, refetch } = useTicketDetailsWithUser(vendorId, pageNo);
+  const { data, isLoading, error, refetch } = useTicketDetailsWithUser(vendorId || '', pageNo);
   
   // Extract tickets and totalPages from the response
   const tickets = data?.ticketAndEventDetails || [];
@@ -120,7 +120,7 @@ const TicketAndUserDetails: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tickets.map((ticket) => (
+                  {tickets.map((ticket:TicketAndUserDTO) => (
                     <TableRow key={ticket._id} className="border-yellow-400/5">
                       <TableCell className="font-medium text-yellow-900">{ticket.ticketId}</TableCell>
                       <TableCell>

@@ -34,7 +34,7 @@ const CategoryManagement: React.FC = () => {
   // Fetch categories with pagination
   const { 
     data: categoriesData, 
-    isLoading, 
+    isPending, 
     refetch 
   } = useFindAllCategories(currentPage);
 
@@ -48,7 +48,7 @@ const CategoryManagement: React.FC = () => {
   const totalCategories = categoriesData?.totalCategories || 0;
 
   // Filter categories client-side for search (since search isn't paginated)
-  const filteredCategories = categories.filter(category =>
+  const filteredCategories = categories.filter((category:Category) =>
     category.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -93,7 +93,7 @@ const CategoryManagement: React.FC = () => {
     if (!categoryToToggle) return;
 
     try {
-      const currentCategory = categories.find(c => c._id === categoryToToggle);
+      const currentCategory = categories.find((c:Category) => c._id === categoryToToggle);
       const newStatus = currentCategory?.status === 'active' ? 'inactive' : 'active';
 
       await changeStatusMutation.mutateAsync(categoryToToggle);
@@ -114,7 +114,7 @@ const CategoryManagement: React.FC = () => {
     setIsFormModalOpen(true);
   };
 
-  const categoryToToggleData = categories.find(c => c._id === categoryToToggle);
+  const categoryToToggleData = categories.find((c:Category) => c._id === categoryToToggle);
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -154,10 +154,10 @@ const CategoryManagement: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => refetch()}
-                disabled={isLoading}
+                disabled={isPending}
                 className="border-primary/20 hover:bg-primary/5"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 mr-2 ${isPending ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
@@ -182,7 +182,7 @@ const CategoryManagement: React.FC = () => {
                 <span className="text-sm text-muted-foreground">Active</span>
               </div>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {categories.filter(c => c.status === 'active').length}
+                {categories.filter((c:Category) => c.status === 'active').length}
               </p>
             </CardContent>
           </Card>
@@ -193,7 +193,7 @@ const CategoryManagement: React.FC = () => {
                 <span className="text-sm text-muted-foreground">Inactive</span>
               </div>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {categories.filter(c => c.status === 'inactive').length}
+                {categories.filter((c:Category) => c.status === 'inactive').length}
               </p>
             </CardContent>
           </Card>
@@ -212,7 +212,7 @@ const CategoryManagement: React.FC = () => {
             )}
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isPending ? (
               <div className="flex items-center justify-center py-12">
                 <RefreshCw className="h-6 w-6 animate-spin text-primary mr-3" />
                 <span className="text-muted-foreground">Loading categories...</span>
@@ -226,7 +226,7 @@ const CategoryManagement: React.FC = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredCategories.map((category) => (
+                  {filteredCategories.map((category:Category) => (
                     <CategoryCard
                       key={category._id}
                       category={category}
@@ -260,7 +260,7 @@ const CategoryManagement: React.FC = () => {
           }}
           onSubmit={handleFormSubmit}
           category={selectedCategory}
-          isLoading={createMutation.isPending || updateMutation.isPending}
+          isPending={createMutation.isPending || updateMutation.isPending}
         />
 
         <ConfirmationModal

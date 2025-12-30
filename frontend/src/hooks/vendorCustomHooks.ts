@@ -2,12 +2,13 @@ import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
 findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,approveBookingVendor,rejectBooking,updateBookingAsComplete,
-showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor,verifyTicket,findTransactionsByPaymentStatus} from "@/services/ApiServiceVendor";
+showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor,verifyTicket,findTransactionsByPaymentStatus,
+loadVendorDashboard,pdfDownloadVendor} from "@/services/ApiServiceVendor";
 import {useInfiniteQuery,useMutation , useQuery} from '@tanstack/react-query'
-import { email } from "zod";
 import { EventEntity } from "@/types/EventType";
 import { EventUpdateEntity } from "@/types/EventUpdateEntity";
 import { WorkSamplesEntity } from "@/types/WorkSampleEntity";
+import { Period } from "@/types/DatePeriodType";
 
 
 
@@ -262,3 +263,14 @@ export const useFindTransactionsByPaymentStatus = (
     
   });
 };
+export const useVendorDashboardDetails = (vendorId: string, datePeriod: Period) => {
+    return useQuery({
+        queryKey: ['vendorDashboard', datePeriod],
+        queryFn: () => loadVendorDashboard(vendorId, datePeriod)
+    })
+}
+export const usePdfDownloadVendor = () => {
+    return useMutation({
+        mutationFn: (vendorId: string) => pdfDownloadVendor(vendorId)
+    })
+}

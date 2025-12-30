@@ -2,7 +2,8 @@ import { Request,Response,Router } from "express";
 import { injectedVendorAuthenticationController,
     injectedVendorLoginLogoutController,
     injectedForgotPasswordVendorController,injectedProfileVendorController,injectedWalletVendorController,
-    injectedEventController,injectedTicketVendorController,injectedWorkSampleController,injectedServiceVendorControllerUseCase,injectedBookingVendorController
+    injectedEventController,injectedTicketVendorController,injectedWorkSampleController,injectedServiceVendorControllerUseCase,injectedBookingVendorController,
+    injectedVendorDashboardController,
  } from "../../inject/vendorInject";
 import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedVendorStatusCheckingMiddleware } from "../../inject/serviceInject";
 import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
@@ -101,6 +102,12 @@ export class VendorRoute{
         })
         this.vendorRoute.get('/transactions', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedWalletVendorController.handleFindTransactionsByPaymentStatus(req, res)
+        })
+        this.vendorRoute.get('/vendorDashboard', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedVendorDashboardController.handleVendorDashboard(req, res)
+        })
+        this.vendorRoute.post('/pdfDownload', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedVendorDashboardController.handlePdfDownloaderVendor(req, res)
         })
     }
 }

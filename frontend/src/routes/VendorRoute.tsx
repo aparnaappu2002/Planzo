@@ -16,6 +16,7 @@ import VendorServicesPage from "@/components/vendor/service/VendorServicePage";
 import VendorBookingsPage from "@/components/vendor/bookings/VendorBookingsPage";
 import { VendorChatPage } from "@/components/vendor/chat/VendorChatPage";
 import TicketScanner from "@/components/vendor/ticket/TicketScanner";
+import VendorDashboardPage from "@/components/vendor/dashboard/vendorDashboard";
 
 
 
@@ -26,9 +27,10 @@ const VendorRoute=()=>{
             <Route path="/login" element={< VendorLogin/>}></Route>
             <Route path="/forgotpassword" element={< ForgotPasswordVendor/>}></Route>
             <Route path="/resetPassword/:token?" element={< PasswordResetVendor/>}></Route>
-            <Route path="/dashboard" element={< ProfileNotApproved/>}></Route>
+            <Route path="/notApproved" element={< ProfileNotApproved/>}></Route>
 
             <Route path="/" element={<VendorLayout/>}>
+            <Route path="/dashboard" element={<ProtectedRouteVendor>  < VendorDashboardPage/> </ProtectedRouteVendor> }></Route>
             <Route path="/profile" element={<ProtectedRouteVendor>< VendorProfile/> </ProtectedRouteVendor>  }></Route>
             <Route path="/createEvent" element={<ProtectedRouteVendor> < EventCreation/> </ProtectedRouteVendor>  }></Route>
             <Route path="/events" element={<ProtectedRouteVendor>  < Events/> </ProtectedRouteVendor> }></Route>
@@ -39,6 +41,7 @@ const VendorRoute=()=>{
             <Route path="/bookings" element={<ProtectedRouteVendor>  < VendorBookingsPage/> </ProtectedRouteVendor> }></Route>
             <Route path="/chats" element={<ProtectedRouteVendor>  < VendorChatPage/> </ProtectedRouteVendor> }></Route>
             <Route path="/scanTickets" element={<ProtectedRouteVendor>  < TicketScanner/> </ProtectedRouteVendor> }></Route>
+            
             </Route>
         </Routes>
     )
