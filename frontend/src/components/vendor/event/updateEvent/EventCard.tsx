@@ -102,10 +102,7 @@ export const EventCard = ({ event, onView, onEdit }: EventCardProps) => {
               </span>
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              <span>{ticketsSold} / {totalTickets} tickets sold</span>
-            </div>
+            
           </div>
 
           {totalTickets > 0 && (

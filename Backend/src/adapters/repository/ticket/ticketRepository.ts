@@ -236,7 +236,7 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
                 email: 1,
                 paymentStatus: 1,
                 qrCodeLink: 1,
-                ticketVariant: 1,
+                ticketVariants: 1, // Changed from ticketVariant to ticketVariants
                 ticketStatus: 1,
                 paymentTransactionId: 1,
                 eventId: {
@@ -285,7 +285,6 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
     
     return { ticketAndEventDetails: tickets, totalPages }
 }
-
 
 
 async findTicketUsingTicketId(ticketId: string): Promise<TicketEntity | null> {

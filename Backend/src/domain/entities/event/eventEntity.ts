@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 
 export interface TicketVariant {
-    type: 'standard' | 'premium' | 'vip';
+    type: string;
     price: number;
     totalTickets: number;
     ticketsSold: number;

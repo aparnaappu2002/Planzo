@@ -30,7 +30,7 @@ export class TicketVerificationUseCase implements IticketVerificationUseCase {
             throw new Error('Ticket already used for today');
         }
         const updateCheckInHistory = await this.ticketDatabase.updateCheckInHistory(ticket._id?.toString()!, new Date(today))
-        if (!updateCheckInHistory) throw new Error('Error while updating check in histiory for the ticket')
+        if (!updateCheckInHistory) throw new Error('Error while updating check in history for the ticket')
         const isLastDay = today === eventDates[eventDates.length - 1];
         if (isLastDay) {
             const changeStatusOfTicket = await this.ticketDatabase.changeUsedStatus(ticket._id as string)

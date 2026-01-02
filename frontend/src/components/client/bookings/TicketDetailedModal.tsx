@@ -66,26 +66,31 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
     if (!dateString) return 'Date not available';
     
     try {
-      let date;
-      if (dateString instanceof Date) {
-        date = dateString;
+      let dates = [];
+      if (Array.isArray(dateString)) {
+        dates = dateString.map(d => new Date(d));
+      } else if (dateString instanceof Date) {
+        dates = [dateString];
       } else if (typeof dateString === 'string' && dateString.includes('-')) {
         const [year, month, day] = dateString.split('-');
-        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        dates = [new Date(parseInt(year), parseInt(month) - 1, parseInt(day))];
       } else {
-        date = new Date(dateString);
+        dates = [new Date(dateString)];
       }
       
-      if (isNaN(date.getTime())) {
+      const validDates = dates.filter(d => !isNaN(d.getTime()));
+      if (validDates.length === 0) {
         return 'Invalid date';
       }
       
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      return validDates.map(d => 
+        d.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      ).join(', ');
     } catch (error) {
       console.error('Date format error:', error);
       return 'Date format error';
@@ -94,7 +99,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
 
   const formatTime = (timeString: string) => {
     try {
-      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+      return new Date(timeString).toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
       });
@@ -150,7 +155,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
     <div className="space-y-6 max-w-2xl">
       {/* Header with Event Image */}
       <div className="flex gap-4 items-start">
-        {event.posterImage && (
+        {event.posterImage && event.posterImage.length > 0 && (
           <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-primary/20 shadow-sm flex-shrink-0">
             <img
               src={event.posterImage[0]}
@@ -187,8 +192,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
             <span>{formatDate(event.date)}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            {/* <Clock className="h-4 w-4 text-primary" /> */}
-            {/* <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span> */}
+            <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground md:col-span-2">
             <MapPin className="h-4 w-4 text-primary" />
@@ -203,7 +207,7 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
           <Ticket className="h-4 w-4 text-primary" />
           Ticket Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div className="space-y-3 text-sm">
           <div>
             <span className="text-muted-foreground">Ticket ID:</span>
             <p className="font-mono font-medium text-foreground">{ticket.ticketId}</p>
@@ -215,16 +219,23 @@ export function TicketDetailsModal({ ticket, onCancelTicket }: { ticket: TicketA
               {ticket.ticketCount} {ticket.ticketCount === 1 ? 'ticket' : 'tickets'}
             </p>
           </div>
+          {ticket.ticketVariants && ticket.ticketVariants.length > 0 ? (
+            <div className="space-y-2">
+              <span className="text-muted-foreground">Ticket Variants:</span>
+              {ticket.ticketVariants.map((variant, index) => (
+                <div key={index} className="ml-4 p-2 bg-muted/50 rounded">
+                  <p className="font-medium">{variant.variant}: {variant.count} tickets</p>
+                  <p className="text-sm">₹{variant.pricePerTicket} each = ₹{variant.subtotal}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div>
             <span className="text-muted-foreground">Total Amount:</span>
             <p className="font-bold text-lg text-primary flex items-center gap-1">
               <CreditCard className="h-4 w-4" />
               ₹{ticket.totalAmount}
             </p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Price per ticket:</span>
-            <p className="font-medium text-foreground">₹{event.pricePerTicket}</p>
           </div>
         </div>
       </div>

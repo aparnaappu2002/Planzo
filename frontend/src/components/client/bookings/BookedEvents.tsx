@@ -434,9 +434,7 @@ export default function BookedEvents() {
                               <td className="p-4">
                                 <div className="text-sm">
                                   <p className="font-bold text-primary">₹{ticket.totalAmount || 0}</p>
-                                  <p className="text-muted-foreground">
-                                    ₹{event?.pricePerTicket || ticket.ticketVariants?.[0]?.price || 0} each
-                                  </p>
+                                  
                                 </div>
                               </td>
                               <td className="p-4">

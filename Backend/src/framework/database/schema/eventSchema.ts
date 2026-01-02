@@ -49,7 +49,6 @@ export const eventSchema = new Schema<EventEntity>({
     ticketVariants: [{
         type: {
             type: String,
-            enum: ['standard', 'premium', 'vip'],
             required: true
         },
         price: {

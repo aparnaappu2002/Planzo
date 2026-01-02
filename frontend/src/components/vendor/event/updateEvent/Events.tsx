@@ -1,13 +1,11 @@
 
 import React, { useState } from 'react';
 import { useFindAllEventsVendorSide } from '@/hooks/vendorCustomHooks';
-import { EventType } from '@/types/EventType';
+import { EventEntity } from '@/types/EventType';
 import { EventCard } from './EventCard';
 import { EventViewModal } from './EventViewModal';
 import { EventEditModal } from './EventEditModal';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   CalendarDays, 
@@ -28,15 +26,16 @@ const Events = () => {
   const queryClient = useQueryClient();
   
   const [pageNo, setPageNo] = useState(1); // Updated to dynamic state
-  const [localEvents, setLocalEvents] = useState<EventType[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
-  const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
-  const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
+  const [localEvents, setLocalEvents] = useState<EventEntity[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<EventEntity | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventEntity | null>(null);
+  const [viewingEvent, setViewingEvent] = useState<EventEntity | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId, pageNo);
+  const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId || '', pageNo);
+  console.log("Data:",apiResponse)
   
   const events = localEvents.length > 0 ? localEvents : (apiResponse?.events || []);
   const totalPages = apiResponse?.totalPages || 1; // Extract totalPages from API response
@@ -83,11 +82,11 @@ const Events = () => {
     return [...new Set(events.map(event => event.category).filter(Boolean))];
   }, [events]);
 
-  const handleViewEvent = (event: EventType) => {
+  const handleViewEvent = (event: EventEntity) => {
     setViewingEvent(event);
   };
 
-  const handleEditEvent = (event: EventType) => {
+  const handleEditEvent = (event: EventEntity) => {
     setEditingEvent(event);
   };
 
@@ -96,7 +95,7 @@ const Events = () => {
     setEditingEvent(null);
   };
 
-  const handleEventUpdated = async (updatedEvent: EventType) => {
+  const handleEventUpdated = async (updatedEvent: EventEntity) => {
     
     try {
       // Update local state immediately for instant UI feedback

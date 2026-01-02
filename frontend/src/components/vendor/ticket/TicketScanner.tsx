@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useMutation } from '@tanstack/react-query';
 import { useVerifyTicket } from '@/hooks/vendorCustomHooks';
+import { useNavigate } from 'react-router-dom';
 
 const TicketScanner: React.FC = () => {
     const [scannerInitialized, setScannerInitialized] = useState(false);
     const { mutate: verifyTicket, isPending, error, data } = useVerifyTicket();
+    const navigate=useNavigate()
 
     useEffect(() => {
         const scanner = new Html5QrcodeScanner(
@@ -37,6 +38,7 @@ const TicketScanner: React.FC = () => {
                                     theme: 'colored',
                                     style: { backgroundColor: '#fef08a' },
                                 });
+                                navigate('/vendor/tickets')
                             },
                             onError: (error) => {
                                 toast.error('Failed to verify ticket: ' + error.message, {

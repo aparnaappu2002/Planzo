@@ -27,7 +27,14 @@ interface EventViewModalProps {
   onClose: () => void;
 }
 
+const TICKET_TYPES = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'premium', label: 'Premium' },
+  { value: 'vip', label: 'VIP' },
+];
+
 export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) => {
+  console.log("Event:",event)
   
   if (!event) return null;
 
@@ -65,16 +72,23 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
   const hasTicketVariants = event.ticketVariants && event.ticketVariants.length > 0;
   const ticketsSold = event.ticketPurchased || 0;
   const totalTickets = event.totalTicket || 0;
-  const ticketsSoldPercentage = totalTickets > 0 ? (ticketsSold / totalTickets) * 100 : 0;
+  
+  const displayTicketsSold = hasTicketVariants 
+    ? event.ticketVariants.reduce((sum: number, variant: any) => sum + (variant.ticketsSold || 0), 0)
+    : ticketsSold;
+  const displayTotalTickets = hasTicketVariants 
+    ? event.ticketVariants.reduce((sum: number, variant: any) => sum + (variant.totalTickets || 0), 0)
+    : totalTickets;
+  const ticketsSoldPercentage = displayTotalTickets > 0 ? (displayTicketsSold / displayTotalTickets) * 100 : 0;
   
   // Calculate revenue based on ticket variants or simple pricing
   let totalRevenue = 0;
   if (hasTicketVariants) {
     totalRevenue = event.ticketVariants.reduce((sum: number, variant: any) => {
-      return sum + ((variant.sold || 0) * (variant.price || 0));
+      return sum + ((variant.ticketsSold || 0) * (variant.price || 0));
     }, 0);
   } else {
-    totalRevenue = ticketsSold * (event.pricePerTicket || 0);
+    totalRevenue = displayTicketsSold * (event.pricePerTicket || 0);
   }
 
   // Get price range for display
@@ -90,6 +104,11 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
       return minPrice === 0 ? `Free - ₹${maxPrice}` : `₹${minPrice} - ₹${maxPrice}`;
     }
     return (event.pricePerTicket || 0) === 0 ? 'Free' : `₹${event.pricePerTicket}`;
+  };
+
+  const getTicketTypeLabel = (type: string) => {
+    const ticketType = TICKET_TYPES.find(t => t.value === type);
+    return ticketType ? ticketType.label : type;
   };
 
   return (
@@ -189,9 +208,7 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
                 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Event Status:</span>
-                  <span className="font-medium">
-                    {event.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                  <span className="font-medium capitalize">{event.status}</span>
                 </div>
               </div>
             </div>
@@ -247,24 +264,80 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
                   This event has multiple ticket types:
                 </div>
                 <div className="grid gap-3">
-                  {event.ticketVariants.map((variant: any, index: number) => (
-                    <div key={index} className="bg-accent/20 rounded-lg p-4 flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{variant.name || `Ticket Type ${index + 1}`}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {variant.description || 'No description'}
+                  {event.ticketVariants.map((variant: any, index: number) => {
+                    const typeLabel = getTicketTypeLabel(variant.type);
+                    return (
+                      <div key={index} className="bg-accent/20 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium">{typeLabel}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {variant.description || 'No description'}
+                            </div>
+                            {variant.benefits && variant.benefits.length > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Benefits: {variant.benefits.join(', ')}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Max per user: {variant.maxPerUser || 'N/A'}
+                            </div>
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="font-bold text-primary">
+                              {variant.price === 0 ? 'Free' : `₹${variant.price}`}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {variant.ticketsSold || 0} / {variant.totalTickets || 0} sold
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-primary">
-                          {variant.price === 0 ? 'Free' : `₹${variant.price}`}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {variant.sold || 0} / {variant.quantity || 0} sold
-                        </div>
-                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary Cards for Variants */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-accent/20 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <IndianRupee className="h-5 w-5 text-primary" />
                     </div>
-                  ))}
+                    <div className="text-2xl font-bold text-primary">
+                      {getPriceDisplay()}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Price Range</div>
+                  </div>
+                  
+                  <div className="bg-accent/20 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Users className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {displayTicketsSold}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Tickets Sold</div>
+                  </div>
+                  
+                  <div className="bg-accent/20 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Tag className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {displayTotalTickets}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Tickets</div>
+                  </div>
+                  
+                  <div className="bg-accent/20 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <IndianRupee className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-2xl font-bold text-primary">
+                      ₹{totalRevenue.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Revenue</div>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -284,7 +357,7 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
                     <Users className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="text-2xl font-bold text-green-600">
-                    {ticketsSold}
+                    {displayTicketsSold}
                   </div>
                   <div className="text-sm text-muted-foreground">Tickets Sold</div>
                 </div>
@@ -294,7 +367,7 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
                     <Tag className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="text-2xl font-bold text-blue-600">
-                    {totalTickets}
+                    {displayTotalTickets}
                   </div>
                   <div className="text-sm text-muted-foreground">Total Tickets</div>
                 </div>
@@ -312,7 +385,7 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
             )}
 
             {/* Progress Bar */}
-            {totalTickets > 0 && (
+            {displayTotalTickets > 0 && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Sales Progress</span>
@@ -330,10 +403,10 @@ export const EventViewModal = ({ event, isOpen, onClose }: EventViewModalProps) 
             {/* Additional Ticket Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               
-              {totalTickets > 0 && (
+              {displayTotalTickets > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Remaining tickets:</span>
-                  <span className="font-medium">{totalTickets - ticketsSold}</span>
+                  <span className="font-medium">{displayTotalTickets - displayTicketsSold}</span>
                 </div>
               )}
             </div>

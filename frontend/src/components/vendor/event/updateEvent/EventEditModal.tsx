@@ -1,4 +1,4 @@
-import { EventType } from '@/types/EventType';
+import { EventEntity } from '@/types/EventType';
 import { EventUpdateEntity } from '@/types/EventUpdateEntity';
 import {
   Dialog,
@@ -22,7 +22,7 @@ import { useUpdateEvent, useUploadImageMutation } from '@/hooks/vendorCustomHook
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { CalendarDays, Save, X, Image as ImageIcon, Trash2, Plus, Minus } from 'lucide-react';
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 
 interface TicketVariant {
   type: string;
@@ -35,10 +35,10 @@ interface TicketVariant {
 }
 
 interface EventEditModalProps {
-  event: EventType | null;
+  event: EventEntity | null;
   isOpen: boolean;
   onClose: () => void;
-  onEventUpdated?: (updatedEvent: EventType) => void; 
+  onEventUpdated?: (updatedEvent: EventEntity) => void; 
 }
 
 const TICKET_TYPES = [
@@ -56,8 +56,14 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
     watch, 
     reset, 
     formState: { errors },
-    getValues 
-  } = useForm<EventUpdateEntity>();
+    getValues,
+    trigger 
+  } = useForm<EventUpdateEntity>({
+    mode: 'onChange',
+    defaultValues: {
+      status: 'upcoming' as const,
+    }
+  });
   
   const updateEventMutation = useUpdateEvent();
   const uploadImageMutation = useUploadImageMutation();
@@ -70,6 +76,31 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
   const [useTicketVariants, setUseTicketVariants] = useState(false);
 
   const watchedStatus = watch('status');
+
+  // Early return if event is completed - disable editing
+  if (event?.status === 'completed') {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+              <CalendarDays className="h-6 w-6" />
+              Event Editing Disabled
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-muted-foreground">
+              This event has been marked as completed and cannot be edited further.
+            </p>
+            <Button type="button" onClick={onClose} className="w-full">
+              <X className="h-4 w-4 mr-2" />
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Helper function to format date for datetime-local input
   const formatDateForInput = (dateString: string | Date) => {
@@ -220,15 +251,12 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
     return Promise.all(uploadPromises);
   };
 
-  const validateDateTime = (startTime: string, endTime: string) => {
+  const validateDateTime = (startTime: string, endTime: string, status: string) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
     const now = new Date();
     
-    if (start < now) {
-      return 'Start time cannot be in the past';
-    }
-    
+    // Always validate end > start and min duration
     if (end <= start) {
       return 'End time must be after start time';
     }
@@ -238,6 +266,16 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
     
     if (timeDiff < minDuration) {
       return 'Event must be at least 30 minutes long';
+    }
+
+    // For completed or cancelled, allow past dates
+    if (status === 'completed' || status === 'cancelled') {
+      return true;
+    }
+    
+    // For upcoming, start must be in future
+    if (start < now) {
+      return 'Start time cannot be in the past';
     }
     
     return true;
@@ -290,11 +328,18 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
   const onSubmit = async (data: EventUpdateEntity) => {
     if (!event) return;
     
+    // Validate status
+    if (!data.status) {
+      toast.error('Event status is required');
+      return;
+    }
+    
     const startTime = data.startTime;
     const endTime = data.endTime;
+    const status = data.status;
     
     if (startTime && endTime) {
-      const dateValidation = validateDateTime(startTime, endTime);
+      const dateValidation = validateDateTime(startTime, endTime, status);
       if (dateValidation !== true) {
         toast.error(dateValidation);
         return;
@@ -359,7 +404,7 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
       
       toast.success(response.message || 'Event updated successfully');
       
-      const updatedEvent: EventType = {
+      const updatedEvent: EventEntity = {
         ...event,
         ...updateData,
         _id: event._id, 
@@ -375,16 +420,10 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
       
       
       if (onEventUpdated) {
-        try {
-          await onEventUpdated(updatedEvent);
-        } catch (error) {
-        }
-      } else {
+        onEventUpdated(updatedEvent);
       }
       
-      setTimeout(() => {
-        onClose();
-      }, 200);
+      onClose();
     } catch (error: any) {
       let errorMessage;
             
@@ -494,8 +533,12 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
             <div className="space-y-2">
               <Label htmlFor="status">Event Status *</Label>
               <Select
-                value={watchedStatus}
-                onValueChange={(value) => setValue('status', value as any)}
+                value={watchedStatus || ''}
+                onValueChange={(value) => {
+                  setValue('status', value as any);
+                  // Revalidate dependent fields
+                  trigger(['startTime', 'endTime']);
+                }}
               >
                 <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select status" />
@@ -507,7 +550,7 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                 </SelectContent>
               </Select>
               {errors.status && (
-                <p className="text-sm text-red-500">Event status is required</p>
+                <p className="text-sm text-red-500">{errors.status.message}</p>
               )}
             </div>
           </div>
@@ -539,13 +582,19 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                   type="datetime-local"
                   {...register('startTime', { 
                     required: 'Start time is required',
-                    validate: (value) => {
-                      const now = new Date();
-                      const startDate = new Date(value);
-                      if (startDate < now) {
-                        return 'Start time cannot be in the past';
+                    validate: {
+                      futureOrCompleted: (value, formValues) => {
+                        const status = formValues.status;
+                        if (status === 'completed' || status === 'cancelled') {
+                          return true;
+                        }
+                        const now = new Date();
+                        const startDate = new Date(value);
+                        if (startDate < now) {
+                          return 'Start time cannot be in the past';
+                        }
+                        return true;
                       }
-                      return true;
                     }
                   })}
                   className={errors.startTime ? 'border-red-500' : ''}
@@ -562,12 +611,14 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                   type="datetime-local"
                   {...register('endTime', { 
                     required: 'End time is required',
-                    validate: (value) => {
-                      const startTime = getValues('startTime');
-                      if (startTime && new Date(value) <= new Date(startTime)) {
-                        return 'End time must be after start time';
+                    validate: {
+                      afterStart: (value, formValues) => {
+                        const startTime = formValues.startTime;
+                        if (startTime && new Date(value) <= new Date(startTime)) {
+                          return 'End time must be after start time';
+                        }
+                        return true;
                       }
-                      return true;
                     }
                   })}
                   className={errors.endTime ? 'border-red-500' : ''}

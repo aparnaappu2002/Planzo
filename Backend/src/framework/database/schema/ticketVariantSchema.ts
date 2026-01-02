@@ -3,7 +3,6 @@ import { Schema } from "mongoose";
 export const ticketVariantSchema = new Schema({
     variant: {
         type: String,
-        enum: ['standard', 'premium', 'vip'],
         required: true
     },
     count: {

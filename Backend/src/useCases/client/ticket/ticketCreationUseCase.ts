@@ -49,12 +49,12 @@ export class CreateTicketUseCase implements IcreateTicketUseCase {
             throw new Error('No ticket variants selected');
         }
 
-        const validVariants: ('standard' | 'premium' | 'vip')[] = ['standard', 'premium', 'vip'];
-        for (const [variantType] of selectedVariants) {
-            if (!validVariants.includes(variantType as any)) {
-                throw new Error(`Invalid variant type: ${variantType}. Valid types are: ${validVariants.join(', ')}`);
-            }
-        }
+        // const validVariants: ('standard' | 'premium' | 'vip')[] = ['standard', 'premium', 'vip'];
+        // for (const [variantType] of selectedVariants) {
+        //     if (!validVariants.includes(variantType as any)) {
+        //         throw new Error(`Invalid variant type: ${variantType}. Valid types are: ${validVariants.join(', ')}`);
+        //     }
+        // }
 
         const eventDetails = await this.eventDatabase.findTotalTicketAndBookedTicket(ticketData.eventId);
         console.log('Event Details:', JSON.stringify(eventDetails, null, 2));

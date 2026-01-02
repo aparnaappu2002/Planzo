@@ -19,15 +19,13 @@ const TicketAndUserDetails: React.FC = () => {
   const [pageNo, setPageNo] = useState(1);
   const [selectedTicket, setSelectedTicket] = useState<TicketAndUserDTO | null>(null);
   const navigate = useNavigate();
-
   const { data, isLoading, error, refetch } = useTicketDetailsWithUser(vendorId || '', pageNo);
-  
+  console.log("Ticket Data:",data)
+ 
   // Extract tickets and totalPages from the response
   const tickets = data?.ticketAndEventDetails || [];
   const totalPages = data?.totalPages || 0;
-
-  
-
+ 
   const handleSearch = () => {
     if (!vendorId?.trim()) {
       toast.error("Missing vendor information. Please ensure you're logged in.");
@@ -35,11 +33,9 @@ const TicketAndUserDetails: React.FC = () => {
     }
     refetch();
   };
-
   const handleScanTicket = (ticketId: string, eventId: string) => {
     navigate(`/vendor/scanTickets?ticketId=${ticketId}&eventId=${eventId}`);
   };
-
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'successful':
@@ -57,6 +53,13 @@ const TicketAndUserDetails: React.FC = () => {
     }
   };
 
+  const getTicketVariantsDisplay = (ticket: TicketAndUserDTO) => {
+    if (ticket.ticketVariants && ticket.ticketVariants.length > 0) {
+      return ticket.ticketVariants.map((v) => v.variant).join(', ');
+    }
+    return 'Standard';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-yellow-200/10 to-yellow-100">
       <div className="container mx-auto px-4 py-8">
@@ -71,7 +74,6 @@ const TicketAndUserDetails: React.FC = () => {
             </h1>
           </div>
         </div>
-
         {/* Content */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
@@ -81,7 +83,6 @@ const TicketAndUserDetails: React.FC = () => {
             </div>
           </div>
         )}
-
         {error && (
           <Card className="p-6 border-yellow-400/20 bg-yellow-200/20">
             <div className="text-center space-y-2">
@@ -97,7 +98,6 @@ const TicketAndUserDetails: React.FC = () => {
             </div>
           </Card>
         )}
-
         {tickets && tickets.length > 0 && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -105,7 +105,7 @@ const TicketAndUserDetails: React.FC = () => {
                 Ticket Details ({tickets.length} found)
               </h2>
             </div>
-            
+           
             <Card className="border-yellow-400/20 bg-yellow-200/10">
               <Table>
                 <TableHeader>
@@ -132,7 +132,7 @@ const TicketAndUserDetails: React.FC = () => {
                       <TableCell>
                         <div className="space-y-1">
                           <p className="font-medium text-yellow-900">{ticket.eventId.title}</p>
-                          <p className="text-sm text-yellow-700">{ticket.ticketVariant}</p>
+                          <p className="text-sm text-yellow-700">{getTicketVariantsDisplay(ticket)}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -155,8 +155,8 @@ const TicketAndUserDetails: React.FC = () => {
                         <div className="flex gap-2">
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => setSelectedTicket(ticket)}
                                 className="border-yellow-500 text-yellow-800 hover:bg-yellow-300"
@@ -171,7 +171,7 @@ const TicketAndUserDetails: React.FC = () => {
                                   Ticket Details - {ticket.ticketId}
                                 </DialogTitle>
                               </DialogHeader>
-                              
+                             
                               {selectedTicket && (
                                 <div className="space-y-6 mt-6">
                                   {/* Customer Information */}
@@ -182,8 +182,8 @@ const TicketAndUserDetails: React.FC = () => {
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                       <div className="flex items-center gap-3">
-                                        <img 
-                                          src={selectedTicket.clientId.profileImage} 
+                                        <img
+                                          src={selectedTicket.clientId.profileImage}
                                           alt={selectedTicket.clientId.name}
                                           className="w-12 h-12 rounded-full object-cover border-2 border-yellow-400/20"
                                         />
@@ -198,7 +198,6 @@ const TicketAndUserDetails: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
-
                                   {/* Event Information */}
                                   <div className="bg-gradient-to-r from-yellow-300/20 to-yellow-200/20 p-6 rounded-lg border border-yellow-400/20">
                                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-yellow-800">
@@ -213,7 +212,7 @@ const TicketAndUserDetails: React.FC = () => {
                                         </div>
                                         <div>
                                           <p><strong>Event ID:</strong> {selectedTicket.eventId._id}</p>
-                                          <p><strong>Status:</strong> 
+                                          <p><strong>Status:</strong>
                                             <Badge variant={getStatusBadgeVariant(selectedTicket.eventId.status)} className="ml-2 bg-yellow-500 text-yellow-900">
                                               {selectedTicket.eventId.status}
                                             </Badge>
@@ -232,8 +231,8 @@ const TicketAndUserDetails: React.FC = () => {
                                       </div>
                                       <div>
                                         {selectedTicket.eventId.posterImage && selectedTicket.eventId.posterImage.length > 0 && (
-                                          <img 
-                                            src={selectedTicket.eventId.posterImage[0]} 
+                                          <img
+                                            src={selectedTicket.eventId.posterImage[0]}
                                             alt={selectedTicket.eventId.title}
                                             className="w-full h-48 object-cover rounded-lg border-2 border-yellow-400/20"
                                           />
@@ -241,7 +240,6 @@ const TicketAndUserDetails: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
-
                                   {/* Ticket & Payment Information */}
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="bg-gradient-to-br from-yellow-200/20 to-yellow-100 p-6 rounded-lg border border-yellow-400/20">
@@ -250,25 +248,34 @@ const TicketAndUserDetails: React.FC = () => {
                                         Ticket Information
                                       </h3>
                                       <div className="space-y-3">
-                                        <p><strong>Ticket Variant:</strong> {selectedTicket.ticketVariant}</p>
                                         <p><strong>Ticket Count:</strong> {selectedTicket.ticketCount}</p>
-                                        <p><strong>Price per Ticket:</strong> ₹{selectedTicket.eventId.pricePerTicket}</p>
+                                        {selectedTicket.ticketVariants && selectedTicket.ticketVariants.length > 0 ? (
+                                          <div className="space-y-2">
+                                            <p><strong>Variants:</strong></p>
+                                            {selectedTicket.ticketVariants.map((variant, index) => (
+                                              <div key={index} className="p-2 bg-yellow-50 rounded">
+                                                <p><strong>{variant.variant}:</strong> {variant.count} tickets @ ₹{variant.pricePerTicket} = ₹{variant.subtotal}</p>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <p><strong>Ticket Variant:</strong> Standard</p>
+                                        )}
                                         <p><strong>Total Amount:</strong> <span className="text-lg font-bold text-yellow-800">₹{selectedTicket.totalAmount}</span></p>
-                                        <p><strong>Status:</strong> 
+                                        <p><strong>Status:</strong>
                                           <Badge variant={getStatusBadgeVariant(selectedTicket.ticketStatus)} className="ml-2 bg-yellow-500 text-yellow-900">
                                             {selectedTicket.ticketStatus}
                                           </Badge>
                                         </p>
                                       </div>
                                     </div>
-
                                     <div className="bg-gradient-to-br from-yellow-300/20 to-yellow-100 p-6 rounded-lg border border-yellow-400/20">
                                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-yellow-800">
                                         <CreditCard className="h-5 w-5" />
                                         Payment Information
                                       </h3>
                                       <div className="space-y-3">
-                                        <p><strong>Payment Status:</strong> 
+                                        <p><strong>Payment Status:</strong>
                                           <Badge variant={getStatusBadgeVariant(selectedTicket.paymentStatus)} className="ml-2 bg-yellow-500 text-yellow-900">
                                             {selectedTicket.paymentStatus}
                                           </Badge>
@@ -277,7 +284,6 @@ const TicketAndUserDetails: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
-
                                   {/* QR Code */}
                                   <div className="bg-gradient-to-r from-yellow-100 to-yellow-200/20 p-6 rounded-lg border border-yellow-400/20 text-center">
                                     <h3 className="text-lg font-semibold mb-4 flex items-center justify-center gap-2 text-yellow-800">
@@ -285,8 +291,8 @@ const TicketAndUserDetails: React.FC = () => {
                                       QR Code
                                     </h3>
                                     <div className="flex justify-center">
-                                      <img 
-                                        src={selectedTicket.qrCodeLink} 
+                                      <img
+                                        src={selectedTicket.qrCodeLink}
                                         alt="Ticket QR Code"
                                         className="w-48 h-48 border border-yellow-400/20 rounded-lg"
                                       />
@@ -315,18 +321,16 @@ const TicketAndUserDetails: React.FC = () => {
                 </TableBody>
               </Table>
             </Card>
-
             {/* Pagination Component */}
             <div className="mt-8">
-              <Pagination 
-                total={totalPages} 
-                current={pageNo} 
-                setPage={setPageNo} 
+              <Pagination
+                total={totalPages}
+                current={pageNo}
+                setPage={setPageNo}
               />
             </div>
           </div>
         )}
-
         {tickets && tickets.length === 0 && !isLoading && (
           <Card className="p-8 text-center border-yellow-400/20 bg-yellow-200/10">
             <div className="space-y-3">
@@ -342,5 +346,4 @@ const TicketAndUserDetails: React.FC = () => {
     </div>
   );
 };
-
 export default TicketAndUserDetails;

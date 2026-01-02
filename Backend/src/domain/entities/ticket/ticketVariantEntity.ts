@@ -10,7 +10,7 @@ export interface QRCode {
 
 export interface TicketVariant {
     _id?: ObjectId | string; 
-    variant: 'standard' | 'premium' | 'vip';
+    variant: string
     count: number;
     pricePerTicket: number;
     subtotal: number;
