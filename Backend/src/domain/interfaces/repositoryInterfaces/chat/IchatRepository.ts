@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { chatEntity } from "../../../entities/chat/chatEntity";
 import { MessageEntity } from "../../../entities/chat/messageEntity";
-import { ChatEntityDTO } from "../../../entities/chat/chatEntityDTO";
+import { ChatEntityDTO } from "../../../dto/chatEntityDTO";
 
 export interface IchatRepository {
     createChat(chat: chatEntity): Promise<chatEntity>
