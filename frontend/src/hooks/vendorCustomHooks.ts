@@ -2,8 +2,8 @@ import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
     uploadImageCloudinary,vendorForgotPassword,vendorForgotPasswordEmail,updateVendorDetails,changePasswordVendor,createEvent,findAllEventsInVendor,updateEvent
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
 findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,approveBookingVendor,rejectBooking,updateBookingAsComplete,
-showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor,verifyTicket,findTransactionsByPaymentStatus,
-loadVendorDashboard,pdfDownloadVendor} from "@/services/ApiServiceVendor";
+showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor,verifyTicket,findTransactionsByPaymentStatus,searchServiceVendor,searchEventsVendor,
+loadVendorDashboard,pdfDownloadVendor,singleNotificationReadVendor,deleteAllNotificationsVendor,deleteSingleNotificationVendor} from "@/services/ApiServiceVendor";
 import {useInfiniteQuery,useMutation , useQuery} from '@tanstack/react-query'
 import { EventEntity } from "@/types/EventType";
 import { EventUpdateEntity } from "@/types/EventUpdateEntity";
@@ -107,6 +107,21 @@ export const useUpdateEvent = () => {
         mutationFn: ({ eventId, update }: { eventId: string, update: EventUpdateEntity }) => updateEvent(eventId, update)
     })
 }
+export interface SearchEventParams {
+    vendorId: string;
+    searchTerm: string;
+    pageNo: number;
+}
+
+export const useSearchEventsVendor = ({ vendorId, searchTerm, pageNo }: SearchEventParams) => {
+    return useQuery({
+        queryKey: ['events', 'search', vendorId, searchTerm, pageNo],
+        queryFn: () => searchEventsVendor(vendorId, searchTerm, pageNo),
+        enabled: !!vendorId && !!searchTerm.trim(), 
+        staleTime: 30000, 
+    });
+};
+
 
 export const useFindWalletDetailsVendor = (userId: string, pageNo: number) => {
     return useQuery({
@@ -272,5 +287,35 @@ export const useVendorDashboardDetails = (vendorId: string, datePeriod: Period) 
 export const usePdfDownloadVendor = () => {
     return useMutation({
         mutationFn: (vendorId: string) => pdfDownloadVendor(vendorId)
+    })
+}
+interface SearchServiceParams {
+    vendorId: string;
+    searchTerm: string;
+    pageNo: number;
+}
+
+export const useSearchServiceVendor = ({ vendorId, searchTerm, pageNo }: SearchServiceParams) => {
+    return useQuery({
+        queryKey: ['services', 'search', vendorId, searchTerm, pageNo],
+        queryFn: () => searchServiceVendor(vendorId, searchTerm, pageNo),
+        enabled: !!vendorId && !!searchTerm.trim(), 
+        staleTime: 30000, 
+    });
+};
+export const useReadSingleNotificationVendor = () => {
+    return useMutation({
+        mutationFn: (notificationId: string) => singleNotificationReadVendor(notificationId)
+    })
+}
+export const useDeleteAllNotificationsVendor = () => {
+    return useMutation({
+        mutationFn: (userId: string) => deleteAllNotificationsVendor(userId)
+    })
+}
+
+export const useDeleteSingleNotificationsVendor = () => {
+    return useMutation({
+        mutationFn: (notificationId: string) => deleteSingleNotificationVendor(notificationId)
     })
 }

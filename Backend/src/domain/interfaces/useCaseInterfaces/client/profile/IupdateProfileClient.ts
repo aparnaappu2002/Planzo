@@ -1,6 +1,6 @@
-import { ClientUpdateProfileEntity } from "../../../../dto/profile/clientUpdateProfileDTO";
+import { ClientUpdateProfileDTO } from "../../../../dto/profile/clientUpdateProfileDTO";
 import { clientEntity } from "../../../../entities/clientEntity";
 
 export interface IupdateProfileDataUseCase {
-    updateClientProfile(client: ClientUpdateProfileEntity): Promise<clientEntity | null>
+    updateClientProfile(client: ClientUpdateProfileDTO): Promise<clientEntity | null>
 }

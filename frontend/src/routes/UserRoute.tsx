@@ -19,7 +19,8 @@ import ServiceDetails from '@/components/client/service/serviceDetails'
 import BookingsPage from '@/components/client/serviceBookings/BookingsPage'
 import BookingPayment from '@/components/client/payment/booking/BookingPayment'
 import { ChatPage } from '@/components/client/chat/ChatPage'
-
+import ContactPage from '@/components/client/contact/ContactPage'
+import AboutPage from '@/components/client/about/AboutPage'
 
 
 
@@ -30,10 +31,14 @@ const UserRoute=()=>{
         <Routes>
             <Route path='/signup' element={<SignupForm/>}></Route>
             <Route path='/login' element={<Login/>}></Route>
+            
+
             <Route path='/' element={<HomePage/>}></Route>
             <Route path='/forgotPassword' element={<ForgotPassword/>}></Route>
             <Route path='/resetPassword/:token?' element={<PasswordReset/>}></Route>
             <Route path='/' element={<ClientLayout/>}>
+            <Route path='/contact' element={<ContactPage/>}></Route>
+            <Route path='/about' element={<AboutPage/>}></Route>
             <Route path='/profile' element={<ProtectedRouteClient> <ClientProfile/> </ProtectedRouteClient> }></Route>
             <Route path='/events' element={ <EventsList/>  }></Route>
             <Route path='/event/:eventId' element={ <EventDetail/> }></Route>

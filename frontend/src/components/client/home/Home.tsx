@@ -2,7 +2,6 @@ import type React from "react"
 import { Navbar } from "../navbar/Navbar"
 import { Button } from "@/components/ui/button"
 import { Calendar, CalendarDays, ChevronRight, MapPin, Search, Star, Ticket, Users } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useNavigate } from "react-router-dom"
@@ -113,10 +112,7 @@ const handleSignupClick = () => {
                   Explore Events
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
-                <Button variant="outline" className="h-12 text-base">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Create Event
-                </Button>
+                
               </div>
             </div>
             

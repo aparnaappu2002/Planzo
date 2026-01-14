@@ -31,15 +31,7 @@ export class ConfirmBookingPaymentUseCase implements IconfirmBookingPaymentUseCa
         const clientId = booking.clientId || (booking as any).client?._id;
     const vendorId = booking.vendorId || (booking as any).vendor?._id;
 
-    console.log('=== CONFIRMATION DEBUG ===');
-    console.log('Looking for transaction with payment intent ID:', paymentIntentId);
-    console.log('Booking ID:', booking._id);
-    console.log('Client ID (direct):', booking.clientId);
-    console.log('Client ID (populated):', (booking as any).client?._id);
-    console.log('Vendor ID (direct):', booking.vendorId);
-    console.log('Vendor ID (populated):', (booking as any).vendor?._id);
-    console.log('Final Client ID:', clientId);
-    console.log('Final Vendor ID:', vendorId);
+    
 
         const { date, servicePrice } = dateAndServicePrice
         const paymentTransaction = await this.paymentDatabase.findTransactionOfAUser(booking.clientId, booking.vendorId, booking._id!)

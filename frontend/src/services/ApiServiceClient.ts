@@ -475,3 +475,32 @@ export const findTicketsByStatus = async (ticketStatus: string, paymentStatus: s
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while fetching tickets by status');
     }
 }
+
+export const singleNotificationRead = async (notificationId: string) => {
+    try {
+        const response = await axios.patch('/readNotification', { notificationId })
+        return response.data
+    } catch (error) {
+        console.log('error while notification marking as read', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while notification marking as read')
+    }
+}
+export const deleteAllNotificationsClient = async (userId: string) => {
+    try {
+        const response = await axios.delete('/deleteAllNotifications', { params: { userId } })
+        return response.data
+    } catch (error) {
+        console.log('error while deleting all notifications', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while deleting all notifications')
+    }
+}
+
+export const deleteSingleNotificationClient = async (notificationId: string) => {
+    try {
+        const response = await axios.delete('/deleteSingleNotification', { params: { notificationId } })
+        return response.data
+    } catch (error) {
+        console.log('error while deleting single notifications', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while deleting single notification')
+    }
+}

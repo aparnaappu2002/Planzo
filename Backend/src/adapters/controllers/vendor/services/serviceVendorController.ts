@@ -6,6 +6,7 @@ import { IeditServiceUseCase } from "../../../../domain/interfaces/useCaseInterf
 import { IchangeStatusServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IchangeStatusServiceUseCase";
 import { IfindServiceUseCaseInterface } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IfindServiceUseCaseInterface";
 import { IfindCategoryForServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IfindCategoryUseCaseInterface";
+import { IsearchServiceVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IsearchServiceVendorUseCase";
 
 interface Params {
     service: ServiceEntity,
@@ -17,13 +18,15 @@ export class ServiceVendorController {
     private editServiceUseCase:IeditServiceUseCase
     private changeStatusServiceUseCase:IchangeStatusServiceUseCase
     private findServiceUseCase:IfindServiceUseCaseInterface
+    private searchServiceVendorUseCase:IsearchServiceVendorUseCase
     constructor(findCategoryForServiceUseCase:IfindCategoryForServiceUseCase,createServiceUseCase: IcreateServiceUseCase,editServiceUseCase:IeditServiceUseCase,
-        changeStatusServiceUseCase:IchangeStatusServiceUseCase,findServiceUseCase:IfindServiceUseCaseInterface) {
+        changeStatusServiceUseCase:IchangeStatusServiceUseCase,findServiceUseCase:IfindServiceUseCaseInterface,searchServiceVendorUseCase:IsearchServiceVendorUseCase) {
         this.createServiceUseCase = createServiceUseCase
         this.editServiceUseCase=editServiceUseCase
         this.changeStatusServiceUseCase=changeStatusServiceUseCase
         this.findServiceUseCase=findServiceUseCase
         this.findCategoryForServiceUseCase=findCategoryForServiceUseCase
+        this.searchServiceVendorUseCase=searchServiceVendorUseCase
     }
     async handleFindCategoryForServiceUseCase(req: Request, res: Response): Promise<void> {
         try {
@@ -105,4 +108,38 @@ export class ServiceVendorController {
             })
         }
     }
+    async handleSearchService(req: Request, res: Response): Promise<void> {
+        try {
+            const vendorId = req.query.vendorId as string;
+            const searchTerm = req.query.searchTerm as string;
+            const pageNo = req.query.pageNo as string;
+            const page = parseInt(pageNo, 10) || 1;
+            
+            if (!searchTerm || !searchTerm.trim()) {
+                res.status(HttpStatus.BAD_REQUEST).json({ 
+                    message: 'Search term is required' 
+                });
+                return;
+            }
+            
+            const { Services, totalPages } = await this.searchServiceVendorUseCase.searchServiceVendor(
+                vendorId,
+                searchTerm,
+                page
+            );
+            
+            res.status(HttpStatus.OK).json({ 
+                message: "Services searched successfully", 
+                Services, 
+                totalPages 
+            });
+        } catch (error) {
+            console.log('error while searching service', error);
+            res.status(HttpStatus.BAD_REQUEST).json({
+                message: 'error while searching service',
+                error: error instanceof Error ? error.message : 'error while searching service'
+            });
+        }
+    }
+
 }

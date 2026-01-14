@@ -66,8 +66,8 @@ export class BookingClientController {
         try {
             const { clientId, pageNo } = req.params
             const page = parseInt(pageNo, 10) || 1
-            const { Bookings, totalPages } = await this.showBookingsInClient.findBookings(clientId, page)
-            res.status(HttpStatus.OK).json({ message: Messages.BOOKING_FETCHED, Bookings, totalPages })
+            const { bookings, totalPages } = await this.showBookingsInClient.findBookings(clientId, page)
+            res.status(HttpStatus.OK).json({ message: Messages.BOOKING_FETCHED, Bookings:bookings, totalPages })
         } catch (error) {
             console.log('error while fetching bookings in client', error)
             res.status(HttpStatus.BAD_REQUEST).json({

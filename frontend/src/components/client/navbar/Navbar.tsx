@@ -28,8 +28,9 @@ import { RootState } from "@/redux/Store";
 import { removeClient } from "@/redux/slices/user/userSlice";
 import { removeToken } from "@/redux/slices/user/userToken";
 import { NotificationDropdown } from "@/components/notification/NotificationDropdown";
-import { addNotifications, addSingleNotification } from "@/redux/slices/notification/notificationSlice";
+import { addNotifications, addSingleNotification, removeNotification, clearAllNotifications } from "@/redux/slices/notification/notificationSlice";
 import socket from '@/hooks/socketHook';
+import { useReadSingleNotification,useDeleteAllNotificationsClient } from "@/hooks/clientCustomHooks";
 
 interface Notification {
   _id?: string;
@@ -56,35 +57,40 @@ export const Navbar: React.FC = () => {
   const dispatch = useDispatch();
   const client = useSelector((state: RootState) => state.clientSlice.client);
   
-  // Fix: Ensure we get notifications with proper fallback
   const notifications = useSelector((state: RootState) => {
     const notificationState = state.notificationSlice;
-    // The state property is 'notification' (singular), not 'notifications' (plural)
     return notificationState?.notification || [];
   });
   
   const isLoggedIn = !!client;
 
-  // Debug effect to track notification changes
+  // Initialize mutation hooks
+  const readSingleNotification = useReadSingleNotification();
+  const deleteAllNotifications = useDeleteAllNotificationsClient();
+
   useEffect(() => {
-    
+    console.log('Navbar notifications:', notifications, 'Client:', client);
   }, [notifications, client]);
 
-  // Socket integration for real-time notifications
   useEffect(() => {
     if (!client) return;
 
     if (!socket.connected) socket.connect();
 
     const handleConnect = () => {
+      console.log('Navbar: Socket connected');
       socket.emit('register', { userId: client._id, name: client.name }, (data: Notification[]) => {
+        console.log('Navbar: Received notifications on connect:', data);
         if (Array.isArray(data) && data.length > 0) {
+          // Clear existing to prevent duplicates on reconnect
+          dispatch(clearAllNotifications([]));
           dispatch(addNotifications(data));
         }
       });
     };
 
     const handleNewNotification = (data: Notification) => {
+      console.log('Navbar: New notification received:', data);
       const notification: Notification = {
         ...data,
         type: 'info',
@@ -98,17 +104,16 @@ export const Navbar: React.FC = () => {
       console.log('Navbar: Socket disconnected');
     };
 
-    // Event listeners
     socket.on('connect', handleConnect);
     socket.on('notification', handleNewNotification);
     socket.on('disconnect', handleDisconnect);
 
-    // Register if already connected
     if (socket.connected) {
       console.log('Navbar: Already connected, registering...');
       socket.emit('register', { userId: client._id, name: client.name }, (data: Notification[]) => {
         console.log('Navbar: Already connected, received notifications:', data);
         if (Array.isArray(data) && data.length > 0) {
+          dispatch(clearAllNotifications([]));
           dispatch(addNotifications(data));
         }
       });
@@ -121,7 +126,6 @@ export const Navbar: React.FC = () => {
     };
   }, [client, dispatch]);
 
-  // Auto-hide notification toast
   useEffect(() => {
     if (showNotificationToast) {
       const timer = setTimeout(() => {
@@ -174,14 +178,80 @@ export const Navbar: React.FC = () => {
 
   const handleMarkAsRead = (notificationId: string) => {
     console.log('Navbar: Marking notification as read:', notificationId);
-    // Update the notification locally by dispatching an updated version
-    const notification = notifications.find(n => n._id === notificationId);
-    if (notification) {
-      const updatedNotification = { ...notification, read: true };
-      dispatch(addSingleNotification(updatedNotification));
+    
+    // Validate notificationId
+    if (!notificationId || notificationId.trim() === '') {
+      console.error('Invalid notification ID for marking as read');
+      return;
     }
-    // Send to server
+
+    // Emit socket event
     socket.emit('markNotificationAsRead', { notificationId });
+    
+    // Call API mutation
+    readSingleNotification.mutate(notificationId, {
+      onSuccess: (updatedNotification) => {
+        console.log('Notification marked as read successfully via API');
+        // Update Redux with the response from the API if available
+        if (updatedNotification) {
+          dispatch(addSingleNotification(updatedNotification));
+        }
+      },
+      onError: (error) => {
+        console.error('Error marking notification as read:', error);
+        toast.error('Failed to mark notification as read', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      },
+    });
+  };
+
+  const handleDeleteNotification = (notificationId: string) => {
+    console.log('Navbar: Deleting notification:', notificationId);
+    
+    // Validate notificationId
+    if (!notificationId || notificationId.trim() === '') {
+      console.error('Invalid notification ID for deletion');
+      return;
+    }
+
+    // Remove from Redux store immediately for optimistic UI update
+    dispatch(removeNotification(notificationId));
+    
+    // Emit socket event to delete on server
+    socket.emit('deleteNotification', { notificationId });
+    
+    // Show success toast
+    toast.success('Notification deleted', {
+      position: "top-right",
+      autoClose: 2000,
+    });
+  };
+
+  const handleClearAllNotifications = () => {
+    if (!client?._id) {
+      console.error('No client ID found');
+      return;
+    }
+
+    deleteAllNotifications.mutate(client._id, {
+      onSuccess: () => {
+        console.log('All notifications deleted successfully');
+        dispatch(clearAllNotifications([]));
+        toast.success('All notifications cleared', {
+          position: "top-right",
+          autoClose: 2000,
+        });
+      },
+      onError: (error) => {
+        console.error('Error deleting all notifications:', error);
+        toast.error('Failed to clear notifications', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      },
+    });
   };
 
   const handleSelectNotification = (notification: Notification) => {
@@ -201,13 +271,13 @@ export const Navbar: React.FC = () => {
       setIsLoggingOut(true);
       const toastId = toast.loading("Logging out...");
       
-      // Disconnect socket before logout
       if (socket.connected) {
         socket.disconnect();
       }
       
       dispatch(removeClient());
       dispatch(removeToken());
+      dispatch(clearAllNotifications([]));
       localStorage.removeItem('clientId');
       
       toast.update(toastId, {
@@ -255,7 +325,7 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
-        {/* Toast notification for new notifications */}
+        
         {showNotificationToast && newNotification && (
           <div className="fixed top-20 right-4 z-50">
             <NotificationDropdown
@@ -263,6 +333,7 @@ export const Navbar: React.FC = () => {
               onMarkAsRead={handleMarkAsRead}
               onSelectNotification={handleSelectNotification}
               onViewAllNotifications={handleViewAllNotifications}
+              onDeleteNotification={handleDeleteNotification}
               isToast
               onClose={() => setShowNotificationToast(false)}
             />
@@ -332,6 +403,8 @@ export const Navbar: React.FC = () => {
                 onMarkAsRead={handleMarkAsRead}
                 onSelectNotification={handleSelectNotification}
                 onViewAllNotifications={handleViewAllNotifications}
+                onDeleteNotification={handleDeleteNotification}
+                onClearAllNotifications={handleClearAllNotifications}
               />
             )}
 
@@ -351,10 +424,7 @@ export const Navbar: React.FC = () => {
                     <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-yellow-800 hover:bg-yellow-200" onClick={handleMyTicketsClick}>
-                    <Ticket className="w-4 h-4 mr-2" />
-                    My Tickets
-                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator className="bg-yellow-200" />
                   <DropdownMenuItem
                     className="text-yellow-800 hover:bg-yellow-200"
@@ -465,7 +535,18 @@ export const Navbar: React.FC = () => {
                       onMarkAsRead={handleMarkAsRead}
                       onSelectNotification={handleSelectNotification}
                       onViewAllNotifications={handleViewAllNotifications}
+                      onDeleteNotification={handleDeleteNotification}
+                      onClearAllNotifications={handleClearAllNotifications}
                     />
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleClearAllNotifications}
+                        disabled={deleteAllNotifications.isPending}
+                        className="block py-1 text-left w-full text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        {deleteAllNotifications.isPending ? 'Clearing...' : 'Clear All Notifications'}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -1,5 +1,5 @@
-import { BookingsInClientEntity } from "../../../../entities/bookingsInClientEntity"
+import { BookingsInClientDTO } from "../../../../dto/bookings/bookingsInClientDTO"
 
 export interface IshowBookingsInClientUseCase {
-    findBookings(clientId: string, pageNo: number): Promise<{ Bookings: BookingsInClientEntity[] | [], totalPages: number }>
+    findBookings(clientId: string, pageNo: number): Promise<{ bookings: BookingsInClientDTO[], totalPages: number }>
 }

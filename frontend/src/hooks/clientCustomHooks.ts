@@ -5,7 +5,8 @@ import {
   clientForgetPassword,changePasswordClient,updateProfileClient,findevents,findEventById,createTicket,confirmTicketAndPayment,searchEvents,
   findEventsNearToUser,findTicketAndEventDetailsClient,ticketCancel,findWalletOfClient,findEventsBasedOnCategory,clientFindCategory,searchEventsOnLocation,
   fetchVendorForCarousal,findVendorProfileWithSample,fetchServiceForClient,clientFindServiceOnCategoryBasis,searchService,fetchServiceDetailsWithVendor,createBooking,
-  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,addReview,showReviews,findTicketsByStatus
+  fetchBookingInClient,createBookingPayment,confirmBookingPayment,cancelBooking,loadChats,loadPreviousChat,addReview,showReviews,findTicketsByStatus,
+  singleNotificationRead,deleteAllNotificationsClient,deleteSingleNotificationClient
 
 } from "../services/ApiServiceClient";
 import { ReviewEntity } from "@/types/ReviewEntity";
@@ -440,3 +441,21 @@ export const useFindTicketsByStatus = (
   });
 };
 
+export const useReadSingleNotification = () => {
+  return useMutation({
+    mutationFn: (notificationId: string) =>
+      singleNotificationRead(notificationId),
+  });
+};
+export const useDeleteAllNotificationsClient = () => {
+  return useMutation({
+    mutationFn: (userId: string) => deleteAllNotificationsClient(userId),
+  });
+};
+
+export const useDeleteSingleNotificationsClient = () => {
+  return useMutation({
+    mutationFn: (notificationId: string) =>
+      deleteSingleNotificationClient(notificationId),
+  });
+};

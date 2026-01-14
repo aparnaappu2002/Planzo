@@ -1,5 +1,4 @@
-import { clientEntity } from "../../../../entities/clientEntity";
-
+import { ShowProfileClientResponseDTO } from "../../../../dto/showProfileClientDTO"
 export interface IshowProfileClientUseCase {
-    showProfile(clientId: string): Promise<clientEntity | null>
+    showProfile(clientId: string): Promise<ShowProfileClientResponseDTO>
 }

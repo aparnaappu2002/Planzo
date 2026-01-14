@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
-import { useFindAllEventsVendorSide } from '@/hooks/vendorCustomHooks';
+import { useFindAllEventsVendorSide, useSearchEventsVendor } from '@/hooks/vendorCustomHooks';
+import { useDebounce } from '@/hooks/useDebounce'; // Import debounce hook
 import { EventEntity } from '@/types/EventType';
 import { EventCard } from './EventCard';
 import { EventViewModal } from './EventViewModal';
@@ -25,7 +25,7 @@ const Events = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const queryClient = useQueryClient();
   
-  const [pageNo, setPageNo] = useState(1); // Updated to dynamic state
+  const [pageNo, setPageNo] = useState(1);
   const [localEvents, setLocalEvents] = useState<EventEntity[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventEntity | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventEntity | null>(null);
@@ -34,36 +34,58 @@ const Events = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const { data: apiResponse, isLoading, error, refetch } = useFindAllEventsVendorSide(vendorId || '', pageNo);
-  console.log("Data:",apiResponse)
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
+
+  // Use search hook when there's a debounced search term, otherwise use find all events
+  const { 
+    data: searchResponse, 
+    isLoading: isSearchLoading, 
+    error: searchError 
+  } = useSearchEventsVendor({
+    vendorId: vendorId || '',
+    searchTerm: debouncedSearchTerm,
+    pageNo
+  });
+
+
+  const { 
+    data: apiResponse, 
+    isLoading: isAllEventsLoading, 
+    error: allEventsError, 
+    refetch 
+  } = useFindAllEventsVendorSide(vendorId || '', pageNo);
+
+  // Determine which data source to use
+  const isSearchActive = debouncedSearchTerm.trim().length > 0;
+  const currentData = isSearchActive ? searchResponse : apiResponse;
+  const isLoading = isSearchActive ? isSearchLoading : isAllEventsLoading;
+  const error = isSearchActive ? searchError : allEventsError;
   
-  const events = localEvents.length > 0 ? localEvents : (apiResponse?.events || []);
-  const totalPages = apiResponse?.totalPages || 1; // Extract totalPages from API response
+  const events = localEvents.length > 0 ? localEvents : (currentData?.events || []);
+  const totalPages = currentData?.totalPages || 1;
 
   React.useEffect(() => {
-    if (apiResponse?.events && Array.isArray(apiResponse.events)) {
-      setLocalEvents(apiResponse.events);
+    if (currentData?.events && Array.isArray(currentData.events)) {
+      setLocalEvents(currentData.events);
     }
-  }, [apiResponse?.events]);
+  }, [currentData?.events]);
 
-  // DEBUG: Log when data changes
+  // Reset to page 1 when debounced search term changes
   React.useEffect(() => {
-  }, [events, pageNo, totalPages]);
+    setPageNo(1);
+  }, [debouncedSearchTerm]);
 
   const filteredEvents = React.useMemo(() => {
     if (!events || !Array.isArray(events)) return [];
 
     return events.filter(event => {
-      const matchesSearch = event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           event.category?.toLowerCase().includes(searchTerm.toLowerCase());
-      
       const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
       const matchesCategory = categoryFilter === 'all' || event.category === categoryFilter;
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesStatus && matchesCategory;
     });
-  }, [events, searchTerm, statusFilter, categoryFilter]);
+  }, [events, statusFilter, categoryFilter]);
 
   const stats = React.useMemo(() => {
     if (!events || !Array.isArray(events)) return { totalEvents: 0, totalRevenue: 0, totalTicketsSold: 0, averageAttendance: 0 };
@@ -96,7 +118,6 @@ const Events = () => {
   };
 
   const handleEventUpdated = async (updatedEvent: EventEntity) => {
-    
     try {
       // Update local state immediately for instant UI feedback
       setLocalEvents(prevEvents => {
@@ -106,31 +127,9 @@ const Events = () => {
         return updated;
       });
       
-      // Try to find and invalidate the correct query key
-      const possibleQueryKeys = [
-        ['findAllEventsVendorSide', vendorId, pageNo],
-        ['findAllEventsVendorSide', vendorId],
-        ['vendorEvents', vendorId, pageNo],
-        ['vendorEvents', vendorId],
-        ['events', 'vendor', vendorId],
-        ['events', vendorId, pageNo],
-        ['events', vendorId],
-        ['findAllEventsVendorSide'],
-        ['vendorEvents'],
-        ['events']
-      ];
-      
-      // Try invalidating each possible key
-      for (const queryKey of possibleQueryKeys) {
-        try {
-          await queryClient.invalidateQueries({ queryKey });
-        } catch (error) {
-          console.log('Failed to invalidate query key:', queryKey);
-        }
-      }
-      
-      // Force complete cache invalidation as backup
-      await queryClient.invalidateQueries();
+      // Invalidate both search and all events queries
+      await queryClient.invalidateQueries({ queryKey: ['events', 'search'] });
+      await queryClient.invalidateQueries({ queryKey: ['findAllEventsVendorSide'] });
       
       // Force immediate refetch
       const refetchResult = await refetch();
@@ -196,54 +195,19 @@ const Events = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8 space-y-8">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-card p-6 rounded-lg shadow-sm border border-border/50">
-            <div className="flex items-center gap-4">
-              <CalendarDays className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Events</p>
-                <p className="text-2xl font-bold">{stats.totalEvents}</p>
-              </div>
-            </div>
-          </div>
-          
-          
-        </div>
-
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-1/3">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search events..."
+              placeholder="Search events by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          <div className="flex gap-4 w-full md:w-auto">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border rounded-lg px-4 py-2 bg-background"
-            >
-              <option value="all">All Statuses</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-            </select>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="border rounded-lg px-4 py-2 bg-background"
-            >
-              <option value="all">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-          </div>
+          
+
         </div>
 
         {/* Events Grid */}

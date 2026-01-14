@@ -26,7 +26,7 @@ import { useDispatch } from "react-redux";
 import { removeAdminToken } from "@/redux/slices/admin/adminToken";
 
 const navigationItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "User Management", url: "/admin/users", icon: Users },
   { title: "Vendor Management", url: "/admin/vendors", icon: Users },
   { title: "Pending Vendors", url: "/admin/pending", icon: Users },

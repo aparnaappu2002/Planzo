@@ -26,4 +26,14 @@ export interface IeventRepository{
     findRecentEvents(vendorId: string): Promise<EventEntity[] | []>
     findTotalticketsSold(vendorId: string, datePeriod: Date | null): Promise<number>
     findAllEventsOfAVendor(vendorId: string): Promise<EventEntity[] | []>
+    searchEventsByName(
+        vendorId: string,
+        searchQuery: string,
+        pageNo: number
+    ): Promise<{
+        events: EventEntity[] | [];
+        totalPages: number;
+        totalResults: number;
+    }>;
+    
 }

@@ -241,4 +241,33 @@ async findEventByIdForTicketVerification(eventId: string): Promise<EventEntity |
     async findAllEventsOfAVendor(vendorId: string): Promise<EventEntity[] | []> {
         return await eventModal.find({ hostedBy: vendorId })
     }
+    async searchEventsByName(
+        vendorId: string,
+        searchQuery: string,
+        pageNo: number
+    ): Promise<{
+        events: EventEntity[] | [];
+        totalPages: number;
+        totalResults: number;
+    }> {
+        const limit = 10;
+        const skip = (pageNo - 1) * limit;
+        
+        const query: any = {
+            hostedBy: vendorId,
+            title: { $regex: searchQuery, $options: 'i' } 
+        };
+    
+        const totalResults = await eventModal.countDocuments(query);
+        const totalPages = Math.ceil(totalResults / limit);
+    
+        const events = await eventModal.find(query)
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 })
+            .lean();
+    
+        return { events, totalPages, totalResults };
+    }
+    
 }

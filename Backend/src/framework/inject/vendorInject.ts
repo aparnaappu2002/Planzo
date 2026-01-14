@@ -56,6 +56,8 @@ import { PdfGenerateVendorUseCase } from "../../useCases/vendor/dashboard/vendor
 import { VendorDashboardUseCase } from "../../useCases/vendor/dashboard/vendorDashboardUseCase";
 import { VendorDashboardController } from "../../adapters/controllers/vendor/dashboard/vendorDashboardController";
 import { PdfServiceVendor } from "../services/pdfServiceVendor";
+import { SearchServiceVendorUseCase } from "../../useCases/vendor/service/searchServiceVendorUseCase";
+import { SearchEventsVendorUseCase } from "../../useCases/vendor/event/searchEventsVendorUseCase";
 
 
 const EmailService  = new emailService()
@@ -95,7 +97,8 @@ const eventRepository = new EventRepository()
 const eventCreationUseCase = new EventCreationUseCase(eventRepository)
 const findAllEventsUseCase = new FindAllEventsVendorUseCase(eventRepository)
 const updateEventUseCase = new UpdateEventUseCase(eventRepository)
-export const injectedEventController = new EventController(eventCreationUseCase,findAllEventsUseCase,updateEventUseCase)
+const searchEventsVendorUseCase=new SearchEventsVendorUseCase(eventRepository)
+export const injectedEventController = new EventController(eventCreationUseCase,findAllEventsUseCase,updateEventUseCase,searchEventsVendorUseCase)
 
 //wallet
 const walletRepository=new WalletRepository()
@@ -125,7 +128,8 @@ const createServiceUseCase=new CreateServiceUseCase(serviceRepository)
 const editServiceUseCase=new EditServiceUseCase(serviceRepository)
 const changeStatusServiceUseCase=new ChangeStatusServiceUseCase(serviceRepository)
 const findServiceUseCase=new FindServiceUseCase(serviceRepository)
-export const injectedServiceVendorControllerUseCase=new ServiceVendorController(findCategoryForCreatingService,createServiceUseCase,editServiceUseCase,changeStatusServiceUseCase,findServiceUseCase)
+const searchServiceVendorUseCase=new SearchServiceVendorUseCase(serviceRepository)
+export const injectedServiceVendorControllerUseCase=new ServiceVendorController(findCategoryForCreatingService,createServiceUseCase,editServiceUseCase,changeStatusServiceUseCase,findServiceUseCase,searchServiceVendorUseCase)
 
 //bookings
 const bookingRepository=new BookingRepository()

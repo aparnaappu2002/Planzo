@@ -1,5 +1,5 @@
-import { EventEntity } from "../../../../entities/event/eventEntity";
+import { EventResponseDTO } from "../../../../dto/event/eventResponseDTO";
 
 export interface IfindEventsNearToClientUseCase {
-    findEventsNearToClient(latitude: number, longitude: number,pageNo:number,range:number): Promise<{ events: EventEntity[] | [], totalPages: number }>
+    findEventsNearToClient(latitude: number, longitude: number,pageNo:number,range:number): Promise<{ events: EventResponseDTO[] | [], totalPages: number }>
 }

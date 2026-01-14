@@ -12,7 +12,7 @@ export class ServiceRepository implements IserviceRepository {
         return await serviceModal.create(service)
     }
     async findServiceOfAVendor(vendorId: string, pageNo: number): Promise<{ Services: ServiceEntity[] | [], totalPages: number }> {
-        const limit = 1
+        const limit = 3
         const page = Math.max(pageNo, 1)
         const skip = (page - 1) * limit
         const Services = await serviceModal.find({ vendorId }).sort({createdAt:-1}).skip(skip).limit(limit)
@@ -103,5 +103,39 @@ export class ServiceRepository implements IserviceRepository {
         const regex = new RegExp(query || '', 'i');
         return await serviceModal.find({ serviceTitle: { $regex: regex }, status: 'active' }).select('_id serviceTitle ')
     }
+    async searchServiceOfAVendor(
+        vendorId: string, 
+        searchTerm: string, 
+        pageNo: number
+    ): Promise<{ Services: ServiceEntity[] | []; totalPages: number; }> {
+        const limit = 10; 
+        const skip = (pageNo - 1) * limit;
+        
+        const searchQuery = {
+            vendorId,
+            $or: [
+                { serviceTitle: { $regex: searchTerm, $options: 'i' } },
+                { serviceDescription: { $regex: searchTerm, $options: 'i' } },
+                { serviceDuration: { $regex: searchTerm, $options: 'i' } }
+            ]
+        };
+        
+        const totalCount = await serviceModal.countDocuments(searchQuery);
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        const Services = await serviceModal
+            .find(searchQuery)
+            .populate('categoryId', 'title') 
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 }) 
+            .lean();
+        
+        return { 
+            Services: Services as ServiceEntity[], 
+            totalPages 
+        };
+    }
+
 }
 

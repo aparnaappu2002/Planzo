@@ -11,4 +11,13 @@ export interface IserviceRepository {
     showServiceDataInBookingPage(serviceId: string): Promise<ServiceWithVendorEntity | null>
     findServiceByCategory(categoryId: string | null, pageNo: number, sortBy: string): Promise<{ Services: ServiceEntity[] | [], totalPages: number }>
     searchService(query: string): Promise<ServiceEntity[] | []>
+    searchServiceOfAVendor(
+        vendorId: string, 
+        searchTerm: string, 
+        pageNo: number
+    ): Promise<{ 
+        Services: ServiceEntity[] | []; 
+        totalPages: number; 
+    }>;
+
 }

@@ -7,8 +7,10 @@ import {
   useCreateServiceMutation, 
   useFetchServiceVendor, 
   useEditServiceVendor, 
-  useChangeStatusServiceVendor 
+  useChangeStatusServiceVendor,
+  useSearchServiceVendor 
 } from '@/hooks/vendorCustomHooks';
+import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'react-toastify';
 
 interface Service {
@@ -37,6 +39,7 @@ interface Category {
 const VendorServicesPage: React.FC = () => {
   const vendorId = useSelector((state: RootState) => state.vendorSlice.vendor?._id);
   const [pageNo, setPageNo] = useState<number>(1);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -45,17 +48,22 @@ const VendorServicesPage: React.FC = () => {
   const [confirmServiceId, setConfirmServiceId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'activate' | 'deactivate' | null>(null);
 
-  // Fetch services and categories
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   const { data: servicesData, isLoading: isLoadingServices, error: servicesError } = useFetchServiceVendor({ vendorId: vendorId ?? '', pageNo });
+  
+  const { data: searchData, isLoading: isLoadingSearch, error: searchError } = useSearchServiceVendor({
+    vendorId: vendorId ?? '',
+    searchTerm: debouncedSearchTerm,
+    pageNo
+  });
+
   const { data: categoriesData, isLoading: isLoadingCategories, error: categoriesError } = useFetchCategoryForServiceQuery();
   const createServiceMutation = useCreateServiceMutation();
   const editServiceMutation = useEditServiceVendor();
   const changeStatusMutation = useChangeStatusServiceVendor();
   const queryClient = useQueryClient();
 
-  
-
-  // Form state for creating/editing service
   const [formData, setFormData] = useState<Service>({
     serviceTitle: '',
     yearsOfExperience: 0,
@@ -69,7 +77,21 @@ const VendorServicesPage: React.FC = () => {
     categoryId: '',
   });
 
-  // Handle form input changes
+  const isSearching = debouncedSearchTerm.trim().length > 0;
+  const currentData = isSearching ? searchData : servicesData;
+  const currentLoading = isSearching ? isLoadingSearch : isLoadingServices;
+  const currentError = isSearching ? searchError : servicesError;
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setPageNo(1);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setPageNo(1);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -80,7 +102,6 @@ const VendorServicesPage: React.FC = () => {
     setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  // Open modal for creating or editing
   const openModal = (service?: Service) => {
     if (service) {
       setEditingService(service);
@@ -105,45 +126,21 @@ const VendorServicesPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Validate form data based on schema
   const validateForm = (data: Service): Record<string, string> => {
     const errors: Record<string, string> = {};
-
-    if (!data.serviceTitle.trim()) {
-      errors.serviceTitle = 'Service Title is required';
-    }
-    if (data.yearsOfExperience < 0) {
-      errors.yearsOfExperience = 'Years of Experience must be non-negative';
-    }
-    if (!data.serviceDescription.trim()) {
-      errors.serviceDescription = 'Service Description is required';
-    }
-    if (!data.cancellationPolicy.trim()) {
-      errors.cancellationPolicy = 'Cancellation Policy is required';
-    }
-    if (!data.termsAndCondition.trim()) {
-      errors.termsAndCondition = 'Terms and Conditions are required';
-    }
-    if (!data.serviceDuration.trim()) {
-      errors.serviceDuration = 'Service Duration is required';
-    }
-    if (data.servicePrice <= 0) {
-      errors.servicePrice = 'Service Price must be a positive number';
-    }
-    if (data.additionalHourFee <= 0) {
-      errors.additionalHourFee = 'Additional Hour Fee must be a positive number';
-    }
-    if (!data.categoryId) {
-      errors.categoryId = 'Please select a category';
-    }
-    if (!['active', 'blocked'].includes(data.status)) {
-      errors.status = 'Status must be either "active" or "blocked"';
-    }
-
+    if (!data.serviceTitle.trim()) errors.serviceTitle = 'Service Title is required';
+    if (data.yearsOfExperience < 0) errors.yearsOfExperience = 'Years of Experience must be non-negative';
+    if (!data.serviceDescription.trim()) errors.serviceDescription = 'Service Description is required';
+    if (!data.cancellationPolicy.trim()) errors.cancellationPolicy = 'Cancellation Policy is required';
+    if (!data.termsAndCondition.trim()) errors.termsAndCondition = 'Terms and Conditions are required';
+    if (!data.serviceDuration.trim()) errors.serviceDuration = 'Service Duration is required';
+    if (data.servicePrice <= 0) errors.servicePrice = 'Service Price must be a positive number';
+    if (data.additionalHourFee <= 0) errors.additionalHourFee = 'Additional Hour Fee must be a positive number';
+    if (!data.categoryId) errors.categoryId = 'Please select a category';
+    if (!['active', 'blocked'].includes(data.status)) errors.status = 'Status must be either "active" or "blocked"';
     return errors;
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vendorId) {
@@ -151,7 +148,6 @@ const VendorServicesPage: React.FC = () => {
       return;
     }
 
-    // Validate form data
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
@@ -167,9 +163,9 @@ const VendorServicesPage: React.FC = () => {
         await createServiceMutation.mutateAsync({ ...formData, vendorId });
         toast.success('Service created successfully');
       }
-      await queryClient.invalidateQueries({ 
-  queryKey: ['services', vendorId] 
-})
+      
+      await queryClient.invalidateQueries({ queryKey: ['services', vendorId] });
+      await queryClient.invalidateQueries({ queryKey: ['services', 'search', vendorId] });
 
       setIsModalOpen(false);
       setFormData({
@@ -201,25 +197,21 @@ const VendorServicesPage: React.FC = () => {
     }
   };
 
-  // Open confirmation modal before status change
   const openConfirmModal = (serviceId: string, action: 'activate' | 'deactivate') => {
     setConfirmServiceId(serviceId);
     setConfirmAction(action);
     setIsConfirmModalOpen(true);
   };
 
-  // Handle status change after confirmation
   const handleStatusChange = async () => {
     if (!confirmServiceId) return;
 
     try {
       await changeStatusMutation.mutateAsync(confirmServiceId);
       toast.success('Service status updated successfully');
-      await queryClient.invalidateQueries({ 
-  queryKey: ['services', vendorId] 
-})
-
-      console.log('Invalidated services query after status change');
+      
+      await queryClient.invalidateQueries({ queryKey: ['services', vendorId] });
+      await queryClient.invalidateQueries({ queryKey: ['services', 'search', vendorId] });
     } catch (err) {
       console.error('Error changing service status:', err);
       toast.error('Failed to update service status');
@@ -230,16 +222,12 @@ const VendorServicesPage: React.FC = () => {
     }
   };
 
-  // Safeguard for data, using correct case for Services
-  const services: Service[] = servicesData?.Services || [];
-  const totalPages: number = servicesData?.totalPages || 1;
+  const services: Service[] = currentData?.Services || [];
+  const totalPages: number = currentData?.totalPages || 1;
   const categories: Category[] = categoriesData?.categories || [];
 
-  
-
-  // Render main content
   const renderContent = () => {
-    if (servicesData === undefined) {
+    if (currentData === undefined) {
       return (
         <div className="flex justify-center items-center py-4">
           <div className="text-yellow-600 text-xl animate-pulse">Loading...</div>
@@ -247,7 +235,7 @@ const VendorServicesPage: React.FC = () => {
       );
     }
 
-    if (isLoadingServices) {
+    if (currentLoading) {
       return (
         <div className="flex justify-center items-center py-4">
           <div className="text-yellow-600 text-xl animate-pulse">Loading...</div>
@@ -255,16 +243,20 @@ const VendorServicesPage: React.FC = () => {
       );
     }
 
-    if (servicesError) {
+    if (currentError) {
       return (
         <div className="flex justify-center items-center py-4">
-          <div className="text-red-600 text-xl">Error: {servicesError.message || 'Failed to load services'}</div>
+          <div className="text-red-600 text-xl">Error: {currentError.message || 'Failed to load services'}</div>
         </div>
       );
     }
 
     if (services.length === 0) {
-      return <p className="text-gray-600 text-center py-4">No services available.</p>;
+      return (
+        <p className="text-gray-600 text-center py-4">
+          {isSearching ? `No services found matching "${searchTerm}"` : 'No services available.'}
+        </p>
+      );
     }
 
     return (
@@ -288,25 +280,15 @@ const VendorServicesPage: React.FC = () => {
                 <td className="p-4 text-gray-700">₹{service.servicePrice.toFixed(2)}</td>
                 <td className="p-4 text-gray-700">{service.serviceDuration}</td>
                 <td className="p-4 text-gray-700">
-                  <span
-                    className={`px-2 py-1 rounded-full text-sm ${
-                      service.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                    }`}
-                  >
+                  <span className={`px-2 py-1 rounded-full text-sm ${service.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                     {service.status}
                   </span>
                 </td>
                 <td className="p-4">
-                  <button
-                    onClick={() => openModal(service)}
-                    className="mr-2 px-3 py-1 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                  >
+                  <button onClick={() => openModal(service)} className="mr-2 px-3 py-1 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors">
                     Edit
                   </button>
-                  <button
-                    onClick={() => openConfirmModal(service._id!, service.status === 'active' ? 'deactivate' : 'activate')}
-                    className="px-3 py-1 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                  >
+                  <button onClick={() => openConfirmModal(service._id!, service.status === 'active' ? 'deactivate' : 'activate')} className="px-3 py-1 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors">
                     {service.status === 'active' ? 'Deactivate' : 'Activate'}
                   </button>
                 </td>
@@ -323,275 +305,112 @@ const VendorServicesPage: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-yellow-600">Vendor Services</h1>
-          <button
-            onClick={() => openModal()}
-            className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-            disabled={!vendorId}
-          >
+          <button onClick={() => openModal()} className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors" disabled={!vendorId}>
             Add New Service
           </button>
         </div>
 
-        {/* Render services table or loading/error/empty state */}
+        <div className="mb-6">
+          <div className="relative">
+            <input type="text" value={searchTerm} onChange={handleSearchChange} placeholder="Search services by title..." className="w-full p-3 pr-24 bg-white border-2 border-yellow-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-700" />
+            {searchTerm && (
+              <button onClick={clearSearch} className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors text-sm">
+                Clear
+              </button>
+            )}
+          </div>
+          {isSearching && (
+            <p className="text-sm text-gray-600 mt-2">
+              Searching for: <span className="font-semibold">"{debouncedSearchTerm}"</span>
+            </p>
+          )}
+        </div>
+
         {renderContent()}
 
-        {/* Pagination Controls */}
-        {!isLoadingServices && !servicesError && totalPages > 1 && (
+        {!currentLoading && !currentError && totalPages > 1 && (
           <div className="mt-8 flex justify-center gap-4">
-            <button
-              onClick={() => setPageNo((prev) => Math.max(prev - 1, 1))}
-              disabled={pageNo === 1}
-              className="px-4 py-2 bg-yellow-400 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-yellow-500 transition-colors"
-            >
+            <button onClick={() => setPageNo((prev) => Math.max(prev - 1, 1))} disabled={pageNo === 1} className="px-4 py-2 bg-yellow-400 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-yellow-500 transition-colors">
               Previous
             </button>
-            <span className="text-yellow-600 font-semibold">
-              Page {pageNo} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPageNo((prev) => Math.min(prev + 1, totalPages))}
-              disabled={pageNo === totalPages}
-              className="px-4 py-2 bg-yellow-400 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-yellow-500 transition-colors"
-            >
+            <span className="text-yellow-600 font-semibold">Page {pageNo} of {totalPages}</span>
+            <button onClick={() => setPageNo((prev) => Math.min(prev + 1, totalPages))} disabled={pageNo === totalPages} className="px-4 py-2 bg-yellow-400 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-yellow-500 transition-colors">
               Next
             </button>
           </div>
         )}
 
-        {/* Modal for Create/Edit Service */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-auto">
             <div className="relative bg-white rounded-lg p-8 w-full max-w-md mx-4 my-8 sm:mx-auto sm:my-12 border-2 border-yellow-400 max-h-[85vh] overflow-y-auto box-border">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl font-bold"
-                aria-label="Close modal"
-              >
+              <button type="button" onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl font-bold" aria-label="Close modal">
                 &times;
               </button>
-              <h2 className="text-2xl font-bold text-yellow-600 mb-6 pr-8">
-                {editingService ? 'Edit Service' : 'Create Service'}
-              </h2>
-              {errorMessage && (
-                <div className="mb-4 text-red-600 text-sm bg-red-100 p-3 rounded-lg">{errorMessage}</div>
-              )}
-              {categoriesError && (
-                <div className="mb-4 text-red-600 text-sm bg-red-100 p-3 rounded-lg">
-                  Failed to load categories: {categoriesError.message || 'Please try again.'}
-                </div>
-              )}
+              <h2 className="text-2xl font-bold text-yellow-600 mb-6 pr-8">{editingService ? 'Edit Service' : 'Create Service'}</h2>
+              {errorMessage && <div className="mb-4 text-red-600 text-sm bg-red-100 p-3 rounded-lg">{errorMessage}</div>}
+              {categoriesError && <div className="mb-4 text-red-600 text-sm bg-red-100 p-3 rounded-lg">Failed to load categories: {categoriesError.message || 'Please try again.'}</div>}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="categoryId" className="block text-gray-700 font-medium mb-2">
-                    Category
-                  </label>
-                  <select
-                    id="categoryId"
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border appearance-none ${
-                      fieldErrors.categoryId ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    required
-                    disabled={isLoadingCategories || !!categoriesError}
-                  >
+                  <label htmlFor="categoryId" className="block text-gray-700 font-medium mb-2">Category</label>
+                  <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border appearance-none ${fieldErrors.categoryId ? 'border-red-500' : 'border-yellow-400'}`} required disabled={isLoadingCategories || !!categoriesError}>
                     {isLoadingCategories ? (
-                      <option value="" disabled className="bg-yellow-50 text-gray-700">
-                        Loading categories...
-                      </option>
+                      <option value="" disabled className="bg-yellow-50 text-gray-700">Loading categories...</option>
                     ) : categories.length === 0 && !categoriesError ? (
-                      <option value="" disabled className="bg-yellow-50 text-gray-700">
-                        No categories available
-                      </option>
+                      <option value="" disabled className="bg-yellow-50 text-gray-700">No categories available</option>
                     ) : (
                       <>
-                        <option value="" disabled className="bg-yellow-50 text-gray-700">
-                          Select a category
-                        </option>
+                        <option value="" disabled className="bg-yellow-50 text-gray-700">Select a category</option>
                         {categories.map((category) => (
-                          <option key={category._id} value={category._id} className="bg-yellow-50 text-gray-700">
-                            {category.title}
-                          </option>
+                          <option key={category._id} value={category._id} className="bg-yellow-50 text-gray-700">{category.title}</option>
                         ))}
                       </>
                     )}
                   </select>
-                  {fieldErrors.categoryId && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.categoryId}</div>
-                  )}
+                  {fieldErrors.categoryId && <div className="text-red-600 text-sm mt-1">{fieldErrors.categoryId}</div>}
                 </div>
                 <div>
-                  <label htmlFor="serviceTitle" className="block text-gray-700 font-medium mb-2">
-                    Service Title
-                  </label>
-                  <input
-                    id="serviceTitle"
-                    type="text"
-                    name="serviceTitle"
-                    value={formData.serviceTitle}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.serviceTitle ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    required
-                  />
-                  {fieldErrors.serviceTitle && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.serviceTitle}</div>
-                  )}
+                  <label htmlFor="serviceTitle" className="block text-gray-700 font-medium mb-2">Service Title</label>
+                  <input id="serviceTitle" type="text" name="serviceTitle" value={formData.serviceTitle} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.serviceTitle ? 'border-red-500' : 'border-yellow-400'}`} required />
+                  {fieldErrors.serviceTitle && <div className="text-red-600 text-sm mt-1">{fieldErrors.serviceTitle}</div>}
                 </div>
                 <div>
-                  <label htmlFor="yearsOfExperience" className="block text-gray-700 font-medium mb-2">
-                    Years of Experience
-                  </label>
-                  <input
-                    id="yearsOfExperience"
-                    type="number"
-                    name="yearsOfExperience"
-                    value={formData.yearsOfExperience}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.yearsOfExperience ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    required
-                    min="0"
-                  />
-                  {fieldErrors.yearsOfExperience && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.yearsOfExperience}</div>
-                  )}
+                  <label htmlFor="yearsOfExperience" className="block text-gray-700 font-medium mb-2">Years of Experience</label>
+                  <input id="yearsOfExperience" type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.yearsOfExperience ? 'border-red-500' : 'border-yellow-400'}`} required min="0" />
+                  {fieldErrors.yearsOfExperience && <div className="text-red-600 text-sm mt-1">{fieldErrors.yearsOfExperience}</div>}
                 </div>
                 <div>
-                  <label htmlFor="serviceDescription" className="block text-gray-700 font-medium mb-2">
-                    Service Description
-                  </label>
-                  <textarea
-                    id="serviceDescription"
-                    name="serviceDescription"
-                    value={formData.serviceDescription}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.serviceDescription ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    rows={3}
-                    required
-                  />
-                  {fieldErrors.serviceDescription && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.serviceDescription}</div>
-                  )}
+                  <label htmlFor="serviceDescription" className="block text-gray-700 font-medium mb-2">Service Description</label>
+                  <textarea id="serviceDescription" name="serviceDescription" value={formData.serviceDescription} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.serviceDescription ? 'border-red-500' : 'border-yellow-400'}`} rows={3} required />
+                  {fieldErrors.serviceDescription && <div className="text-red-600 text-sm mt-1">{fieldErrors.serviceDescription}</div>}
                 </div>
                 <div>
-                  <label htmlFor="cancellationPolicy" className="block text-gray-700 font-medium mb-2">
-                    Cancellation Policy
-                  </label>
-                  <textarea
-                    id="cancellationPolicy"
-                    name="cancellationPolicy"
-                    value={formData.cancellationPolicy}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.cancellationPolicy ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    rows={2}
-                    required
-                  />
-                  {fieldErrors.cancellationPolicy && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.cancellationPolicy}</div>
-                  )}
+                  <label htmlFor="cancellationPolicy" className="block text-gray-700 font-medium mb-2">Cancellation Policy</label>
+                  <textarea id="cancellationPolicy" name="cancellationPolicy" value={formData.cancellationPolicy} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.cancellationPolicy ? 'border-red-500' : 'border-yellow-400'}`} rows={2} required />
+                  {fieldErrors.cancellationPolicy && <div className="text-red-600 text-sm mt-1">{fieldErrors.cancellationPolicy}</div>}
                 </div>
                 <div>
-                  <label htmlFor="termsAndCondition" className="block text-gray-700 font-medium mb-2">
-                    Terms and Conditions
-                  </label>
-                  <textarea
-                    id="termsAndCondition"
-                    name="termsAndCondition"
-                    value={formData.termsAndCondition}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.termsAndCondition ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    rows={2}
-                    required
-                  />
-                  {fieldErrors.termsAndCondition && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.termsAndCondition}</div>
-                  )}
+                  <label htmlFor="termsAndCondition" className="block text-gray-700 font-medium mb-2">Terms and Conditions</label>
+                  <textarea id="termsAndCondition" name="termsAndCondition" value={formData.termsAndCondition} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.termsAndCondition ? 'border-red-500' : 'border-yellow-400'}`} rows={2} required />
+                  {fieldErrors.termsAndCondition && <div className="text-red-600 text-sm mt-1">{fieldErrors.termsAndCondition}</div>}
                 </div>
                 <div>
-                  <label htmlFor="serviceDuration" className="block text-gray-700 font-medium mb-2">
-                    Service Duration
-                  </label>
-                  <input
-                    id="serviceDuration"
-                    type="text"
-                    name="serviceDuration"
-                    value={formData.serviceDuration}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.serviceDuration ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    required
-                  />
-                  {fieldErrors.serviceDuration && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.serviceDuration}</div>
-                  )}
+                  <label htmlFor="serviceDuration" className="block text-gray-700 font-medium mb-2">Service Duration</label>
+                  <input id="serviceDuration" type="text" name="serviceDuration" value={formData.serviceDuration} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.serviceDuration ? 'border-red-500' : 'border-yellow-400'}`} required />
+                  {fieldErrors.serviceDuration && <div className="text-red-600 text-sm mt-1">{fieldErrors.serviceDuration}</div>}
                 </div>
                 <div>
-                  <label htmlFor="servicePrice" className="block text-gray-700 font-medium mb-2">
-                    Service Price (₹)
-                  </label>
-                  <input
-                    id="servicePrice"
-                    type="number"
-                    name="servicePrice"
-                    value={formData.servicePrice}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.servicePrice ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    required
-                    min="0.01"
-                    step="0.01"
-                  />
-                  {fieldErrors.servicePrice && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.servicePrice}</div>
-                  )}
+                  <label htmlFor="servicePrice" className="block text-gray-700 font-medium mb-2">Service Price (₹)</label>
+                  <input id="servicePrice" type="number" name="servicePrice" value={formData.servicePrice} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.servicePrice ? 'border-red-500' : 'border-yellow-400'}`} required min="0.01" step="0.01" />
+                  {fieldErrors.servicePrice && <div className="text-red-600 text-sm mt-1">{fieldErrors.servicePrice}</div>}
                 </div>
                 <div>
-                  <label htmlFor="additionalHourFee" className="block text-gray-700 font-medium mb-2">
-                    Additional Hour Fee (₹)
-                  </label>
-                  <input
-                    id="additionalHourFee"
-                    type="number"
-                    name="additionalHourFee"
-                    value={formData.additionalHourFee}
-                    onChange={handleInputChange}
-                    className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${
-                      fieldErrors.additionalHourFee ? 'border-red-500' : 'border-yellow-400'
-                    }`}
-                    required
-                    min="0.01"
-                    step="0.01"
-                  />
-                  {fieldErrors.additionalHourFee && (
-                    <div className="text-red-600 text-sm mt-1">{fieldErrors.additionalHourFee}</div>
-                  )}
+                  <label htmlFor="additionalHourFee" className="block text-gray-700 font-medium mb-2">Additional Hour Fee (₹)</label>
+                  <input id="additionalHourFee" type="number" name="additionalHourFee" value={formData.additionalHourFee} onChange={handleInputChange} className={`w-full p-3 bg-yellow-50 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 box-border ${fieldErrors.additionalHourFee ? 'border-red-500' : 'border-yellow-400'}`} required min="0.01" step="0.01" />
+                  {fieldErrors.additionalHourFee && <div className="text-red-600 text-sm mt-1">{fieldErrors.additionalHourFee}</div>}
                 </div>
                 <div className="flex justify-end gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                    disabled={createServiceMutation.isPending || editServiceMutation.isPending || !vendorId || isLoadingCategories}
-                  >
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors" disabled={createServiceMutation.isPending || editServiceMutation.isPending || !vendorId || isLoadingCategories}>
                     {editingService ? 'Update' : 'Create'}
                   </button>
                 </div>
@@ -600,40 +419,17 @@ const VendorServicesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Confirmation Modal for Status Change */}
         {isConfirmModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className="relative bg-white rounded-lg p-6 w-full max-w-sm mx-4 border-2 border-yellow-400">
-              <button
-                type="button"
-                onClick={() => setIsConfirmModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl font-bold"
-                aria-label="Close confirmation modal"
-              >
+              <button type="button" onClick={() => setIsConfirmModalOpen(false)} className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl font-bold" aria-label="Close confirmation modal">
                 &times;
               </button>
-              <h2 className="text-xl font-bold text-yellow-600 mb-4">
-                Confirm {confirmAction === 'activate' ? 'Activation' : 'Deactivation'}
-              </h2>
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to {confirmAction === 'activate' ? 'activate' : 'deactivate'} this service?
-              </p>
+              <h2 className="text-xl font-bold text-yellow-600 mb-4">Confirm {confirmAction === 'activate' ? 'Activation' : 'Deactivation'}</h2>
+              <p className="text-gray-700 mb-6">Are you sure you want to {confirmAction === 'activate' ? 'activate' : 'deactivate'} this service?</p>
               <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={() => setIsConfirmModalOpen(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStatusChange}
-                  className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                  disabled={changeStatusMutation.isPending}
-                >
-                  Confirm
-                </button>
+                <button type="button" onClick={() => setIsConfirmModalOpen(false)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                <button type="button" onClick={handleStatusChange} className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors" disabled={changeStatusMutation.isPending}>Confirm</button>
               </div>
             </div>
           </div>

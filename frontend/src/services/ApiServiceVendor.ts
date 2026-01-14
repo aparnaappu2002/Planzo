@@ -7,6 +7,7 @@ import { WorkSamplesEntity } from '@/types/WorkSampleEntity'
 import { Period } from '@/types/DatePeriodType'
 
 
+
 interface Vendor{
     name:string,
     email:string,
@@ -166,6 +167,23 @@ export const updateEvent = async (eventId: string, update: EventUpdateEntity) =>
         throw new Error('Error while updating event')
     }
 }
+
+export const searchEventsVendor = async (vendorId: string, searchTerm: string, pageNo: number) => {
+    try {
+        const response = await axios.get('/searchevents', {
+            params: { 
+                vendorId, 
+                searchQuery: searchTerm, 
+                pageNo 
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log('error while searching events', error);
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while searching events');
+    }
+};
+
 
 export const findWalletDetailsVendor = async (userId: string, pageNo: number) => {
     try {
@@ -422,5 +440,51 @@ export const pdfDownloadVendor = async (vendorId: string) => {
     } catch (error) {
         console.log('error while downloading pdf for the vendor', error)
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while downloading pdf for the vendor')
+    }
+    
+}
+
+export const searchServiceVendor = async (vendorId: string, searchTerm: string, pageNo: number) => {
+    try {
+        const response = await axios.get('/searchservice', {
+            params: { 
+                vendorId, 
+                searchTerm, 
+                pageNo 
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log('error while searching service', error);
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while searching service');
+    }
+};
+
+export const singleNotificationReadVendor = async (notificationId: string) => {
+    try {
+        const response = await axios.patch('/readNotification', { notificationId })
+        return response.data
+    } catch (error) {
+        console.log('error while notification marking as read', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while notification marking as read')
+    }
+}
+export const deleteAllNotificationsVendor = async (userId: string) => {
+    try {
+        const response = await axios.delete('/deleteAllNotifications', { params: { userId } })
+        return response.data
+    } catch (error) {
+        console.log('error while deleting all notifications', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while deleting all notifications')
+    }
+}
+
+export const deleteSingleNotificationVendor = async (notificationId: string) => {
+    try {
+        const response = await axios.delete('/deleteSingleNotification', { params: { notificationId } })
+        return response.data
+    } catch (error) {
+        console.log('error while deleting single notifications', error)
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while deleting single notification')
     }
 }
