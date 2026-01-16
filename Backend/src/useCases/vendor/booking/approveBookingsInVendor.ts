@@ -1,4 +1,3 @@
-import { BookingEntity } from "../../../domain/entities/bookingEntity";
 import { IbookingRepository } from "../../../domain/interfaces/repositoryInterfaces/booking/IbookingRepository";
 import { IapproveBookingVendorUseCase } from "../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IapproveBookingVendorUseCase";
 

@@ -18,7 +18,6 @@ export class ConfirmBookingPaymentUseCase implements IconfirmBookingPaymentUseCa
         this.paymentDatabase = paymentDatabase
         this.walletDatabase = walletDatabase
         this.transactionDatabase = transactionDatabase
-        this.paymentDatabase = paymentDatabase
         this.paymentService = paymentService
     }
     async confirmBookingPayment(booking: BookingEntity, paymentIntentId: string): Promise<boolean> {
@@ -27,9 +26,7 @@ export class ConfirmBookingPaymentUseCase implements IconfirmBookingPaymentUseCa
         if (!dateAndServicePrice) {
             throw new Error("Booking not found or service unavailable");
         }
-        console.log("Bookings",booking)
-        const clientId = booking.clientId || (booking as any).client?._id;
-    const vendorId = booking.vendorId || (booking as any).vendor?._id;
+        
 
     
 
@@ -38,7 +35,7 @@ export class ConfirmBookingPaymentUseCase implements IconfirmBookingPaymentUseCa
         if (!paymentTransaction) throw new Error("No transaction found in these users")
         const confirmBooking = await this.paymentService.confirmPayment(paymentIntentId)
         if (!confirmBooking) {
-            const updateBooking = await this.bookingDatabase.updateBookingPaymentStatus(booking._id!, 'Failed')
+            await this.bookingDatabase.updateBookingPaymentStatus(booking._id!, 'Failed')
             throw new Error("Payment failed")
         }
         const totalAmount = date.length * servicePrice

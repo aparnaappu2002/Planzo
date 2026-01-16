@@ -22,7 +22,7 @@ export class SendOtpVendorUseCase implements IsendOtpVendorInterface{
         const otp=await this.otpService.generateOtp()
         await this.otpService.storeOtp(email,otp)
         const {subject,html}=EmailComposer.getOtpEmail(otp)
-        const sendEmail=this.emailService.sendEmail(email,subject,html)
+        await this.emailService.sendEmail(email,subject,html)
 
     }
     async verifyOtp(email: string, enteredOtp: string): Promise<boolean> {
@@ -34,7 +34,7 @@ export class SendOtpVendorUseCase implements IsendOtpVendorInterface{
         const otp=await this.otpService.generateOtp()
         await this.otpService.storeOtp(email,otp)
         const {subject,html}=EmailComposer.getOtpEmail(otp)
-        const sendEmail=this.emailService.sendEmail(email,subject,html)
+        await this.emailService.sendEmail(email,subject,html)
         
     }
 }

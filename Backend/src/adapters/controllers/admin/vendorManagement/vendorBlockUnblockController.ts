@@ -22,7 +22,7 @@ export class VendorBlockUnblockController{
         try{
             const {vendorId} = req.body
             const blockVendor = await this.vendorBlockUseCase.blockVendor(vendorId)
-            const changeStatusRedis= await this.redisService.set(`user:vendor:${vendorId}`,15 * 60,JSON.stringify({status:'block',vendorStatus:'approved'}))
+             await this.redisService.set(`user:vendor:${vendorId}`,15 * 60,JSON.stringify({status:'block',vendorStatus:'approved'}))
             if(blockVendor) res.status(HttpStatus.OK).json({
                 message:Messages.VENDOR_BLOCKED
             })
@@ -38,7 +38,7 @@ export class VendorBlockUnblockController{
         try{
             const {vendorId}=req.body
             const unblockUser = await this.vendorUnblockUseCase.vendorUnblock(vendorId)
-            const changeStatusRedis=  await this.redisService.set(`user:vendor:${vendorId}`,15*60,JSON.stringify({status:'active',vendorStatus:'approved'}))
+             await this.redisService.set(`user:vendor:${vendorId}`,15*60,JSON.stringify({status:'active',vendorStatus:'approved'}))
             if(unblockUser) res.status(HttpStatus.OK).json({message:Messages.VENDOR_UNBLOCKED})
         }catch(error){
             console.log(Messages.VENDOR_UNBLOCK_ERROR, error)

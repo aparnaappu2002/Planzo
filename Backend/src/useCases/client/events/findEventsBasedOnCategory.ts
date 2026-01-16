@@ -1,4 +1,3 @@
-import { EventEntity } from "../../../domain/entities/event/eventEntity";
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IfindEventsBasedOnCategoryUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsBasedOnCategory";
 import { EventResponseDTO } from "../../../domain/dto/event/eventResponseDTO";

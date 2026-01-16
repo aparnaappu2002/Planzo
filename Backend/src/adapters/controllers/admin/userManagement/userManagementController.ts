@@ -26,7 +26,7 @@ export class UserManagementController{
         try{
             const {clientId}=req.body
             await this.clientBlockUseCase.blockClient(clientId)
-            const changeStatus = await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('block'))
+            await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('block'))
             res.status(HttpStatus.OK).json({message:Messages.CLIENT_BLOCKED})
         }catch(error){
             //console.log("Error while blocking user",error)
@@ -40,7 +40,7 @@ export class UserManagementController{
         try{
             const {clientId}=req.body
             await this.clientUnblockUseCase.unblockClient(clientId)
-            const changeStatus=await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('active'))
+            await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('active'))
             res.status(HttpStatus.OK).json({message:Messages.CLIENT_UNBLOCKED})
         }catch(error){
             //console.log('Error while unblocking client',error)

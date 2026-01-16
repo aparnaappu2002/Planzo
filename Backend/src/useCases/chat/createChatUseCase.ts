@@ -1,4 +1,3 @@
-import { ObjectId } from "mongoose";
 import { chatEntity } from "../../domain/entities/chat/chatEntity";
 import { IchatRepository } from "../../domain/interfaces/repositoryInterfaces/chat/IchatRepository";
 import { IcreateChatUseCase } from "../../domain/interfaces/useCaseInterfaces/chat/IcreateChatUseCase";

@@ -130,7 +130,7 @@ export class SocketIoController {
         const createdMessage = await this.createMessageUseCase.createMessage(
           message
         );
-        const updateLastMessage =
+        
           await this.updateLastMessageUseCase.udpateLastMessage(createdMessage);
 
         response(createdMessage);

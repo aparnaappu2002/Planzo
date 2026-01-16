@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { IeventRepository } from "../../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindEventsInAdminSideUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/eventManagement/IfindEventsInAdminSide";
 import { Messages } from "../../../../domain/enums/messages";

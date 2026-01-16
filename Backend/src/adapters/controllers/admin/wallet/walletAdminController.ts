@@ -19,7 +19,12 @@ export class FindAdminWalletDetailsController {
             const { userId, pageNo } = req.params
             const page = parseInt(pageNo, 10) || 1
             const wallet = await this.findWalletDetailsUseCase.findWallet(userId)
-            const { transactions, totalPages } = await this.findTransactionDetailsUseCase.findTransactions(wallet?._id!, page)
+            if (!wallet?._id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: Messages.WALLET_FETCH_ERROR });
+    return;
+}
+
+            const { transactions, totalPages } = await this.findTransactionDetailsUseCase.findTransactions(wallet._id, page)
             res.status(HttpStatus.OK).json({ message: Messages.WALLET_FETCHED, wallet, transactions, totalPages })
         } catch (error) {
             console.log('error while finding admin wallet details', error)
@@ -53,11 +58,12 @@ export class FindAdminWalletDetailsController {
             sortBy: sort
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in handleFindTransactionsByPaymentStatus:", error);
+        
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             message: Messages.TRANSACTION_FETCH_ERROR,
-            error: error.message || Messages.TRANSACTION_FETCH_ERROR
+            error:  Messages.TRANSACTION_FETCH_ERROR
         });
     }
     }

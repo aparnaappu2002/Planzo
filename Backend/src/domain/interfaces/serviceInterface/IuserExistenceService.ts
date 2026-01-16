@@ -1,3 +1,3 @@
 export interface IuserExistenceService{
-    emailExists(email:string):Promise<Boolean>
+    emailExists(email:string):Promise<boolean>
 }

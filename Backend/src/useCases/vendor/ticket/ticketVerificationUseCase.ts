@@ -25,11 +25,15 @@ export class TicketVerificationUseCase implements IticketVerificationUseCase {
         if (!eventDates.includes(today)) {
             throw new Error("This ticket is not valid for today's date");
         }
-        const checkInHistory = ticket.checkInHistory?.map(d => new Date(d).toISOString().slice(0, 10))
+        const checkInHistory = ticket.checkInHistory?.map(d => new Date(d).toISOString().slice(0, 10)) ?? []
         if (checkInHistory!.includes(today)) {
             throw new Error('Ticket already used for today');
         }
-        const updateCheckInHistory = await this.ticketDatabase.updateCheckInHistory(ticket._id?.toString()!, new Date(today))
+        if (!ticket._id) {
+  throw new Error('Ticket ID is missing')
+}
+
+        const updateCheckInHistory = await this.ticketDatabase.updateCheckInHistory(ticket._id.toString(), new Date(today))
         if (!updateCheckInHistory) throw new Error('Error while updating check in history for the ticket')
         const isLastDay = today === eventDates[eventDates.length - 1];
         if (isLastDay) {

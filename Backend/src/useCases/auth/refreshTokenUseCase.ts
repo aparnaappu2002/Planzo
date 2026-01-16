@@ -13,10 +13,10 @@ export class RefreshTokenUseCase implements IrefreshTokenUseCase {
         clientRepository: IClientDatabaseRepository,
         vendorRepository: IvendorDatabaseRepositoryInterface,
         adminRepository: IadminRepository) {
-        this.adminRepository = adminRepository,
-            this.clientRepository = clientRepository,
-            this.jwtService = jwtService,
-            this.vendorRepository = vendorRepository
+        this.adminRepository = adminRepository;
+            this.clientRepository = clientRepository;
+            this.jwtService = jwtService;
+            this.vendorRepository = vendorRepository;
     }
     async execute(token: string): Promise<string> {
         const payload = this.jwtService.verifyRefreshToken(token, process.env.REFRESHTOKEN_SECRET_KEY as string)

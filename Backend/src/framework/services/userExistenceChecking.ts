@@ -8,7 +8,7 @@ export class userExistence implements IuserExistenceService{
         this.clientRepository=clientRepository
         this.vendorRepository=vendorRepository
     }
-    async emailExists(email: string): Promise<Boolean> {
+    async emailExists(email: string): Promise<boolean> {
         const [client,vendor]=await Promise.all([
             this.clientRepository.findByEmail(email),
             this.vendorRepository.findByEmaill(email)

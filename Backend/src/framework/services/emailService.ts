@@ -1,7 +1,6 @@
 import { IemailService } from "../../domain/interfaces/serviceInterface/IemailService";
 import nodemailer from 'nodemailer'
-import {otpEmailTemplate} from "../../templates/otpTemplate"
-import { resetPasswordEmailTemplate } from "../../templates/resetPasswordEmailTemplate";
+
 export class emailService implements IemailService{
     private transporter:nodemailer.Transporter
     constructor(){

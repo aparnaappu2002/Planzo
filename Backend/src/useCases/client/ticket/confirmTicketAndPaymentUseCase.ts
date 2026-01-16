@@ -1,6 +1,5 @@
 import { ObjectId } from "mongoose";
 import { TicketEntity } from "../../../domain/entities/ticket/ticketEntity";
-import { TicketFromFrontend } from "../../../domain/entities/ticket/ticketFromFrontend";
 import { TransactionsEntity } from "../../../domain/entities/wallet/transactionEntity";
 import { WalletEntity } from "../../../domain/entities/wallet/walletEntity";
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";

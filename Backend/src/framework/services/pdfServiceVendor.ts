@@ -4,7 +4,7 @@ import { VendorPdfReportInput } from "../../domain/entities/vendorPdfReportInput
 
 export class PdfServiceVendor implements IpdfServiceVendor {
   async generateVendorReportPdf(data: VendorPdfReportInput): Promise<Buffer> {
-    return new Promise((resolve, _reject) => {
+    return new Promise((resolve) => {
       const doc = new PDFDocument({ margin: 50 });
       const buffers: Uint8Array[] = [];
 
@@ -14,11 +14,7 @@ export class PdfServiceVendor implements IpdfServiceVendor {
         resolve(pdfData);
       });
 
-      // Debug logging
-      console.log('=== PDF GENERATION DEBUG ===');
-      console.log('Events count:', data.events?.length || 0);
-      console.log('Bookings count:', data.bookings?.length || 0);
-      console.log('===========================');
+      
 
       // Main Title
       doc

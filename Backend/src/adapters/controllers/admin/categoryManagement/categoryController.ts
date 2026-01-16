@@ -48,7 +48,7 @@ export class CategoryController {
         try {
             const { categoryId, updates } = req.body
             //console.log(categoryId)
-            const updateCategory = await this.updateCategoryUseCase.updateCategory(categoryId, updates)
+             await this.updateCategoryUseCase.updateCategory(categoryId, updates)
             res.status(HttpStatus.OK).json({ message: Messages.CATEGORY_UPDATED})
         } catch (error) {
             //console.log('error while changning titlle and image of category', error)

@@ -7,7 +7,6 @@ import { clientAuthenticationController,injectedClientLoginController,
  import { injectedVerifyTokenAndCheckBlacklistMiddleware,injectedTokenExpiryValidationChecking,injectedClientStatusCheckingMiddleware } from "../../inject/serviceInject";
  import { injectedLoadPreviousChatController,injectedFindChatsOfUserController, injectedNotificationController } from "../../inject/chatInject";
  import { checkRoleBaseMiddleware } from "../../../adapters/middlewares/checkRoleBaseMiddleware";
-import { injectedEventController } from "../../inject/vendorInject";
 
 export class clientRoute{
     public clientRoute:Router

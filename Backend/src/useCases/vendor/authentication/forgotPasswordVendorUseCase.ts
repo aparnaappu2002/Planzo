@@ -1,4 +1,3 @@
-import { VendorEntity } from "../../../domain/entities/vendorEntitty";
 import { IvendorDatabaseRepositoryInterface } from "../../../domain/interfaces/repositoryInterfaces/vendor/vendorDatabaseRepository";
 import { IjwtInterface } from "../../../domain/interfaces/serviceInterface/IjwtService";
 import { hashPassword } from "../../../framework/hashpassword/hashPassword";

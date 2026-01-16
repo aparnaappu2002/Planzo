@@ -1,4 +1,3 @@
-import { clientEntity } from "../../../domain/entities/clientEntity";
 import { IClientDatabaseRepository } from "../../../domain/interfaces/repositoryInterfaces/client/clientDatabaseRepository";
 import { IjwtInterface } from "../../../domain/interfaces/serviceInterface/IjwtService";
 import { hashPassword } from "../../../framework/hashpassword/hashPassword";
