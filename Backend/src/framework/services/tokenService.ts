@@ -13,7 +13,7 @@ export class TokenService implements ITokenService{
         this.accessSecretKey=accessSecretKey
     }
     
-    verifyToken(token: string): Promise<string | JwtPayload> {
+    verifyToken(token: string): { userId: string; role: string } | null {
         return this.jwtService.verifyAccessToken(token,this.accessSecretKey)
     }
     async checkTokenBlacklist(token: string): Promise<boolean> {
