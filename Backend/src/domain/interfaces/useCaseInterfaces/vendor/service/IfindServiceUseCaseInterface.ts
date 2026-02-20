@@ -1,5 +1,5 @@
-import { ServiceEntity } from "../../../../entities/serviceEntity";
+import { FindServiceDTO } from "../../../../dto/services/findServiceDTO";
 
 export interface IfindServiceUseCaseInterface {
-    findService(vendorId: string, pageNo: number): Promise<{ Services: ServiceEntity[] | [], totalPages: number }>
+    findService(vendorId: string, pageNo: number): Promise<{ Services: FindServiceDTO[], totalPages: number }>
 }

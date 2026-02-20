@@ -1,5 +1,5 @@
-import { VendorEntity } from "../../../../entities/vendorEntitty"
+import { FindVendorDTO } from "../../../../dto/vendor/findVendorDTO"
 
 export interface IfindVendorForClientUseCase {
-    findVendorForClientUseCase(): Promise<VendorEntity[] | []>
+    findVendorForClientUseCase(): Promise<FindVendorDTO[]>
 }

@@ -1,5 +1,5 @@
-import { BookingListingEntityVendor } from "../../../../entities/vendor/bookingListingEntityVendor"
+import { BookingListingVendorDTO } from "../../../../dto/bookings/bookingListingVendorDTO"
 
 export interface IshowBookingsInVendorUseCase {
-    showBookingsInVendor(vendorId: string, pageNo: number): Promise<{ Bookings: BookingListingEntityVendor[] | [], totalPages: number }>
+    showBookingsInVendor(vendorId: string, pageNo: number): Promise<{ Bookings: BookingListingVendorDTO[], totalPages: number }>
 }

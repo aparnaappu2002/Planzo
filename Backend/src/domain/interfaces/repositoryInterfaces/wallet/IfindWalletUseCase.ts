@@ -1,5 +1,5 @@
-import { WalletEntity } from "../../../entities/wallet/walletEntity"
+import { FindWalletDTO } from "../../../dto/findWalletDTO"
 
 export interface IfindWalletUseCase {
-    findWallet(userId: string): Promise<WalletEntity | null>
+    findWallet(userId: string): Promise<FindWalletDTO>
 }

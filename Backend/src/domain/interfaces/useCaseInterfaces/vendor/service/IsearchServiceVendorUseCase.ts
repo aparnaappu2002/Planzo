@@ -1,4 +1,4 @@
-import { ServiceEntity } from "../../../../entities/serviceEntity";
+import { FindServiceDTO } from "../../../../dto/services/findServiceDTO";
 
 export interface IsearchServiceVendorUseCase {
     
@@ -8,7 +8,7 @@ export interface IsearchServiceVendorUseCase {
         searchTerm: string, 
         pageNo: number
     ): Promise<{ 
-        Services: ServiceEntity[] | []; 
+        Services: FindServiceDTO[]; 
         totalPages: number; 
     }>;
 }

@@ -5,6 +5,7 @@ import { VendorEntity } from "../../../../domain/entities/vendorEntitty";
 import { IfindVendorProfileUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/vendor/IfindVendorProfileUseCase";
 import { Messages } from "../../../../domain/enums/messages";
 import { handleErrorResponse,logInfo,logError } from "../../../../framework/services/errorHandler";
+import { FindVendorDTO } from "../../../../domain/dto/vendor/findVendorDTO";
 
 
 export class VendorForClientController {
@@ -16,7 +17,7 @@ export class VendorForClientController {
     }
     async handleFindVendorForClient(req: Request, res: Response): Promise<void> {
         try {
-            const vendors: VendorEntity[] = await this.findVendorForClientUseCase.findVendorForClientUseCase()
+            const vendors: FindVendorDTO[] = await this.findVendorForClientUseCase.findVendorForClientUseCase()
             logInfo(`Vendors fetched successfully for client carousel - count: ${vendors.length}`);
 
             res.status(HttpStatus.OK).json({ message: Messages.VENDOR_FETCHED, vendors })
