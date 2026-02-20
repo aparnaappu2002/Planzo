@@ -8,6 +8,16 @@ export class FindChatBetweenClientAndVendorUseCase implements IfindChatsBetweenC
         this.chatDatabase = chatDatabase
     }
     async findChatBetweenClientAndVendor(senderId: string, receiverId: string): Promise<chatEntity | null> {
+        if (!senderId || senderId.trim().length === 0) {
+            throw new Error('Sender ID is required');
+        }
+        if (!receiverId || receiverId.trim().length === 0) {
+            throw new Error('Receiver ID is required');
+        }
+        if (senderId === receiverId) {
+            throw new Error('Sender and receiver cannot be the same');
+        }
+        
         return await this.chatDatabase.getChatsOfParticularUsers(senderId, receiverId)
 
     }

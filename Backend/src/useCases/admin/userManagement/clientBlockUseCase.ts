@@ -9,6 +9,9 @@ export class BlockClientUseCase implements IClientBlockUseCase{
     }
 
     async blockClient(clientId: string): Promise<boolean> {
+        if (!clientId || clientId.trim().length === 0) {
+            throw new Error('Client ID is required');
+        }
         const blockedClient = await this.clientDatabase.blockUser(clientId)
         if(!blockedClient) throw new Error("No client found in this ID")
         return true

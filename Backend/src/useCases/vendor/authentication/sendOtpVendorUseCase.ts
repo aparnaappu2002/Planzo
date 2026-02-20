@@ -14,6 +14,14 @@ export class SendOtpVendorUseCase implements IsendOtpVendorInterface{
     }
 
     async execute(email: string): Promise<void> {
+        if (!email || email.trim().length === 0) {
+            throw new Error('Email is required');
+        }
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email.trim())) {
+            throw new Error('Invalid email format');
+        }
+
         const existingEmail=await this.userExistence.emailExists(email)
         if(existingEmail)
         {
@@ -26,6 +34,15 @@ export class SendOtpVendorUseCase implements IsendOtpVendorInterface{
 
     }
     async verifyOtp(email: string, enteredOtp: string): Promise<boolean> {
+        if (!email || email.trim().length === 0) {
+            throw new Error('Email is required');
+        }
+        if (!enteredOtp || enteredOtp.trim().length === 0) {
+            throw new Error('OTP is required');
+        }
+        if (!/^\d{6}$/.test(enteredOtp)) {
+            throw new Error('OTP must be 6 digits');
+        }
         const otpverification= await this.otpService.verifyOtp(email,enteredOtp)
         return otpverification
     }

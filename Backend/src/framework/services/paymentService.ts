@@ -6,7 +6,7 @@ export class PaymentService implements IStripeService {
     private stripe: Stripe
     constructor() {
         this.stripe = new Stripe(process.env.STRIPE_SK!, {
-            apiVersion: "2025-07-30.basil"
+            apiVersion: "2025-08-27.basil"
         })
     }
     async createPaymentIntent(

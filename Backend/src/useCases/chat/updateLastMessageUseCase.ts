@@ -9,6 +9,9 @@ export class UpdateLastMessageUseCase implements IupdateLastMessageOfChatUseCase
         this.chatDatabase = chatDatabase
     }
     async udpateLastMessage(message: MessageEntity): Promise<chatEntity> {
+        if (!message) {
+            throw new Error('Message data is required');
+        }
         const updatedChat = await this.chatDatabase.updateLastMessage(message)
         if (!updatedChat) throw new Error("No chat found in this id for updating the last message")
         return updatedChat

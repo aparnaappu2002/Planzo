@@ -1,7 +1,7 @@
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IfindEventsBasedOnCategoryUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsBasedOnCategory";
 import { EventResponseDTO } from "../../../domain/dto/event/eventResponseDTO";
-import { mapEventEntityToDTO } from "../../../domain/dto/event/eventMapper";
+import { mapEventEntityToDTO } from "../../mappers/eventMapper";
 
 export class FindEventsBasedOnCategoryUseCase implements IfindEventsBasedOnCategoryUseCase {
     private eventDatabase: IeventRepository

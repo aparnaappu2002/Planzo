@@ -15,6 +15,26 @@ export class ResetPasswordVendorUseCase implements IForgotPasswordVendorUseCase{
     }
 
     async resetPasswordVendor(email: string, newPassword: string, token: string): Promise<void> {
+        if (!email || email.trim().length === 0) {
+            throw new Error('Email is required');
+        }
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email.trim())) {
+            throw new Error('Invalid email format');
+        }
+        if (!newPassword || newPassword.trim().length === 0) {
+            throw new Error('New password is required');
+        }
+
+        if (newPassword.length < 6) {
+            throw new Error('Password must be at least 6 characters');
+        }
+
+        if (newPassword.length > 128) {
+            throw new Error('Password is too long');
+        }
+
+        
         const isValidToken=await this.jwtService.verifyPasswordResetToken(token,process.env.RESET_SECRET_KEY!)
         if(!isValidToken){
             throw new Error("Invalid or expired reset token")

@@ -777,7 +777,7 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label>Ticket Types</Label>
-                  <Button
+                  {/* <Button
                     type="button"
                     variant="outline"
                     size="sm"
@@ -787,7 +787,7 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                   >
                     <Plus className="h-4 w-4" />
                     Add Ticket Type
-                  </Button>
+                  </Button> */}
                 </div>
 
                 {ticketVariants.map((variant, index) => {
@@ -812,7 +812,7 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="space-y-1">
+                        {/* <div className="space-y-1">
                           <Label>Ticket Type *</Label>
                           <Select
                             value={variant.type}
@@ -832,10 +832,10 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
+                        </div> */}
                         
                         <div className="space-y-1">
-                          <Label>Price ($) *</Label>
+                          <Label>Price (₹) *</Label>
                           <Input
                             type="number"
                             step="0.01"
@@ -880,12 +880,12 @@ export const EventEditModal = ({ event, isOpen, onClose, onEventUpdated }: Event
                         />
                       </div>
                       
-                      {variant.ticketsSold && variant.ticketsSold > 0 && (
+                      {/* {variant.ticketsSold && variant.ticketsSold > 0 && (
                         <div className="text-sm text-muted-foreground bg-muted/50 rounded p-2">
                           <strong>{variant.ticketsSold}</strong> of <strong>{variant.totalTickets}</strong> sold
                           ({variant.totalTickets > 0 ? Math.round((variant.ticketsSold / variant.totalTickets) * 100) : 0}% sold)
                         </div>
-                      )}
+                      )} */}
                     </div>
                   );
                 })}

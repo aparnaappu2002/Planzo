@@ -13,6 +13,14 @@ export class ResendOtpVendorUseCase implements IresendOtpVendorUseCase{
     }
 
     async resendOtp(email: string): Promise<void> {
+        if (!email || email.trim().length === 0) {
+            throw new Error('Email is required');
+        }
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email.trim())) {
+            throw new Error('Invalid email format');
+        }
+
         const otp=this.otpService.generateOtp()
         await this.otpService.storeOtp(email,otp)
         const {subject,html}=EmailComposer.getOtpEmail(otp)

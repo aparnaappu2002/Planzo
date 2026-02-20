@@ -8,6 +8,19 @@ export class CreateChatUseCase implements IcreateChatUseCase {
         this.chatDatabase = chatDatabase
     }
     async createChat(chat: chatEntity): Promise<chatEntity> {
+        if (!chat) {
+            throw new Error('Chat data is required');
+        }
+        if (!chat.senderId) {
+            throw new Error('Sender ID is required');
+        }
+        if (!chat.receiverId) {
+            throw new Error('Receiver ID is required');
+        }
+        if (chat.senderId === chat.receiverId) {
+            throw new Error('Cannot create chat with yourself');
+        }
+
         const existingChat = await this.chatDatabase.getChatsOfParticularUsers(chat.senderId, chat.receiverId)
         if (existingChat) return existingChat
         const createdChat = await this.chatDatabase.createChat(chat)

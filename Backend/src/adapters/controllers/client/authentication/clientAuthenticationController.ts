@@ -3,6 +3,7 @@ import { IclientUsecase } from '../../../../domain/interfaces/useCaseInterfaces/
 import { IsendOtpClientInterface } from '../../../../domain/interfaces/useCaseInterfaces/client/authentication/sendOtpClientInterface'
 import { HttpStatus } from '../../../../domain/enums/httpStatus'
 import { Messages } from '../../../../domain/enums/messages'
+import { handleErrorResponse,logError } from '../../../../framework/services/errorHandler'
 
 export class ClientAuthenticationController{
     private clientUseCase: IclientUsecase
@@ -19,8 +20,8 @@ export class ClientAuthenticationController{
             res.status(HttpStatus.OK).json({message:Messages.OTP_SENT})
             return
         }catch(error){
-            console.log("error while sending otp",error)
-            res.status(HttpStatus.BAD_REQUEST).json({message:Messages.OTP_SEND_ERROR,error:error instanceof Error? error.message : Messages.OTP_SEND_ERROR})
+            logError('Error while sending OTP', error);
+            handleErrorResponse(req, res, error, Messages.OTP_SEND_ERROR);
         }
     }
     async register(req:Request,res:Response):Promise<void>{
@@ -36,7 +37,7 @@ export class ClientAuthenticationController{
                 res.status(HttpStatus.BAD_REQUEST).json({message:Messages.OTP_INVALID})
             }
         }catch(error){
-            console.log("error while creating client",error)
+            logError("error while creating client",error)
             res.status(HttpStatus.BAD_REQUEST).json({
                 message:Messages.ACCOUNT_CREATE_ERROR,
                 error:error instanceof Error ? error.message : Messages.ACCOUNT_CREATE_ERROR,
@@ -52,10 +53,8 @@ export class ClientAuthenticationController{
             await this.clientSendOtpUseCase.resendOtp(email)
             res.status(HttpStatus.OK).json({message:Messages.OTP_RESENT})
         }catch(error){
-            console.log('error while resending the otp',error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message:Messages.OTP_RESEND_ERROR,
-                error:error instanceof Error ? error.message : Messages.OTP_RESEND_ERROR})
+            logError('Error while resending the OTP', error);
+            handleErrorResponse(req, res, error, Messages.OTP_RESEND_ERROR);
         }
     }
 }

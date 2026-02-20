@@ -6,6 +6,7 @@ import { IClientUnblockUseCase } from "../../../../domain/interfaces/useCaseInte
 import { IfindAllClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/userManagement/IfindAllClientUseCase";
 import { ISearchClientsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/userManagement/ISearchClientUseCase";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class UserManagementController{
     private clientBlockUseCase : IClientBlockUseCase
@@ -25,29 +26,35 @@ export class UserManagementController{
     async handleClientBlock(req:Request,res:Response):Promise<void>{
         try{
             const {clientId}=req.body
+            if (!clientId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Client ID is required'
+                });
+                return;
+            }
             await this.clientBlockUseCase.blockClient(clientId)
             await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('block'))
             res.status(HttpStatus.OK).json({message:Messages.CLIENT_BLOCKED})
         }catch(error){
-            //console.log("Error while blocking user",error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message:Messages.CLIENT_BLOCK_ERROR,
-                error:error instanceof Error ? error.message : Messages.CLIENT_BLOCK_ERROR
-            })
+            logError("Error while blocking user", error);
+            handleErrorResponse(req, res, error, Messages.CLIENT_BLOCK_ERROR);
         }
     }
     async handleClientUnblock(req:Request,res:Response):Promise<void>{
         try{
             const {clientId}=req.body
+            if (!clientId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Client ID is required'
+                });
+                return;
+            }
             await this.clientUnblockUseCase.unblockClient(clientId)
             await this.redisService.set(`user:client:${clientId}`,15*60,JSON.stringify('active'))
             res.status(HttpStatus.OK).json({message:Messages.CLIENT_UNBLOCKED})
         }catch(error){
-            //console.log('Error while unblocking client',error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message:Messages.CLIENT_UNBLOCK_ERROR,
-                error: error instanceof Error ? error.message : Messages.CLIENT_UNBLOCK_ERROR
-            })
+            logError('Error while unblocking client', error);
+            handleErrorResponse(req, res, error, Messages.CLIENT_UNBLOCK_ERROR);
         }
     }
     async findAllClient(req:Request,res:Response):Promise<void>{
@@ -61,11 +68,8 @@ export class UserManagementController{
             }
             res.status(HttpStatus.OK).json({message:Messages.CLIENT_FETCHED,clients,totalPages})
         }catch(error){
-            //console.log("Error while fetching all clients",error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message:Messages.CLIENT_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.CLIENT_FETCH_ERROR
-            })
+            logError("Error while fetching all clients", error);
+            handleErrorResponse(req, res, error, Messages.CLIENT_FETCH_ERROR);
         }
     }
     async searchClient(req: Request, res: Response): Promise<void> {
@@ -86,11 +90,8 @@ export class UserManagementController{
             clients
         });
     } catch (error) {
-        //console.log("Error while searching clients", error);
-        res.status(HttpStatus.BAD_REQUEST).json({
-            message: Messages.CLIENT_SEARCH_ERROR,
-            error: error instanceof Error ? error.message : Messages.CLIENT_SEARCH_ERROR
-        });
+        logError("Error while searching clients", error);
+        handleErrorResponse(req, res, error, Messages.CLIENT_SEARCH_ERROR);
     }
 }
 

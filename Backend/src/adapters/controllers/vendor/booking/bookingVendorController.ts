@@ -4,6 +4,7 @@ import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IapproveBookingVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IapproveBookingVendorUseCase";
 import { IrejectBookingVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IrejectBookingVendorUseCase";
 import { IupdateBookingAsCompleteUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/bookings/IupdateBookingAsCompleteUseCase";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class BookingsVendorController {
     private showBookingsInVendorUseCase: IshowBookingsInVendorUseCase
@@ -24,11 +25,8 @@ export class BookingsVendorController {
             const { Bookings, totalPages } = await this.showBookingsInVendorUseCase.showBookingsInVendor(vendorId, page)
             res.status(HttpStatus.OK).json({ message: "Bookings fetched", Bookings, totalPages })
         } catch (error) {
-            console.log('error while fetching bookigns for vendorSide', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while fetching bookigns for vendorSide',
-                error: error instanceof Error ? error.message : 'error while fetching bookigns for vendorSide'
-            })
+            logError('Error while fetching bookings for vendor side', error);
+            handleErrorResponse(req, res, error, 'Error while fetching bookings for vendor side');
         }
     }
     async handleApproveBooking(req: Request, res: Response): Promise<void> {
@@ -37,11 +35,8 @@ export class BookingsVendorController {
             const changeStatus = await this.approveBookingVendorUseCase.approveBooking(bookingId)
             if (changeStatus) res.status(HttpStatus.OK).json({ message: "Vendor Approved" })
         } catch (error) {
-            console.log('error while changing the status of the booking', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while changing the status of the booking',
-                error: error instanceof Error ? error.message : 'error while changing the status of the booking'
-            })
+            logError('Error while approving booking', error);
+            handleErrorResponse(req, res, error, 'Error while approving booking');
         }
     }
     async handleRejectBookingInVendor(req: Request, res: Response): Promise<void> {
@@ -52,11 +47,8 @@ export class BookingsVendorController {
                     res.status(HttpStatus.OK).json({message:'Rejected booking'})
                 }
         } catch (error) {
-            console.log('error while rejecting booking', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while rejectig booking',
-                error: error instanceof Error ? error.message : 'error while rejecting booking'
-            })
+            logError('Error while rejecting booking', error);
+            handleErrorResponse(req, res, error, 'Error while rejecting booking');
         }
     }
     async handleUpdateBookingComplete(req: Request, res: Response): Promise<void> {
@@ -65,11 +57,8 @@ export class BookingsVendorController {
             const updateBooking = await this.updateBookingAsCompleteUseCase.changeStatusOfBooking(bookingId, status)
             res.status(HttpStatus.OK).json({ message: "Booking marked as completed" })
         } catch (error) {
-            console.log('error while updating complete status of booking', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while updating complete status of booking',
-                error: error instanceof Error ? error.message : 'error while updating complete status of booking'
-            })
+            logError('Error while updating complete status of booking', error);
+            handleErrorResponse(req, res, error, 'Error while updating complete status of booking');
         }
     }
 }

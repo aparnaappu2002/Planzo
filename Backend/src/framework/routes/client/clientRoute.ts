@@ -39,7 +39,7 @@ export class clientRoute{
             injectedClientLoginController.handleGoogleLogin(req,res)
         })
         this.clientRoute.patch('/changePassword',(req:Request,res:Response)=>{
-            injectedProfileClientController.handeChangePasswordClient(req,res)
+            injectedProfileClientController.handleChangePasswordClient(req,res)
         })
         this.clientRoute.put('/updateProfile',injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('client'), injectedClientStatusCheckingMiddleware,(req:Request,res:Response)=>{
             injectedProfileClientController.handleUpdateProfileClient(req,res)

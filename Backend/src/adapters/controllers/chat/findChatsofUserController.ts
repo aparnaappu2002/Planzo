@@ -12,6 +12,12 @@ export class FindChatOfUserController {
         try {
             const pageNo = req.query.pageNo as string
             const userId = req.query.userId as string
+            if (!userId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'User ID is required'
+                });
+                return;
+            }
             const page = parseInt(pageNo, 10) || 1
             const { chats, hasMore } = await this.findChatOfUserUseCase.findChatsOfUser(userId, page)
             res.status(HttpStatus.OK).json({ message: Messages.CHAT_FETCHED, chats, hasMore })

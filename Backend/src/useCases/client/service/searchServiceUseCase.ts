@@ -8,6 +8,11 @@ export class SearchServiceUseCase implements IsearchServiceUseCase {
         this.serviceDatabase = serviceDatabase
     }
     async searchService(query: string): Promise<ServiceEntity[] | []> {
+        
+        if (!query || query.trim().length === 0) {
+            throw new Error('Search query is required');
+        }
+
         return await this.serviceDatabase.searchService(query)
     }
 }

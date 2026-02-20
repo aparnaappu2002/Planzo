@@ -1,7 +1,7 @@
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IfindAllEventsUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/events/IfindAllEventsUseCase";
 import { EventResponseDTO } from "../../../domain/dto/event/eventResponseDTO";
-import { mapEventEntityToDTO } from "../../../domain/dto/event/eventMapper";
+import { mapEventEntityToDTO } from "../../mappers/eventMapper";
 
 export class FindAllEventsUseCase implements IfindAllEventsUseCase {
     private eventDatabase: IeventRepository

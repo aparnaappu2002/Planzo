@@ -65,3 +65,7 @@ export class VendorDashboardUseCase implements IvendorDashboardUseCase {
         return { revenueChart: revenueDetails, totalBookings, totalEvents, recentBookings, recentEvents, totalRevenue, totalTickets }
     }
 }
+
+
+
+

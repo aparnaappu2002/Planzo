@@ -10,6 +10,11 @@ export class ShowProfileDetailsInClientUseCase
     this.clientDatabase = clientDatabase;
   }
   async showProfile(clientId: string): Promise<ShowProfileClientResponseDTO> {
+    if (!clientId || clientId.trim().length === 0) {
+            throw new Error('Client ID is required');
+        }
+
+    
     const client = await this.clientDatabase.showProfileDetails(clientId);
 
     if (!client) {

@@ -7,6 +7,10 @@ export class ApproveBookingUseCase implements IapproveBookingVendorUseCase {
         this.bookingDatabase = bookingDatabase
     }
     async approveBooking(bookingId: string,): Promise<boolean> {
+        if (!bookingId || bookingId.trim().length === 0) {
+            throw new Error('Booking ID is required');
+        }
+
         const booking = await this.bookingDatabase.findBookingByIdForDateChecking(bookingId)
         if (!booking) throw new Error("No booking Found in this Id")
         const conflict = await this.bookingDatabase.findBookingWithSameDate(bookingId, booking.vendorId.toString(), booking.date)

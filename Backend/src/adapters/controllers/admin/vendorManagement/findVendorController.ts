@@ -3,6 +3,7 @@ import { IfindAllVendorUseCase } from "../../../../domain/interfaces/useCaseInte
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindPendingVendors } from "../../../../domain/interfaces/useCaseInterfaces/admin/vendorManagement/IfindPendingVendors";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class FindVendorController{
     private findAllVendorUseCase :IfindAllVendorUseCase
@@ -22,11 +23,8 @@ export class FindVendorController{
             })
             return
         }catch(error){
-            //console.log('error while fetching all vendors', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.VENDOR_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.VENDOR_FETCH_ERROR
-            })
+            logError('Error while fetching all vendors', error);
+            handleErrorResponse(req, res, error, Messages.VENDOR_FETCH_ERROR);
         }
     }
     async findPendingVendor(req: Request, res: Response) {
@@ -36,11 +34,8 @@ export class FindVendorController{
             res.status(HttpStatus.OK).json({ message: Messages.PENDING_VENDORS_FETCHED, pendingVendors, totalPages })
             return
         } catch (error) {
-            //console.log('error while fetching pending vendors', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.PENDING_VENDORS_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.PENDING_VENDORS_FETCH_ERROR
-            })
+            logError('Error while fetching pending vendors', error);
+            handleErrorResponse(req, res, error, Messages.PENDING_VENDORS_FETCH_ERROR);
         }
     }
 }

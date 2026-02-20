@@ -4,6 +4,7 @@ import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindAllEventsVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/event/IfindAllEventsUseCase";
 import { IupdateEventUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/event/IupdateEventUseCase";
 import { IsearchEventsVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/event/IsearchEventsVendorUseCase";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class EventController {
     private eventCreateUseCase: IeventCreationUseCase
@@ -20,42 +21,57 @@ export class EventController {
         try {
             const { vendorId } = req.params
             const { event } = req.body
+            if (!vendorId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Vendor ID is required'
+                });
+                return;
+            }
+            if (!event) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Event data is required'
+                });
+                return;
+            }
             const createdEvent = await this.eventCreateUseCase.createEvent(event, vendorId)
             res.status(HttpStatus.CREATED).json({ message: "Event created", createdEvent })
         } catch (error) {
-            console.log('error while creating event', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while creating event',
-                error: error instanceof Error ? error.message : 'error while creating event'
-            })
+            logError('Error while creating event', error);
+            handleErrorResponse(req, res, error, 'Failed to create event');
         }
     }
     async handleFindAllEventsVendor(req: Request, res: Response): Promise<void> {
         try {
             const vendorId = req.params.vendorId
+            if (!vendorId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Vendor ID is required'
+                });
+                return;
+            }
             const pageNo = parseInt(req.params.pageNo, 10) || 1
             const { events, totalPages } = await this.findAllEventsVendorUseCase.findAllEvents(vendorId, pageNo)
             res.status(HttpStatus.OK).json({ message: "Events fetched", events, totalPages })
         } catch (error) {
-            console.log('error while finding all events in vendor side', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while finding all events in vendor side',
-                error: error instanceof Error ? error.message : 'error while finding all events in vendor side'
-            })
+            logError('Error while finding all events in vendor side', error);
+            handleErrorResponse(req, res, error, 'Failed to fetch vendor events');
         }
         
     }
     async handleUpdateEvent(req: Request, res: Response): Promise<void> {
         try {
             const { eventId, update } = req.body
+            if (!eventId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Event ID is required'
+                });
+                return;
+            }
             const updatedEvent = await this.updateEventUseCase.updateEvent(eventId, update)
             res.status(HttpStatus.OK).json({ message: "Event Updated", updatedEvent })
         } catch (error) {
-            console.log('Error while updating event', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while updating event",
-                error: error instanceof Error ? error.message : 'Error while updating event'
-            })
+            logError('Error while updating event', error);
+            handleErrorResponse(req, res, error, 'Failed to update event');
         }
     }
     async handleSearchEvents(req: Request, res: Response): Promise<void> {
@@ -63,6 +79,13 @@ export class EventController {
             const vendorId =  req.query.vendorId as string; 
             const { searchQuery } = req.query;
             const pageNo = parseInt(req.query.pageNo as string) || 1;
+
+            if (!vendorId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Vendor ID is required'
+                });
+                return;
+            }
     
             if (!searchQuery || typeof searchQuery !== 'string') {
                 res.status(HttpStatus.BAD_REQUEST).json({
@@ -86,11 +109,8 @@ export class EventController {
                 currentPage: pageNo
             });
         } catch (error) {
-            console.log('Error while searching events', error);
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Error while searching events",
-                error: error instanceof Error ? error.message : 'Error while searching events'
-            });
+            logError('Error while searching events', error);
+            handleErrorResponse(req, res, error, 'Failed to search events');
         }
     }
 }

@@ -124,5 +124,14 @@ export class VendorRoute{
         this.vendorRoute.delete('/deleteAllNotifications', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
             injectedNotificationController.handleDeleteAllNotification(req, res)
         })
+        this.vendorRoute.get('/searchservice', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedServiceVendorControllerUseCase.handleSearchService(req, res)
+        })
+        this.vendorRoute.get('/tickets/filter', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketVendorController.handleTicketFilter(req, res)
+        })
+        this.vendorRoute.get('/tickets/search', injectedVerifyTokenAndCheckBlacklistMiddleware, injectedTokenExpiryValidationChecking, checkRoleBaseMiddleware('vendor'), injectedVendorStatusCheckingMiddleware, (req: Request, res: Response) => {
+            injectedTicketVendorController.handleTicketSearch(req, res)
+        })
     }
 }

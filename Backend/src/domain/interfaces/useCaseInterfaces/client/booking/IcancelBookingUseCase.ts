@@ -1,5 +1,5 @@
-import { CancelBookingClientDTO } from "../../../../dto/client/booking/cancelBookingClientDTO";
+import { BookingEntity } from "../../../../entities/bookingEntity";
 
 export interface IcancelBookingUseCase {
-    cancelBooking(bookingId: string): Promise<CancelBookingClientDTO>
+    cancelBooking(bookingId: string): Promise<BookingEntity>
 }

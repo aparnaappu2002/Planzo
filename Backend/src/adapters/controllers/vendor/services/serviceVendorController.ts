@@ -7,11 +7,10 @@ import { IchangeStatusServiceUseCase } from "../../../../domain/interfaces/useCa
 import { IfindServiceUseCaseInterface } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IfindServiceUseCaseInterface";
 import { IfindCategoryForServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IfindCategoryUseCaseInterface";
 import { IsearchServiceVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IsearchServiceVendorUseCase";
+import { Params } from "../../../../domain/interfaces/controllerInterfaces/Iparams";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
-interface Params {
-    service: ServiceEntity,
-    serviceId: string
-}
+
 export class ServiceVendorController {
     private findCategoryForServiceUseCase:IfindCategoryForServiceUseCase
     private createServiceUseCase: IcreateServiceUseCase
@@ -37,17 +36,20 @@ export class ServiceVendorController {
             }
             res.status(HttpStatus.OK).json({ message: 'categories fetched', categories })
         } catch (error) {
-            console.log('error while fetching categories for service', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while fetching categories for service",
-                error: error instanceof Error ? error.message : 'error while fetching categories for service'
-            })
+            logError('Error while fetching categories for service', error);
+            handleErrorResponse(req, res, error, 'Failed to fetch categories for service');
         }
         
     }
     async handleCreateService(req: Request, res: Response): Promise<void> {
         try {
             const { service } = req.body
+            if (!service) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Service data is required'
+                });
+                return;
+            }
             const createdService = await this.createServiceUseCase.createService(service)
             if (!createdService) {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: 'error while creating service' })
@@ -55,29 +57,41 @@ export class ServiceVendorController {
             }
             res.status(HttpStatus.CREATED).json({ message: "service created", service: createdService })
         } catch (error) {
-            console.log('error while creating service', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while creating service',
-                error: error instanceof Error ? error.message : 'error while creating service'
-            })
+            logError('Error while creating service', error);
+            handleErrorResponse(req, res, error, 'Failed to create service');
         }
     }
     async handleEditService(req: Request, res: Response): Promise<void> {
         try {
             const { service, serviceId }: Params = req.body
+            if (!serviceId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Service ID is required'
+                });
+                return;
+            }
+            if (!service) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Service data is required'
+                });
+                return;
+            }
             const updatedService = await this.editServiceUseCase.editService(service, serviceId)
             res.status(HttpStatus.OK).json({ message: "Service Updated", updatedService })
         } catch (error) {
-            console.log('error while udpating service', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while udpating service',
-                error: error instanceof Error ? error.message : 'error while udpating service'
-            })
+            logError('Error while updating service', error);
+            handleErrorResponse(req, res, error, 'Failed to update service');
         }
     }
     async handleChangeStatusUseCase(req: Request, res: Response): Promise<void> {
         try {
             const { serviceId } = req.body
+            if (!serviceId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Service ID is required'
+                });
+                return;
+            }
             const changedService = await this.changeStatusServiceUseCase.changeStatus(serviceId)
             if (!changedService) {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: "error while changing the status of the user" })
@@ -85,11 +99,8 @@ export class ServiceVendorController {
             }
             res.status(HttpStatus.OK).json({ message: "Status Changes" })
         } catch (error) {
-            console.log('error while changing status of service', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while changing status of service",
-                error: error instanceof Error ? error.message : 'error while changing status of service'
-            })
+            logError('Error while changing status of service', error);
+            handleErrorResponse(req, res, error, 'Failed to change service status');
         }
         
     }
@@ -101,11 +112,8 @@ export class ServiceVendorController {
             const { Services, totalPages } = await this.findServiceUseCase.findService(vendorId, page)
             res.status(HttpStatus.OK).json({ message: "Service fetched", Services, totalPages })
         } catch (error) {
-            console.log('error while fetching service', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while fetching service',
-                error: error instanceof Error ? error.message : 'error while fetching service'
-            })
+            logError('Error while fetching service', error);
+            handleErrorResponse(req, res, error, 'Failed to fetch services');
         }
     }
     async handleSearchService(req: Request, res: Response): Promise<void> {
@@ -114,7 +122,12 @@ export class ServiceVendorController {
             const searchTerm = req.query.searchTerm as string;
             const pageNo = req.query.pageNo as string;
             const page = parseInt(pageNo, 10) || 1;
-            
+            if (!vendorId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Vendor ID is required'
+                });
+                return;
+            }
             if (!searchTerm || !searchTerm.trim()) {
                 res.status(HttpStatus.BAD_REQUEST).json({ 
                     message: 'Search term is required' 
@@ -134,11 +147,8 @@ export class ServiceVendorController {
                 totalPages 
             });
         } catch (error) {
-            console.log('error while searching service', error);
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while searching service',
-                error: error instanceof Error ? error.message : 'error while searching service'
-            });
+            logError('Error while searching service', error);
+            handleErrorResponse(req, res, error, 'Failed to search services');
         }
     }
 

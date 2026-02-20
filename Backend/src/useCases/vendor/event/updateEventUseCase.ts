@@ -9,6 +9,10 @@ export class UpdateEventUseCase implements IupdateEventUseCase {
         this.eventDatabase = eventDatabase
     }
     async updateEvent(eventId: string, update: EventUpdateEntity): Promise<EventEntity> {
+        
+        if (!eventId || eventId.trim().length === 0) {
+            throw new Error('Event ID is required');
+        }
         const updatedEvent = await this.eventDatabase.editEvent(eventId, update)
         if (!updatedEvent) throw new Error('No event found in this eventId')
         return updatedEvent

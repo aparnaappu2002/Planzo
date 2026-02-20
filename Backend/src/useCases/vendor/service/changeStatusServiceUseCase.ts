@@ -7,6 +7,9 @@ export class ChangeStatusServiceUseCase implements IchangeStatusServiceUseCase {
         this.serviceDatabase = serviceDatabase
     }
     async changeStatus(serviceId: string): Promise<boolean> {
+        if (!serviceId || serviceId.trim().length === 0) {
+            throw new Error('Service ID is required');
+        }
         const changeStatus = await this.serviceDatabase.changeStatus(serviceId)
         if (!changeStatus) throw new Error('No service found in this ID')
         return true

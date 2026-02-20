@@ -7,6 +7,10 @@ export class RejectBookingInVendorUseCase implements IrejectBookingVendorUseCase
         this.bookingDatabase = bookingDatabase
     }
     async rejectBooking(bookingId: string, rejectionReason: string): Promise<boolean> {
+        if (!bookingId || bookingId.trim().length === 0) {
+            throw new Error('Booking ID is required');
+        }
+        
         const rejectedBooking = await this.bookingDatabase.rejectBooking(bookingId,rejectionReason)
         if (!rejectedBooking) throw new Error('There is no booking in this Booking Id')
         return true

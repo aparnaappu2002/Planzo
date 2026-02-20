@@ -18,6 +18,10 @@ export class SearchEventsVendorUseCase implements IsearchEventsVendorUseCase {
         totalPages: number;
         totalResults: number;
     }> {
+        if (!searchQuery || searchQuery.trim().length === 0) {
+            throw new Error('Search query is required');
+        }
+
         const { events, totalPages, totalResults } = 
             await this.eventsDatabase.searchEventsByName(
                 vendorId,

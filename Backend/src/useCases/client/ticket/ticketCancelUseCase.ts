@@ -28,13 +28,11 @@ export class TicketCancelUseCase implements ITicketCancelUseCase {
 
     async ticketCancel(ticketId: string, refundMethod?: 'wallet' | 'bank'): Promise<TicketAndVendorDTO> {
         const cancelledTicket = await this.ticketDatabase.ticketCancel(ticketId, refundMethod)
-        console.log("CancelledTicket:",cancelledTicket)
         if (!cancelledTicket) throw new Error('No ticket found in this ID for cancellation')
         
         const refundAmountToVendor = cancelledTicket.totalAmount * 0.29
         const refundAmountToClient = cancelledTicket.totalAmount - (refundAmountToVendor + cancelledTicket.totalAmount * 0.01)
         
-        // Check if refund method is bank transfer
         if (refundMethod === 'bank') {
             console.log('[TicketCancel] Processing bank transfer payout via Stripe');
             

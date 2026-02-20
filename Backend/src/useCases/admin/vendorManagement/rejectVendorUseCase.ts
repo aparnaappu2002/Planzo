@@ -8,6 +8,14 @@ export class RejectVendorUseCase implements IrejectVendorUseCase {
         this.vendorDatabase = vendorDatabase
     }
     async rejectVendor(vendorid: string, newStatus: string, rejectionReason: string): Promise<VendorEntity> {
+        
+        if (!vendorid || vendorid.trim().length === 0) {
+            throw new Error('Vendor ID is required');
+        }
+        if (!newStatus || newStatus.trim().length === 0) {
+            throw new Error('Status is required');
+        }
+        
         const existingVendor = await this.vendorDatabase.findById(vendorid)
         if (!existingVendor) throw new Error('No vendor Exist')
         const vendor = await this.vendorDatabase.rejectPendingVendor(vendorid, newStatus, rejectionReason)

@@ -3,6 +3,7 @@ import { IdashBoardDataUseCase } from "../../../../domain/interfaces/useCaseInte
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IeventGraphUseCase } from "../../../../domain/interfaces/useCaseInterfaces/admin/dashboard/IeventGraphUseCase";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class DashboardAdminController {
     private adminDashBoardUseCase: IdashBoardDataUseCase
@@ -18,11 +19,8 @@ export class DashboardAdminController {
             const { bookings, events, totalBookings, totalClients, totalRevenue, totalVendors } = await this.adminDashBoardUseCase.dashBoardDetails(adminId as string)
             res.status(HttpStatus.OK).json({ message: Messages.DASHBOARD_DATA_FETCHED , bookings, events, totalBookings, totalClients, totalRevenue, totalVendors, eventDetailsForGraph })
         } catch (error) {
-            //console.log('error while fetching admin dashboard data', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.DASHBOARD_DATA_ERROR,
-                error: error instanceof Error ? error.message : Messages.DASHBOARD_DATA_ERROR
-            })
+            logError('Error while fetching admin dashboard data', error);
+            handleErrorResponse(req, res, error, Messages.DASHBOARD_DATA_ERROR);
         }
     }
 }

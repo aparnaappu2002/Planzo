@@ -119,7 +119,7 @@ const BookingsPage: React.FC = () => {
                 <tbody>
                   {data.Bookings.map((booking: Booking) => (
                     <tr key={booking._id} className="border-b border-yellow-200">
-                      <td className="px-4 py-2 text-gray-700">{booking._id}</td>
+                      <td className="px-4 py-2 text-gray-700">{booking.bookingId}</td>
                       <td className="px-4 py-2 text-gray-700">{booking.service?.serviceTitle ?? 'N/A'}</td>
                       <td className="px-4 py-2 text-gray-700">{booking.vendor?.name ?? 'N/A'}</td>
                       <td className="px-4 py-2 text-gray-700">

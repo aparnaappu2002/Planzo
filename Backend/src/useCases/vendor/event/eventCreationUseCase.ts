@@ -8,6 +8,12 @@ export class EventCreationUseCase implements IeventCreationUseCase {
         this.eventDatabase = eventDatabase
     }
     async createEvent(event: EventEntity, vendorId: string): Promise<EventEntity> {
+        if (!event) {
+            throw new Error('Event data is required');
+        }
+        if (!event.posterImage || event.posterImage.length === 0) {
+        throw new Error('At least one poster image is required');
+        }
         event.hostedBy = vendorId
         const createEvent = await this.eventDatabase.createEvent(event)
         if (!createEvent) throw new Error('Error while creating event')

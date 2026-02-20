@@ -10,6 +10,9 @@ export class SearchClientsUseCase implements ISearchClientsUseCase {
     }
 
     async searchClients(search: string): Promise<clientEntity[]> {
+        if (!search || search.trim().length === 0) {
+            throw new Error('Search query is required');
+        }
         if (!search) throw new Error("Search query is required");
         return await this.clientRepository.searchClients(search);
     }

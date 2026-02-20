@@ -8,6 +8,10 @@ export class FindChatsOfAUserUseCase implements IfindChatsOfUserUseCase {
         this.chatDatabase = chatDatabase
     }
     async findChatsOfUser(userId: string, pageNo: number): Promise<{ chats: ChatEntityDTO[], hasMore: boolean }> {
+        if (!userId || userId.trim().length === 0) {
+            throw new Error('User ID is required');
+        }
+        
         const { chats, hasMore } = await this.chatDatabase.getchatsOfUser(userId, pageNo)
         return { chats, hasMore }
     }

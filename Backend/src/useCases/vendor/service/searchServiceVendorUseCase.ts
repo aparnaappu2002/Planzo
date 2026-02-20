@@ -17,7 +17,9 @@ export class SearchServiceVendorUseCase implements IsearchServiceVendorUseCase {
         if (!vendorId || !searchTerm.trim()) {
             return { Services: [], totalPages: 0 };
         }
-        
+        if (!searchTerm || searchTerm.trim().length === 0) {
+            throw new Error('Search term is required');
+        }
         const { Services, totalPages } = await this.serviceDatabase.searchServiceOfAVendor(
             vendorId, 
             searchTerm.trim(), 

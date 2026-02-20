@@ -116,7 +116,7 @@ export class TicketRepository implements IticketRepositoryInterface {
         clientId: ticket.clientId?.toString(),
         ticketStatus: ticket.ticketStatus,
         paymentTransactionId: ticket.paymentTransactionId?.toString(),
-        paymentId: paymentId || undefined, // Payment ID from payment entity
+        paymentId: paymentId || undefined, 
         refundMethod: refundMethod || 'wallet',
     };
     return result
@@ -190,7 +190,7 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
     const page = Math.max(pageNo, 1)
     const limit = 6
     const skip = (page - 1) * limit
-    const matchStage: any = {
+    const matchStage: Record<string, unknown> = {
         'event.hostedBy': new Types.ObjectId(vendorId)
     };
     
@@ -288,7 +288,7 @@ async ticketAndUserDetails(vendorId: string, pageNo: number): Promise<{ ticketAn
 
 
 async findTicketUsingTicketId(ticketId: string): Promise<TicketEntity | null> {
-    return ticketModel.findOne({ ticketId }).select('-__v')
+    return await ticketModel.findOne({ ticketId }).select('-__v').lean() as TicketEntity | null;
 }
 async changeUsedStatus(ticketId: string): Promise<TicketEntity | null> {
     return await ticketModel.findByIdAndUpdate(ticketId, { ticketStatus: 'used' })
@@ -403,6 +403,72 @@ async getTicketsByStatus(
     
     return { tickets, totalPages }
 }
+async filterTickets(
+    vendorId: string,
+    pageNo: number,
+    paymentStatus?: 'pending' | 'successful' | 'failed',
+    ticketStatus?: 'used' | 'refunded' | 'unused'
+): Promise<{ ticketAndEventDetails: TicketAndUserDTO[] | [], totalPages: number }> {
+    const limit = 10;
+    const page = Math.max(pageNo, 1);
+    const skip = (page - 1) * limit;
+    
+    const filter: Record<string, string> = {};
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
+    if (ticketStatus) filter.ticketStatus = ticketStatus;
+    
+    const tickets = await ticketModel.find(filter)
+        .populate({
+            path: 'eventId',
+            match: { hostedBy: vendorId },
+            select: 'title description date startTime endTime status address pricePerTicket posterImage'
+        })
+        .populate('clientId', 'name profileImage')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 });
+    
+    const validTickets = tickets.filter(ticket => ticket.eventId !== null);
+    
+    const totalCount = await ticketModel.countDocuments({
+        ...filter,
+        eventId: { $in: await eventModal.find({ hostedBy: vendorId }).distinct('_id') }
+    });
+    
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return { ticketAndEventDetails: validTickets as  unknown as TicketAndUserDTO[], totalPages };
+}
+
+async searchTicketsByEventTitle(
+    vendorId: string,
+    searchTerm: string,
+    pageNo: number
+): Promise<{ ticketAndEventDetails: TicketAndUserDTO[] | [], totalPages: number }> {
+    const limit = 10;
+    const page = Math.max(pageNo, 1);
+    const skip = (page - 1) * limit;
+    
+    const matchingEvents = await eventModal.find({
+        hostedBy: vendorId,
+        title: { $regex: searchTerm, $options: 'i' }
+    }).select('_id');
+    
+    const eventIds = matchingEvents.map(event => event._id);
+    
+    const tickets = await ticketModel.find({ eventId: { $in: eventIds } })
+        .populate('eventId', 'title description date startTime endTime status address pricePerTicket posterImage')
+        .populate('clientId', 'name profileImage')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 });
+    
+    const totalCount = await ticketModel.countDocuments({ eventId: { $in: eventIds } });
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return { ticketAndEventDetails: tickets as any, totalPages };
+}
+
 
 
 }

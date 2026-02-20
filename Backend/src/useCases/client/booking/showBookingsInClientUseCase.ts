@@ -1,7 +1,7 @@
 import { IbookingRepository } from "../../../domain/interfaces/repositoryInterfaces/booking/IbookingRepository";
 import { IshowBookingsInClientUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/booking/IshowBookingInClientUseCase";
 import { BookingsInClientDTO } from "../../../domain/dto/bookings/bookingsInClientDTO";
-import { mapBookingsInClientEntityToDTO } from "../../../domain/dto/bookings/bookingMapper";
+import { mapBookingsInClientEntityToDTO } from "../../mappers/bookingMapper";
 
 export class ShowBookingsInClientUseCase implements IshowBookingsInClientUseCase {
     private bookingsDatabase: IbookingRepository

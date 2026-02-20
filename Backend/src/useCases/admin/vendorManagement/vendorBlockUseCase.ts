@@ -8,6 +8,11 @@ export class VendorBlockUseCase implements IvendorBlockUseCase{
     }
 
     async blockVendor(vendorId: string): Promise<boolean> {
+        
+        if (!vendorId || vendorId.trim().length === 0) {
+            throw new Error('Vendor ID is required');
+        }
+
         const blockedUser = await this.vendorDatabase.blockVendor(vendorId)
         if(!blockedUser) throw new Error("There is no vendor in this ID")
         return true

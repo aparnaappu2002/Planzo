@@ -7,6 +7,7 @@ import { IredisService } from "../../../../domain/interfaces/serviceInterface/Ir
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IgoogleLoginClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/authentication/IgoogleLoginClientUseCase";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError,logInfo } from "../../../../framework/services/errorHandler";
 
 export class ClientLoginController implements IloginClientControllerInterface {
   private jwtService: IjwtInterface;
@@ -27,7 +28,6 @@ export class ClientLoginController implements IloginClientControllerInterface {
   async handleLogin(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      console.log("this is the email and the password", email, password);
       const client = await this.clientLoginUseCase.loginClient(email, password);
       if (!client) {
         res
@@ -64,6 +64,8 @@ export class ClientLoginController implements IloginClientControllerInterface {
         role: client.role,
         status: client.status,
       };
+      logInfo(`Client login successful - email: ${email}, clientId: ${client._id}`);
+
       res
         .status(HttpStatus.OK)
         .json({
@@ -72,11 +74,8 @@ export class ClientLoginController implements IloginClientControllerInterface {
           accessToken,
         });
     } catch (error) {
-      console.log("error while login client", error);
-      res.status(HttpStatus.BAD_REQUEST).json({
-        message: Messages.LOGIN_ERROR,
-        error: error instanceof Error ? error.message : Messages.LOGIN_ERROR,
-      });
+      logError("Error while login client", error);
+      handleErrorResponse(req, res, error, Messages.LOGIN_ERROR);
     }
   }
   async handleGoogleLogin(req: Request, res: Response): Promise<void> {
@@ -130,12 +129,8 @@ export class ClientLoginController implements IloginClientControllerInterface {
           accessToken,
         });
     } catch (error) {
-      console.log("error while google login", error);
-      res.status(HttpStatus.BAD_REQUEST).json({
-        message: Messages.GOOGLE_LOGIN_ERROR,
-        error:
-          error instanceof Error ? error.message : Messages.GOOGLE_LOGIN_ERROR,
-      });
+      logError("Error while Google login", error);
+      handleErrorResponse(req, res, error, Messages.GOOGLE_LOGIN_ERROR);
     }
   }
 }

@@ -3,6 +3,7 @@ import { IvendorDashboardUseCase } from "../../../../domain/interfaces/useCaseIn
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { Period } from "../../../../domain/types/PeriodType";
 import { IpdfGenerateVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/dashboard/IpdfGenerateVendorUseCase";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class VendorDashboardController {
     private vendorDashboardUseCase: IvendorDashboardUseCase
@@ -17,11 +18,8 @@ export class VendorDashboardController {
             const { recentBookings, recentEvents, revenueChart, totalBookings, totalEvents, totalRevenue,totalTickets} = await this.vendorDashboardUseCase.findVendorDashBoardDetails(vendorId as string, datePeriod as Period)
             res.status(HttpStatus.OK).json({ message: 'Vendor dashboard details fetched', recentBookings, recentEvents, revenueChart, totalBookings, totalEvents, totalRevenue,totalTickets})
         } catch (error) {
-            console.log('error while fetching vendor dashboard details', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while fetching vendor dashboard details',
-                error: error instanceof Error ? error.message : 'error while fetching vendor dashboard details'
-            })
+            logError('Error while fetching vendor dashboard details', error);
+            handleErrorResponse(req, res, error, 'Error while fetching vendor dashboard details');
         }
     }
     async handlePdfDownloaderVendor(req: Request, res: Response): Promise<void> {
@@ -32,11 +30,8 @@ export class VendorDashboardController {
             res.setHeader("Content-Disposition", "attachment; filename=vendor-report.pdf");
             res.send(pdf);
         } catch (error) {
-            console.log('error while downloading the pdf in the vendor side', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while downloading the pdf in the vendor side',
-                error: error instanceof Error ? error.message : 'error while downloading the pdf in the vendor side'
-            })
+            logError('Error while generating PDF report for vendor', error);
+            handleErrorResponse(req, res, error, 'Error while downloading the PDF report');
         }
     }
 }

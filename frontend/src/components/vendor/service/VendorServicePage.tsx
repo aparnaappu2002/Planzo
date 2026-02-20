@@ -204,23 +204,31 @@ const VendorServicesPage: React.FC = () => {
   };
 
   const handleStatusChange = async () => {
-    if (!confirmServiceId) return;
+  if (!confirmServiceId) return;
 
-    try {
-      await changeStatusMutation.mutateAsync(confirmServiceId);
-      toast.success('Service status updated successfully');
-      
-      await queryClient.invalidateQueries({ queryKey: ['services', vendorId] });
-      await queryClient.invalidateQueries({ queryKey: ['services', 'search', vendorId] });
-    } catch (err) {
-      console.error('Error changing service status:', err);
-      toast.error('Failed to update service status');
-    } finally {
-      setIsConfirmModalOpen(false);
-      setConfirmServiceId(null);
-      setConfirmAction(null);
-    }
-  };
+  try {
+    await changeStatusMutation.mutateAsync(confirmServiceId);
+    
+    await queryClient.invalidateQueries({ 
+      queryKey: ['services-in-vendor', vendorId],
+      exact: false 
+    });
+    
+    await queryClient.invalidateQueries({ 
+      queryKey: ['services-search-vendor', vendorId], 
+      exact: false 
+    });
+    
+    toast.success('Service status updated successfully');
+  } catch (err) {
+    console.error('Error changing service status:', err);
+    toast.error('Failed to update service status');
+  } finally {
+    setIsConfirmModalOpen(false);
+    setConfirmServiceId(null);
+    setConfirmAction(null);
+  }
+};
 
   const services: Service[] = currentData?.Services || [];
   const totalPages: number = currentData?.totalPages || 1;

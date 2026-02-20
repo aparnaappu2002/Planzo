@@ -12,6 +12,23 @@ export class ChangePasswordClientUseCase implements IchangePasswordClientUseCase
         this.clientDatabase = clientDatabase
     }
     async changePasswordClient(clientId: string, Oldpassword: string, newPassword: string): Promise<clientEntity | null> {
+        
+        if (!clientId || clientId.trim().length === 0) {
+            throw new Error('Client ID is required');
+        }
+        if (!Oldpassword || Oldpassword.trim().length === 0) {
+            throw new Error('Old password is required');
+        }
+        if (!newPassword || newPassword.trim().length === 0) {
+            throw new Error('New password is required');
+        }
+        if (newPassword.length < 6) {
+            throw new Error('New password must be at least 6 characters');
+        }
+        if (newPassword.length > 128) {
+            throw new Error('New password is too long');
+        }
+        
         const clientOldPassword = await this.clientDatabase.findPassword(clientId)
         if (!clientOldPassword) throw new Error('No user Found in this ID')
         const ComparedPassword = await this.hashPassword.comparePassword(Oldpassword, clientOldPassword)

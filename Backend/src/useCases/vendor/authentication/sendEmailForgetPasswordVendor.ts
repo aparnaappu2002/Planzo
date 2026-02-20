@@ -16,6 +16,14 @@ export class sendEmailForgetPasswordVendor implements IsendEmailForgetPasswordVe
     }
 
     async sendEmailForgetPasswordVendor(email: string): Promise<void> {
+        if (!email || email.trim().length === 0) {
+            throw new Error('Email is required');
+        }
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email.trim())) {
+            throw new Error('Invalid email format');
+        }
+        
         const vendor=await this.vendorDatabase.findByEmaill(email)
         if(!vendor) throw new Error("No vendor Found with this email")
         const resetToken=this.jwtService.generateResetToken(process.env.RESET_SECRET_KEY!,vendor.vendorId,email)

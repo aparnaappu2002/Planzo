@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { IWorkSampleCreationUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/workSamples/IworkSamplesCreationUseCase";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindWorkSamplesOfAVendorUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/workSamples/IfindWorkSampleofVendorUseCase";
-
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 export class WorkSampleController {
     private addWorkSamplesUseCase: IWorkSampleCreationUseCase
     private findWorkSampleVendorUseCase:IfindWorkSamplesOfAVendorUseCase
@@ -13,14 +13,17 @@ export class WorkSampleController {
     async handleAddWorkSample(req: Request, res: Response): Promise<void> {
         try {
             const { workSample } = req.body
+            if (!workSample) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Work sample data is required'
+                });
+                return;
+            }
             const newWorkSample = await this.addWorkSamplesUseCase.createWorkSample(workSample)
             res.status(HttpStatus.CREATED).json({ message: "Work Sample created", newWorkSample })
         } catch (error) {
-            console.log('Error while creating workSample', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "Error while creating workSample",
-                error: error instanceof Error ? error.message : 'Error while creating workSample'
-            })
+            logError('Error while creating work sample', error);
+            handleErrorResponse(req, res, error, 'Failed to create work sample');
         }
     }
     async handleFindWorkSampleOfVendor(req: Request, res: Response): Promise<void> {
@@ -34,11 +37,8 @@ export class WorkSampleController {
             const { totalPages, workSamples } = await this.findWorkSampleVendorUseCase.findWorkSamples(vendorId.toString(), page)
             res.status(HttpStatus.OK).json({ message: 'Work samples fetched', workSamples, totalPages })
         } catch (error) {
-            console.log('error while finding the workSamples of vendor', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while finding the worksamples of a vendor',
-                error: error instanceof Error ? error.message : 'error while finding the work samples of vendor'
-            })
+            logError('Error while finding work samples of vendor', error);
+            handleErrorResponse(req, res, error, 'Failed to fetch work samples');
         }
     }
 }

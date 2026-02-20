@@ -10,7 +10,7 @@ export class SearchVendorsUseCase implements ISearchVendorsUseCase {
     }
 
     async searchVendors(search: string): Promise<VendorEntity[]> {
-        if (!search) throw new Error("Search query is required");
+        if (!search || search.trim().length === 0) throw new Error("Search query is required");
         return await this.vendorRepository.searchVendors(search);
     }
 }

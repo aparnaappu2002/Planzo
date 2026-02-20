@@ -1,11 +1,8 @@
 
-
-
 import axios,{AxiosError,AxiosRequestConfig,InternalAxiosRequestConfig} from "axios";
 import { store } from "@/redux/Store";
 import AuthAxios from './authAxios'
 import { addAdminToken } from "@/redux/slices/admin/adminToken";
-import { error } from "console";
 
 const instance = axios.create({
     baseURL:import.meta.env.VITE_API_ADMIN_BASEURL,

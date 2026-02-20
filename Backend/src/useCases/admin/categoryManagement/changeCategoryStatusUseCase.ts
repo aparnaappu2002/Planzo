@@ -7,6 +7,10 @@ export class ChangeCategoryStatusUseCase implements IchangeCategoryStatusUseCase
         this.categoryDatabase = categoryDatabase
     }
     async changeStatusCategory(categoryId: string): Promise<boolean> {
+        if (!categoryId || categoryId.trim().length === 0) {
+            throw new Error('Category ID is required');
+        }
+
         const statusChangedCategory = await this.categoryDatabase.changeStatusOfCategory(categoryId)
         if (!statusChangedCategory) throw new Error('No category found in this ID')
         return true

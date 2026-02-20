@@ -3,6 +3,7 @@ import { IreadNotificationUseCase } from "../../../domain/interfaces/useCaseInte
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { IdeleteSingleNotificationUseCase } from "../../../domain/interfaces/useCaseInterfaces/notification/IdeleteSingleNotification";
 import { IdeleteAllNotificationUseCase } from "../../../domain/interfaces/useCaseInterfaces/notification/IdeleteAllNotificationUseCase";
+import { handleErrorResponse,logError } from "../../../framework/services/errorHandler";
 
 export class NotificationController {
     private readNotificationUseCase: IreadNotificationUseCase
@@ -22,11 +23,8 @@ export class NotificationController {
                 message: 'Notification readed'
             })
         } catch (error) {
-            console.log('error while reading notification', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while reading notification',
-                error: error instanceof Error ? error.message : 'error while reading notification'
-            })
+            logError('Error while reading notification', error);
+            handleErrorResponse(req, res, error, 'Error while reading notification');
         }
     }
     async handleDeleteSingleNotification(req: Request, res: Response): Promise<void> {
@@ -39,11 +37,8 @@ export class NotificationController {
             await this.deleteSingleNotificationUseCase.deleteSingleNotification(notficationId?.toString())
             res.status(HttpStatus.OK).json({ message: "Notification deleted" })
         } catch (error) {
-            console.log('error while deleting single notification', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while deleting single notfication",
-                error: error instanceof Error ? error.message : 'error while deleting single notification'
-            })
+            logError('Error while deleting single notification', error);
+            handleErrorResponse(req, res, error, 'Error while deleting single notification');
         }
     }
     async handleDeleteAllNotification(req: Request, res: Response): Promise<void> {
@@ -56,11 +51,8 @@ export class NotificationController {
             await this.deleteAllNotificationUseCase.deleteAllNotifications(userId.toString())
             res.status(HttpStatus.OK).json({ message: "Notificaitons deleted" })
         } catch (error) {
-            console.log('error while deleting all notification', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while deleting all notifcations',
-                error: error instanceof Error ? error.message : 'error while deleting all notifcations'
-            })
+            logError('Error while deleting all notifications', error);
+            handleErrorResponse(req, res, error, 'Error while deleting all notifications');
         }
     }
 }

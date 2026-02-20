@@ -10,6 +10,22 @@ export class ChangePasswordVendorUseCase implements IchangePasswordVendorUseCase
         this.hashPassword = hashPassword
     }
     async changePasswordVendor(vendorId: string, newPassword: string, oldPassword: string): Promise<boolean> {
+        if (!vendorId || vendorId.trim().length === 0) {
+            throw new Error('Vendor ID is required');
+        }
+        if (!oldPassword || oldPassword.trim().length === 0) {
+            throw new Error('Old password is required');
+        }
+        if (!newPassword || newPassword.trim().length === 0) {
+            throw new Error('New password is required');
+        }
+        if (newPassword.length < 6) {
+            throw new Error('New password must be at least 6 characters');
+        }
+        if (newPassword.length > 128) {
+            throw new Error('New password is too long');
+        }
+        
         const passwordInDb = await this.vendorDatabase.findPassword(vendorId)
         if (!passwordInDb) throw new Error("No vendor Found in this ID")
         const verifyOldPassword = await this.hashPassword.comparePassword(oldPassword, passwordInDb)

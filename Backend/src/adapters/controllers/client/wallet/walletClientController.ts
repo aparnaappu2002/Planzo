@@ -3,6 +3,7 @@ import { IfindWalletUseCase } from "../../../../domain/interfaces/repositoryInte
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindTransactionsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/trasaction/IfindTransactionUseCase";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class ClientWalletController {
     private findClientWalletUseCase: IfindWalletUseCase
@@ -19,11 +20,8 @@ export class ClientWalletController {
             const { transactions, totalPages } = await this.findTransactionOfUser.findTransactions(wallet?._id!, page)
             res.status(HttpStatus.OK).json({ message: Messages.WALLET_FETCHED, wallet, transactions, totalPages })
         } catch (error) {
-            console.log('error while finding client wallet', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.WALLET_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.WALLET_FETCH_ERROR
-            })
+            logError('Error while finding client wallet', error);
+            handleErrorResponse(req, res, error, Messages.WALLET_FETCH_ERROR);
         }
     }
 }

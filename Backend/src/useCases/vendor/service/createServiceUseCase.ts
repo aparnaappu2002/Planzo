@@ -8,6 +8,11 @@ export class CreateServiceUseCase implements IcreateServiceUseCase {
         this.serviceDatabase = serviceDatabase
     }
     async createService(service: ServiceEntity): Promise<ServiceEntity> {
+        
+        if (!service) {
+            throw new Error('Service data is required');
+        }
+
         return await this.serviceDatabase.createService(service)
     }
 }

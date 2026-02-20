@@ -288,7 +288,13 @@ export const EventCreation = () => {
 
     } catch (error: any) {
       console.error("Event creation failed:", error);
-      toast.error(error.message || "Failed to create event");
+      let errorMessage = "Event creation failed.";
+      
+      if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    toast.error(errorMessage); 
     }
   };
 

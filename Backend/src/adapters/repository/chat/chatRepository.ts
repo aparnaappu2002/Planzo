@@ -71,7 +71,7 @@ export class ChatRepository implements IchatRepository {
                 { senderId: senderId, receiverId: receiverId },
                 { senderId: receiverId, receiverId: senderId }
             ]
-        }).select('_id chatId')
+        }).select('_id chatId').lean() as chatEntity | null
     }
     
 }

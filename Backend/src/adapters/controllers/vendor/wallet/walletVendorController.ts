@@ -3,7 +3,7 @@ import { IfindWalletUseCase } from "../../../../domain/interfaces/repositoryInte
 import { IfindTransactionsUseCase } from "../../../../domain/interfaces/useCaseInterfaces/trasaction/IfindTransactionUseCase";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IfindTransactionsByPaymentStatusUseCase } from "../../../../domain/interfaces/useCaseInterfaces/trasaction/IfindTrasactionByPaymentUseCase";
-
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 export class WalletVendorController {
   private findWalletDetails: IfindWalletUseCase;
   private findTransactions: IfindTransactionsUseCase;
@@ -41,14 +41,8 @@ export class WalletVendorController {
           totalPages,
         });
     } catch (error) {
-      console.log("error while finding wallet details", error);
-      res.status(HttpStatus.BAD_REQUEST).json({
-        message: "Error whilw finding wallet details",
-        error:
-          error instanceof Error
-            ? error.message
-            : "error while finding wallet detailsl",
-      });
+      logError('Error while finding wallet details', error);
+      handleErrorResponse(req, res, error, 'Failed to fetch wallet details');
     }
   }
   async handleFindTransactionsByPaymentStatus(
@@ -88,11 +82,8 @@ export class WalletVendorController {
         sortBy: sort,
       });
     } catch (error: any) {
-      console.error("Error in handleFindTransactionsByPaymentStatus:", error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: "Failed to fetch transactions",
-        error: error.message || "Internal server error",
-      });
+      logError('Error while finding transactions by payment status', error);
+      handleErrorResponse(req, res, error, 'Failed to fetch transactions');
     }
   }
 }

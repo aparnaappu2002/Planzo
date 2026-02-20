@@ -89,7 +89,7 @@ export class BookingRepository implements IbookingRepository {
         return await bookingModel.findByIdAndUpdate({ _id: bookingId }, { vendorApproval: "Approved" }, { new: true })
     }
     async findBookingByIdForDateChecking(bookingId: string): Promise<BookingEntity | null> {
-        return await bookingModel.findById(bookingId).select('_id date vendorId')
+        return await bookingModel.findById(bookingId).select('_id date vendorId').lean() as BookingEntity | null
     }
     async findBookingWithSameDate(bookingId: string, vendorId: string, date: Date[]): Promise<BookingEntity | null> {
         return await bookingModel.findOne({
@@ -147,7 +147,7 @@ export class BookingRepository implements IbookingRepository {
         return { date: bookingDetails?.date, servicePrice: bookingDetails?.serviceId.servicePrice }
     }
     async updateBookingPaymentStatus(bookingId: string | ObjectId, status: string): Promise<BookingEntity | null> {
-        return await bookingModel.findByIdAndUpdate(bookingId, { paymentStatus: status }, { new: true }).select('-__v -createdAt')
+        return await bookingModel.findByIdAndUpdate(bookingId, { paymentStatus: status }, { new: true }).select('-__v -createdAt').lean() as BookingEntity | null
     }
     async cancelBooking(bookingId: string): Promise<BookingEntity | null> {
         return await bookingModel.findByIdAndUpdate(bookingId, { status: 'Cancelled' }, { new: true })

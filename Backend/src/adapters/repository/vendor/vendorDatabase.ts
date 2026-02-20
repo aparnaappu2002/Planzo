@@ -52,7 +52,7 @@ export class VendorDatabase implements IvendorDatabaseRepositoryInterface{
         return vendor
     }
     async updateDetailsVendor(vendorId: string, about: string, phone: string, name: string): Promise<VendorEntity | null> {
-        return await VendorModel.findByIdAndUpdate(vendorId, { aboutVendor: about, phone, name }).select('_id email name phone role status vendorId vendorStatus profileImage aboutVendor role')
+        return await VendorModel.findByIdAndUpdate(vendorId, { aboutVendor: about, phone, name }).select('_id email name phone role status vendorId vendorStatus profileImage aboutVendor role').lean() as VendorEntity | null;
     }
     async changePassword(vendorId: string, newPassword: string): Promise<boolean> {
         const changedPasswordVendor = await VendorModel.findByIdAndUpdate(vendorId, { password: newPassword })

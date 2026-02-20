@@ -488,3 +488,45 @@ export const deleteSingleNotificationVendor = async (notificationId: string) => 
         throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while deleting single notification')
     }
 }
+
+export const filterTicketsVendor = async (
+    vendorId: string, 
+    pageNo: number,
+    paymentStatus?: 'pending' | 'successful' | 'failed',
+    ticketStatus?: 'used' | 'refunded' | 'unused'
+) => {
+    try {
+        const response = await axios.get('/tickets/filter', {
+            params: { 
+                vendorId, 
+                pageNo,
+                paymentStatus,
+                ticketStatus
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log('error while filtering tickets', error);
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while filtering tickets');
+    }
+};
+
+export const searchTicketsVendor = async (
+    vendorId: string, 
+    searchTerm: string, 
+    pageNo: number
+) => {
+    try {
+        const response = await axios.get('/tickets/search', {
+            params: { 
+                vendorId, 
+                searchTerm, 
+                pageNo 
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log('error while searching tickets', error);
+        throw new Error(isAxiosError(error) ? error.response?.data.error : 'error while searching tickets');
+    }
+};

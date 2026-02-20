@@ -4,6 +4,7 @@ import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { VendorEntity } from "../../../../domain/entities/vendorEntitty";
 import { IfindVendorProfileUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/vendor/IfindVendorProfileUseCase";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logInfo,logError } from "../../../../framework/services/errorHandler";
 
 
 export class VendorForClientController {
@@ -16,13 +17,12 @@ export class VendorForClientController {
     async handleFindVendorForClient(req: Request, res: Response): Promise<void> {
         try {
             const vendors: VendorEntity[] = await this.findVendorForClientUseCase.findVendorForClientUseCase()
+            logInfo(`Vendors fetched successfully for client carousel - count: ${vendors.length}`);
+
             res.status(HttpStatus.OK).json({ message: Messages.VENDOR_FETCHED, vendors })
         } catch (error) {
-            console.log('error while finding vendors for client carousal', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.VENDORS_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.VENDORS_FETCH_ERROR
-            })
+            logError('Error while finding vendors for client carousel', error);
+            handleErrorResponse(req, res, error, Messages.VENDORS_FETCH_ERROR);
         }
     }
     async handleFindVendorProfile(req: Request, res: Response): Promise<void> {
@@ -30,6 +30,8 @@ export class VendorForClientController {
             const { vendorId, PageNo} = req.params
             const page = parseInt(PageNo, 10) || 1
             const { services, totalPages, vendorProfile } = await this.findVendorProfileUseCase.findVendorProfile(vendorId, page)
+            logInfo(`Vendor profile fetched successfully - vendorId: ${vendorId}, services count: ${services.length}, total pages: ${totalPages}`);
+
             res.status(HttpStatus.OK).json({
                 message: Messages.PROFILE_FETCHED,
                 vendorProfile,
@@ -37,11 +39,8 @@ export class VendorForClientController {
                 totalPages
             })
         } catch (error) {
-            console.log('error while finding the vendor profile', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.PROFILE_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.PROFILE_FETCH_ERROR
-            })
+            logError('Error while finding the vendor profile', error);
+            handleErrorResponse(req, res, error, Messages.PROFILE_FETCH_ERROR);
         }
     }
 }

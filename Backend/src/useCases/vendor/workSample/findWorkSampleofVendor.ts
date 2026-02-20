@@ -8,6 +8,9 @@ export class FindWorkSamplesOfAVendorUseCase implements IfindWorkSamplesOfAVendo
         this.workSampleDatbase = workSampleDatbase
     }
     async findWorkSamples(vendorId: string,pageNo:number): Promise<{ workSamples: WorkSamplesEntity[] | [], totalPages: number }> {
+        if (!vendorId || vendorId.trim().length === 0) {
+            throw new Error('Vendor ID is required');
+        }
         return await this.workSampleDatbase.findWorkSample(vendorId,pageNo)
     }
 }

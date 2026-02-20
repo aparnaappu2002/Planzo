@@ -8,6 +8,9 @@ export class WorkSampleCreationUseCase implements IWorkSampleCreationUseCase {
         this.workSampleDatabase = workSampleDatabase
     }
     async createWorkSample(workSample: WorkSamplesEntity): Promise<WorkSamplesEntity | null> {
+        if (!workSample) {
+            throw new Error('Work sample data is required');
+        }
         return await this.workSampleDatabase.createWorkSamples(workSample)
     }
 }

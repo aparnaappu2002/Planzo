@@ -21,4 +21,22 @@ export interface IticketRepositoryInterface {
         pageNo: number,
         sortBy: string
     ): Promise<{ tickets: TicketAndUserDTO[] | []; totalPages: number; }>
+    filterTickets(
+        vendorId: string,
+        pageNo: number,
+        paymentStatus?: 'pending' | 'successful' | 'failed',
+        ticketStatus?: 'used' | 'refunded' | 'unused'
+    ): Promise<{
+        ticketAndEventDetails: TicketAndUserDTO[] | [],
+        totalPages: number
+    }>;
+    searchTicketsByEventTitle(
+        vendorId: string,
+        searchTerm: string,
+        pageNo: number
+    ): Promise<{
+        ticketAndEventDetails: TicketAndUserDTO[] | [],
+        totalPages: number
+    }>;
+
 }

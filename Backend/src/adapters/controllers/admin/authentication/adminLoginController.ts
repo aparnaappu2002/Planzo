@@ -5,6 +5,7 @@ import { IredisService } from "../../../../domain/interfaces/serviceInterface/Ir
 import { setCookie } from "../../../../framework/services/tokenCookieSetting";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 export class AdminLoginController {
   private adminLoginUseCase: IadminLoginUseCase;
   private jwtService: IjwtInterface;
@@ -20,16 +21,23 @@ export class AdminLoginController {
     this.redisService = redisService;
   }
 
+  private isValidEmail(email: string): boolean {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+
   async handleAdminLogin(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
       //console.log(req.body);
-      if (!email) {
+      if (!email || !this.isValidEmail(email)) {
         res.status(HttpStatus.BAD_REQUEST).json({
           message: Messages.INVALID_EMAIL,
         });
         return;
-      } else if (!password) {
+      } 
+      if (!password || password.trim().length<6) {
         res.status(HttpStatus.BAD_REQUEST).json({
           message: Messages.INVALID_PASSWORD,
         });
@@ -70,12 +78,8 @@ export class AdminLoginController {
       });
       return;
     } catch (error) {
-      //console.log("Error while admin login", error);
-      res.status(HttpStatus.BAD_REQUEST).json({
-        message: Messages.LOGIN_ERROR,
-        error:
-          error instanceof Error ? error.message : Messages.LOGIN_ERROR,
-      });
+      logError("Error while admin login", error);
+      handleErrorResponse(req, res, error, Messages.LOGIN_ERROR);
     }
   }
 }

@@ -1,7 +1,7 @@
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IfindEventsNearToClientUseCase } from "../../../domain/interfaces/useCaseInterfaces/client/events/IfindEventsNearToClient";
 import { EventResponseDTO } from "../../../domain/dto/event/eventResponseDTO";
-import { mapEventEntityToDTO } from "../../../domain/dto/event/eventMapper";
+import { mapEventEntityToDTO } from "../../mappers/eventMapper";
 
 export class FindEventsNearToClientUseCase implements IfindEventsNearToClientUseCase {
     private eventDatabase: IeventRepository

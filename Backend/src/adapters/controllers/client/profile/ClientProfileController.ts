@@ -5,6 +5,7 @@ import { IchangeProfileImageClientUseCase } from "../../../../domain/interfaces/
 import { IshowProfileClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/profile/IshowProfileClient";
 import { IupdateProfileDataUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/profile/IupdateProfileClient";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logInfo,logError } from "../../../../framework/services/errorHandler";
 
 export class ProfileClientController {
     private changePasswordCientUseCase: IchangePasswordClientUseCase
@@ -18,61 +19,74 @@ export class ProfileClientController {
         this.showProfileClientUseCase=showProfileClientUseCase
         this.updateProfileClientUseCase=updateProfileClientUseCase
     }
-    async handeChangePasswordClient(req: Request, res: Response): Promise<void> {
+    async handleChangePasswordClient(req: Request, res: Response): Promise<void> {
         try {
             const { userId, oldPassword, newPassword } = req.body
-            console.log(userId)
+            if (!userId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'User ID is required'
+                });
+                return;
+            }
+            if (!oldPassword) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Old password is required'
+                });
+                return;
+            }
+            if (!newPassword) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'New password is required'
+                });
+                return;
+            }
+            logInfo(`Password change attempt for user: ${userId}`);
             const changePasswordClient = await this.changePasswordCientUseCase.changePasswordClient(userId, oldPassword, newPassword)
+            logInfo(`Password changed successfully for user: ${userId}`);
             res.status(HttpStatus.OK).json({ message: Messages.PASSWORD_CHANGED, changePasswordClient })
         } catch (error) {
-            console.log('error while changing the password of the client', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.PASSWORD_CHANGE_ERROR,
-                error: error instanceof Error ? error.message : Messages.PASSWORD_CHANGE_ERROR
-            })
+            logError('error while changing the password of the client', error)
+            handleErrorResponse(req, res, error, Messages.PASSWORD_CHANGE_ERROR);
         }
     }
     async handleUpdateProfileImageClient(req: Request, res: Response): Promise<void> {
         try {
             const { clientId, profileImage } = req.body
+            logInfo(`Profile image update attempt for client: ${clientId}`);
             const updatedProfile = await this.changeProfileImageClientUseCase.changeProfileImage(clientId, profileImage)
+            logInfo(`Profile image updated successfully for client: ${clientId}`);
             res.status(HttpStatus.OK).json({ message: Messages.PROFILE_IMAGE_UPDATED, updatedProfile })
         } catch (error) {
-            console.log('error while changing profie image client', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.PROFILE_IMAGE_UPDATE_ERROR,
-                error: error instanceof Error ? error.message : Messages.PROFILE_IMAGE_UPDATE_ERROR
-            })
+            logError("Error while changing profile image client", error);
+            handleErrorResponse(req, res, error, Messages.PROFILE_IMAGE_UPDATE_ERROR);
         }
     }
     async handleShowProfileClient(req: Request, res: Response): Promise<void> {
         try {
             const { clientId } = req.params
+            logInfo(`Fetching profile for client: ${clientId}`);
             const client = await this.showProfileClientUseCase.showProfile(clientId)
+            logInfo(`Profile fetched successfully for client: ${clientId}`);
             res.status(HttpStatus.OK).json({ message: Messages.PROFILE_FETCHED, client })
         } catch (error) {
-            console.log('error while fetching profile details of client', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.PROFILE_FETCH_ERROR,
-                error: error instanceof Error ? error.message : Messages.PROFILE_FETCH_ERROR
-            })
+            logError("Error while fetching profile details of client", error);
+            handleErrorResponse(req, res, error, Messages.PROFILE_FETCH_ERROR);
         }
     }
     async handleUpdateProfileClient(req: Request, res: Response): Promise<void> {
         try {
             const { client } = req.body
+            logInfo(`Profile update attempt for client: ${client?.id || 'unknown'}`);
             const updatedProfile = await this.updateProfileClientUseCase.updateClientProfile(client)
             if (!updatedProfile) {
                 res.status(HttpStatus.BAD_REQUEST).json({ error: Messages.USER_NOT_FOUND })
                 return
             }
+            logInfo(`Profile updated successfully for client: ${client?.id || 'unknown'}`)
             res.status(HttpStatus.OK).json({ message: Messages.PROFILE_UPDATED, updatedProfile })
         } catch (error) {
-            console.log('error while update client profile', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: Messages.PROFILE_UPDATE_ERROR,
-                error: error instanceof Error ? error.message : Messages.PROFILE_UPDATE_ERROR
-            })
+            logError("Error while updating client profile", error);
+            handleErrorResponse(req, res, error, Messages.PROFILE_UPDATE_ERROR);
         }
     }
 }

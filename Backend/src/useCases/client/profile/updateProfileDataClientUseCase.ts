@@ -9,6 +9,10 @@ export class UpdateProfileClientUseCase implements IupdateProfileDataUseCase {
         this.clientDatabase = clientDatabase
     }
     async updateClientProfile(client: ClientUpdateProfileDTO): Promise<clientEntity | null> {
+        if (!client) {
+            throw new Error('Client data is required');
+        }
+        
         return await this.clientDatabase.updateProfile(client)
     }
 }

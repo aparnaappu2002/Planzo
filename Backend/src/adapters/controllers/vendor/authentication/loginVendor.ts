@@ -5,6 +5,7 @@ import { IredisService } from "../../../../domain/interfaces/serviceInterface/Ir
 import { setCookieVendor } from "../../../../framework/services/tokenCookieSettingVendor";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IvendorLogoutUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/authentication/IvendorLogoutUseCase";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 export class LoginLogoutVendorController {
   private vendorLoginUseCase: IloginVendorUseCase;
@@ -26,6 +27,33 @@ export class LoginLogoutVendorController {
   async handleLoginVendor(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
+      if (!email) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Email is required'
+                });
+                return;
+            }
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email.trim())) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Invalid email format'
+                });
+                return;
+            }
+        if (!password) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Password is required'
+                });
+                return;
+            }
+
+            if (password.length < 6) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Password must be at least 6 characters'
+                });
+                return;
+            }
+    
       const vendor = await this.vendorLoginUseCase.loginVendor(email, password);
       const modifiedVendor = {
         _id: vendor?._id,
@@ -74,11 +102,8 @@ export class LoginLogoutVendorController {
         });
       return;
     } catch (error) {
-      res.status(HttpStatus.BAD_REQUEST).json({
-        message: "error while login vendor",
-        error:
-          error instanceof Error ? error.message : "error while login vendor",
-      });
+      logError("Error while vendor login", error);
+      handleErrorResponse(req, res, error, "Error while login vendor");
       return;
     }
   }
@@ -98,11 +123,8 @@ export class LoginLogoutVendorController {
                 res.status(HttpStatus.OK).json({ message: "Logout successful" });
 
         } catch (error) {
-            console.log('error while handling logout client', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: 'error while handling logout client',
-                error: error instanceof Error ? error.message : 'error while handling logout client'
-            })
+            logError('Error while handling vendor logout', error);
+            handleErrorResponse(req, res, error, 'Error while handling logout vendor');
         }
     }
 

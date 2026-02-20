@@ -3,6 +3,7 @@ import { IsendMailForgetPasswordClient } from "../../../../domain/interfaces/use
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IresetPasswordClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/authentication/IforgotPassword";
 import { Messages } from "../../../../domain/enums/messages";
+import { handleErrorResponse,logError } from "../../../../framework/services/errorHandler";
 
 
 export class ForgotPasswordClient{
@@ -19,11 +20,8 @@ export class ForgotPasswordClient{
             await this.sendResetEmailClientUseCase.sendMailForForgetPassword(email)
             res.status(HttpStatus.OK).json({message:Messages.PASSWORD_RESET_SENT})
         }catch(error){
-            console.log("Error while sending reset email:",error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message:Messages.PASSWORD_RESET_SENT_ERROR,
-                error:error instanceof Error ? error.message:Messages.PASSWORD_RESET_SENT_ERROR
-            })
+            logError("Error while sending reset email", error);
+            handleErrorResponse(req, res, error, Messages.PASSWORD_RESET_SENT_ERROR);
         }
     }
     async handleResetPassword(req:Request,res:Response):Promise<void>{
@@ -35,11 +33,8 @@ export class ForgotPasswordClient{
                 client: updatedClient
             })
         }catch(error){
-            console.log("Error while resetting password:",error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message:Messages.PASSWORD_RESET_ERROR,
-                error: error instanceof Error ? error.message :Messages.PASSWORD_RESET_ERROR
-            })
+            logError("Error while resetting password", error);
+            handleErrorResponse(req, res, error, Messages.PASSWORD_RESET_ERROR);
         }
     }
 }

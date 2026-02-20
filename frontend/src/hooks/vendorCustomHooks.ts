@@ -3,7 +3,8 @@ import { vendorSignup,verifyOtpVendor,vendorLogin,resendOtpVendor,
 ,findWalletDetailsVendor,ticketDetailsWithUser,vendorLogout,createWorkSamples,findWorkSamples,
 findServiceForVendor,editServiceVendor,changeStatusService,createServiceVendor,fetchCategoryCategoryForService,approveBookingVendor,rejectBooking,updateBookingAsComplete,
 showBookingsInVendor,loadChatsVendor,loadPreviousChatVendor,verifyTicket,findTransactionsByPaymentStatus,searchServiceVendor,searchEventsVendor,
-loadVendorDashboard,pdfDownloadVendor,singleNotificationReadVendor,deleteAllNotificationsVendor,deleteSingleNotificationVendor} from "@/services/ApiServiceVendor";
+loadVendorDashboard,pdfDownloadVendor,singleNotificationReadVendor,deleteAllNotificationsVendor,deleteSingleNotificationVendor,
+filterTicketsVendor,searchTicketsVendor} from "@/services/ApiServiceVendor";
 import {useInfiniteQuery,useMutation , useQuery} from '@tanstack/react-query'
 import { EventEntity } from "@/types/EventType";
 import { EventUpdateEntity } from "@/types/EventUpdateEntity";
@@ -319,3 +320,42 @@ export const useDeleteSingleNotificationsVendor = () => {
         mutationFn: (notificationId: string) => deleteSingleNotificationVendor(notificationId)
     })
 }
+interface FilterTicketsParams {
+    vendorId: string;
+    pageNo: number;
+    paymentStatus?: 'pending' | 'successful' | 'failed';
+    ticketStatus?: 'used' | 'refunded' | 'unused';
+}
+
+interface SearchTicketsParams {
+    vendorId: string;
+    searchTerm: string;
+    pageNo: number;
+}
+
+export const useFilterTicketsVendor = ({ 
+    vendorId, 
+    pageNo, 
+    paymentStatus, 
+    ticketStatus 
+}: FilterTicketsParams) => {
+    return useQuery({
+        queryKey: ['tickets', 'filter', vendorId, pageNo, paymentStatus, ticketStatus],
+        queryFn: () => filterTicketsVendor(vendorId, pageNo, paymentStatus, ticketStatus),
+        enabled: !!vendorId && (!!paymentStatus || !!ticketStatus),
+        staleTime: 30000,
+    });
+};
+
+export const useSearchTicketsVendor = ({ 
+    vendorId, 
+    searchTerm, 
+    pageNo 
+}: SearchTicketsParams) => {
+    return useQuery({
+        queryKey: ['tickets', 'search', vendorId, searchTerm, pageNo],
+        queryFn: () => searchTicketsVendor(vendorId, searchTerm, pageNo),
+        enabled: !!vendorId && !!searchTerm.trim(),
+        staleTime: 30000,
+    });
+};

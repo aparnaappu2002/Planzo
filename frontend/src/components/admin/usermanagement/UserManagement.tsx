@@ -130,45 +130,33 @@ export default function UserManagement() {
   }, []);
 
   const confirmAction = async () => {
-    if (!alertDialog.user) return;
+  if (!alertDialog.user) return;
 
-    try {
-      const userId = alertDialog.user._id;
+  const userId = alertDialog.user._id;
 
-      if (alertDialog.type === "block") {
-        setLocalUserUpdates((prev) => ({
-          ...prev,
-          [userId]: { status: "block", timestamp: Date.now() },
-        }));
-        await blockClientMutation.mutateAsync(userId);
-        toast.success("User blocked successfully");
-      } else if (alertDialog.type === "unblock") {
-        setLocalUserUpdates((prev) => ({
-          ...prev,
-          [userId]: { status: "active", timestamp: Date.now() },
-        }));
-        await unblockClientMutation.mutateAsync(userId);
-        toast.success("User unblocked successfully");
-      }
-
-      setAlertDialog({ open: false, type: null, user: null });
-
-      if (isSearching) {
-        searchClientQuery.refetch();
-      } else {
-        fetchClientQuery.refetch();
-      }
-    } catch (error) {
-      console.error("Action failed:", error);
-      toast.error(`Failed to ${alertDialog.type} user`);
-      setLocalUserUpdates((prev) => {
-        const updated = { ...prev };
-        delete updated[alertDialog.user._id];
-        return updated;
-      });
-      setAlertDialog({ open: false, type: null, user: null });
+  try {
+    if (alertDialog.type === "block") {
+      await blockClientMutation.mutateAsync(userId);
+      setLocalUserUpdates((prev) => ({ ...prev, [userId]: { status: "block" } }));
+      toast.success("User blocked successfully");
+    } else {
+      await unblockClientMutation.mutateAsync(userId);
+      setLocalUserUpdates((prev) => ({ ...prev, [userId]: { status: "active" } }));
+      toast.success("User unblocked successfully");
     }
-  };
+
+    setAlertDialog({ open: false, type: null, user: null });
+
+    // ❌ Remove these two lines — they were causing the refetch flicker
+    // searchClientQuery.refetch();
+    // fetchClientQuery.refetch();
+
+  } catch (error) {
+    toast.error(`Failed to ${alertDialog.type} user`);
+    setLocalUserUpdates((prev) => { const u = { ...prev }; delete u[userId]; return u; });
+    setAlertDialog({ open: false, type: null, user: null });
+  }
+};
 
   const getStatusColor = useCallback((status: string) => {
     const s = status?.toLowerCase();

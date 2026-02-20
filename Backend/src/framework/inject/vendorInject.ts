@@ -58,6 +58,8 @@ import { VendorDashboardController } from "../../adapters/controllers/vendor/das
 import { PdfServiceVendor } from "../services/pdfServiceVendor";
 import { SearchServiceVendorUseCase } from "../../useCases/vendor/service/searchServiceVendorUseCase";
 import { SearchEventsVendorUseCase } from "../../useCases/vendor/event/searchEventsVendorUseCase";
+import { TicketSearchUseCase } from "../../useCases/vendor/ticket/ticketSearchUseCase";
+import { TicketFilterUseCase } from "../../useCases/vendor/ticket/ticketFilterUseCase";
 
 
 const EmailService  = new emailService()
@@ -112,7 +114,9 @@ export const injectedWalletVendorController = new WalletVendorController(findWal
 const ticketRepository=new TicketRepository()
 const ticketAndUserDetailsOfEventUseCase=new TicketAndUserDetailsOfEventUseCase(ticketRepository)
 const ticketVerificationUseCase=new TicketVerificationUseCase(ticketRepository,eventRepository)
-export const injectedTicketVendorController= new TicketVendorController(ticketAndUserDetailsOfEventUseCase,ticketVerificationUseCase)
+const ticketSearchUseCase=new TicketSearchUseCase(ticketRepository)
+const ticketFilterUseCase=new TicketFilterUseCase(ticketRepository)
+export const injectedTicketVendorController= new TicketVendorController(ticketAndUserDetailsOfEventUseCase,ticketVerificationUseCase,ticketSearchUseCase,ticketFilterUseCase)
 
 //workSample
 const workSampleRepository=new WorkSampleRepository()

@@ -13,6 +13,31 @@ export class ProfileVendorController {
     async handleChangePasswordVendor(req: Request, res: Response): Promise<void> {
         try {
             const { userId, newPassword, oldPassword } = req.body
+            if (!userId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Vendor ID is required'
+                });
+                return;
+            }
+            if (!oldPassword) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Old password is required'
+                });
+                return;
+            }
+            if (!newPassword) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'New password is required'
+                });
+                return;
+            }
+            if (newPassword.length < 6) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'New password must be at least 6 characters'
+                });
+                return;
+            }
+            
             const changePassword = await this.changePasswordVendorUseCase.changePasswordVendor(userId, oldPassword,newPassword)
             res.status(HttpStatus.OK).json({ message: "Password changed" })
         } catch (error) {
@@ -26,6 +51,18 @@ export class ProfileVendorController {
     async handleUpdateAboutAndPhone(req: Request, res: Response): Promise<void> {
         try {
             const { id, about, phone, name } = req.body
+            if (!name) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Name is required'
+                });
+                return;
+            }
+            if (!phone) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Phone number is required'
+                });
+                return;
+            }
             const updatedVendor = await this.updateDetailsVendorUseCase.updateDetailsVendor(id, about, phone, name)
             res.status(HttpStatus.OK).json({ message: "About and Phone Updated", updatedVendor })
         } catch (error) {

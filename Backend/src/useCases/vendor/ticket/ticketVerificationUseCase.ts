@@ -11,6 +11,16 @@ export class TicketVerificationUseCase implements IticketVerificationUseCase {
         this.eventDatabase = eventDatabase
     }
     async verifyTicket(ticketId: string, eventId: string, vendorId: string): Promise<TicketEntity> {
+        if (!ticketId || ticketId.trim().length === 0) {
+            throw new Error('Ticket ID is required');
+        }
+        if (!eventId || eventId.trim().length === 0) {
+            throw new Error('Event ID is required');
+        }
+        if (!vendorId || vendorId.trim().length === 0) {
+            throw new Error('Vendor ID is required');
+        }
+        
         const ticket = await this.ticketDatabase.findTicketUsingTicketId(ticketId)
         if (!ticket) throw new Error('No ticket found in this ID')
         if (ticket.ticketStatus == 'used') throw new Error('This ticket is already used')

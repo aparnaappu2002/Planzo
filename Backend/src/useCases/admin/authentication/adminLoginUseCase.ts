@@ -17,7 +17,12 @@ export class AdminLoginUseCase implements IadminLoginUseCase{
     }
 
     async handleLogin(email: string, password: string): Promise<clientEntity | null> {
-        const admin = await  this.adminRepository.findByEmail(email)
+        if (!email || !password) {
+            throw new Error("Email and password are required");
+        }
+        const normalizedEmail = email.trim().toLowerCase();
+        const admin = await this.adminRepository.findByEmail(normalizedEmail);
+
         if(!admin) throw new Error("Admin not exist in this email")
         if(!admin.isAdmin) throw new Error("You are not Admin")
         const passwordVerify = await this.hashPassword.comparePassword(password,admin.password)

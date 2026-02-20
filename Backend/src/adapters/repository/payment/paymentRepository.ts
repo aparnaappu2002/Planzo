@@ -9,6 +9,6 @@ export class PaymentRepository implements IpaymentRepository {
     }
     
     async findTransactionOfAUser(senderId: string | ObjectId, receiverId: string | ObjectId, bookingId: string | ObjectId): Promise<PaymentEntity | null> {
-        return await paymentModel.findOne({ userId: senderId, receiverId, bookingId }).select('-__v -createdAt')
+        return await paymentModel.findOne({ userId: senderId, receiverId, bookingId }).select('-__v -createdAt').lean() as PaymentEntity | null
     }
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IloadPreviousChatUseCase } from "../../../domain/interfaces/useCaseInterfaces/message/IloadPreviousChatUseCase";
 import { HttpStatus } from "../../../domain/enums/httpStatus";
+import { handleErrorResponse,logError } from "../../../framework/services/errorHandler";
 
 export class LoadPreviousMessageController {
     private loadPreviousMessageUseCase: IloadPreviousChatUseCase
@@ -19,11 +20,8 @@ export class LoadPreviousMessageController {
             const { messages, hasMore } = await this.loadPreviousMessageUseCase.loadPreviousChat(chatId, page)
             res.status(HttpStatus.OK).json({ message: "Previous chat loaded", messages, hasMore })
         } catch (error) {
-            console.log('error while loading previous message of chat', error)
-            res.status(HttpStatus.BAD_REQUEST).json({
-                message: "error while loading previous message of chat",
-                error: error instanceof Error ? error.message : 'error while loading previous message of chat'
-            })
+            logError('Error while loading previous message of chat', error);
+            handleErrorResponse(req, res, error, 'Error while loading previous message of chat');
         }
     }
 }

@@ -42,10 +42,10 @@ export const eventSchema = new Schema<EventEntity>({
             required: true
         }
     },
-    posterImage: [{
-        type: String,
+    posterImage: {
+        type: [String],
         required: true
-    }],
+    },
     ticketVariants: [{
         type: {
             type: String,
