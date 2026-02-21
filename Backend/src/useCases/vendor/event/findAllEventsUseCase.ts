@@ -1,5 +1,4 @@
 import { FindEventVendorDTO } from "../../../domain/dto/event/findEventVendorDTO";
-import { EventEntity } from "../../../domain/entities/event/eventEntity";
 import { IeventRepository } from "../../../domain/interfaces/repositoryInterfaces/event/IeventRepository";
 import { IfindAllEventsVendorUseCase } from "../../../domain/interfaces/useCaseInterfaces/vendor/event/IfindAllEventsUseCase";
 import { mapEventEntityVendorToDTO } from "../../mappers/eventVendorMapper";

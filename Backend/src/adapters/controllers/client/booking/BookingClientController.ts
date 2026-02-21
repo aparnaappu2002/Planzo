@@ -32,7 +32,7 @@ export class BookingClientController {
     async handleShowServiceWithVendor(req: Request, res: Response): Promise<void> {
         try {
             
-            const { serviceId, pageNo, rating } = req.query
+            const { serviceId, pageNo } = req.query
             if (!serviceId || !pageNo) {
                 res.status(HttpStatus.BAD_REQUEST).json({ error: Messages.SERVICE_ID_REQUIRED })
                 return
@@ -83,7 +83,7 @@ export class BookingClientController {
     async handleConfirmBookingPaymentUseCase(req: Request, res: Response): Promise<void> {
         try {
             const { booking, paymentIntentId } = req.body
-            const ConfirmBooking = await this.confirmBookingPaymentUseCase.confirmBookingPayment(booking, paymentIntentId)
+             await this.confirmBookingPaymentUseCase.confirmBookingPayment(booking, paymentIntentId)
             res.status(HttpStatus.OK).json({message:Messages.PAYMENT_CONFIRMED})
         } catch (error) {
             logError('Error while confirming booking payment', error);

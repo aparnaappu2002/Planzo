@@ -17,7 +17,11 @@ export class ClientWalletController {
             const { userId, pageNo } = req.params
             const page = parseInt(pageNo, 10) || 1
             const wallet = await this.findClientWalletUseCase.findWallet(userId)
-            const { transactions, totalPages } = await this.findTransactionOfUser.findTransactions(wallet?._id!, page)
+            if (!wallet?._id) {
+            res.status(HttpStatus.NOT_FOUND).json({ message: Messages.WALLET_FETCH_ERROR })
+            return
+            }
+            const { transactions, totalPages } = await this.findTransactionOfUser.findTransactions(wallet._id, page)
             res.status(HttpStatus.OK).json({ message: Messages.WALLET_FETCHED, wallet, transactions, totalPages })
         } catch (error) {
             logError('Error while finding client wallet', error);

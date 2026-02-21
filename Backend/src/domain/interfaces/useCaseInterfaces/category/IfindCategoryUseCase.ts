@@ -1,5 +1,5 @@
-import { categoryEntity } from "../../../entities/categoryEntity"
+import { FindCategoryDTO } from "../../../dto/findCategoryDTO"
 
 export interface IfindCategoryUseCase {
-    findAllCategory(pageNo: number): Promise<{ categories: categoryEntity[] | [], totalPages: number }>
+    findAllCategory(pageNo: number): Promise<{ categories: FindCategoryDTO[], totalPages: number }>
 }

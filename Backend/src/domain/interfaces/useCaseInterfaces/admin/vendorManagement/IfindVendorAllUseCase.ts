@@ -1,5 +1,5 @@
-import { VendorEntity } from "../../../../entities/vendorEntitty";
+import { FindVendorDTO } from "../../../../dto/vendor/findVendorDTO";
 
 export interface IfindAllVendorUseCase{
-    findAllVendor(pageNo:number):Promise<{vendors:VendorEntity[] | [] ; totalPages:number}>
+    findAllVendor(pageNo:number):Promise<{vendors:FindVendorDTO[] ; totalPages:number}>
 }

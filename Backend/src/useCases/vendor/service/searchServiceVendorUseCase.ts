@@ -1,5 +1,4 @@
 import { FindServiceDTO } from "../../../domain/dto/services/findServiceDTO";
-import { ServiceEntity } from "../../../domain/entities/serviceEntity";
 import { IserviceRepository } from "../../../domain/interfaces/repositoryInterfaces/service/IserviceRepository";
 import { IsearchServiceVendorUseCase } from "../../../domain/interfaces/useCaseInterfaces/vendor/service/IsearchServiceVendorUseCase";
 import { mapServiceEntityToDTO } from "../../mappers/serviceMapper";

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { IcreateServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IcreateServiceUseCase";
-import { ServiceEntity } from "../../../../domain/entities/serviceEntity";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
 import { IeditServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IeditServiceUseCase";
 import { IchangeStatusServiceUseCase } from "../../../../domain/interfaces/useCaseInterfaces/vendor/service/IchangeStatusServiceUseCase";

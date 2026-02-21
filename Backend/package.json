@@ -29,6 +29,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/redis": "^4.0.10",
     "eslint": "^9.39.2",
+    "eslint-interactive": "^11.1.0",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",

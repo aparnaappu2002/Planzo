@@ -1,4 +1,3 @@
-import { JwtPayload } from "jsonwebtoken";
 import { IjwtInterface } from "../../domain/interfaces/serviceInterface/IjwtService";
 import { IredisService } from "../../domain/interfaces/serviceInterface/IredisService";
 import { ITokenService } from "../../domain/interfaces/serviceInterface/ITokenService";

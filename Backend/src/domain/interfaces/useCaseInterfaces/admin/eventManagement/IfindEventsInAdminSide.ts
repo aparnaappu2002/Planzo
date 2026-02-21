@@ -1,5 +1,5 @@
-import { EventEntity } from "../../../../entities/event/eventEntity";
+import { EventResponseDTO } from "../../../../dto/event/eventResponseDTO";
 
 export interface IfindEventsInAdminSideUseCase {
-    findEvents(pageNo: number): Promise<{ events: EventEntity[] | [], totalPages: number }>
+    findEvents(pageNo: number): Promise<{ events: EventResponseDTO[], totalPages: number }>
 }

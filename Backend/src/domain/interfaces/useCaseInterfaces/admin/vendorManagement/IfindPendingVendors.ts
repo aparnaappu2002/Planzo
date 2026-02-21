@@ -1,5 +1,5 @@
-import { VendorEntity } from "../../../../entities/vendorEntitty";
+import { FindVendorDTO } from "../../../../dto/vendor/findVendorDTO";
 
 export interface IfindPendingVendors{
-    findPendingVendors(pageNo:number):Promise<{pendingVendors:VendorEntity[] | [];totalPages:number}>
+    findPendingVendors(pageNo:number):Promise<{pendingVendors:FindVendorDTO[];totalPages:number}>
 }

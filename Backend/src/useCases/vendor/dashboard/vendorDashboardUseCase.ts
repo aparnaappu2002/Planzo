@@ -25,7 +25,6 @@ export class VendorDashboardUseCase implements IvendorDashboardUseCase {
         const wallet = await this.walletDatabase.findWalletByUserId(vendorId)
         if (!wallet) throw new Error('No wallet found in this userId')
         const walletId = wallet._id!.toString()
-        const now = new Date()
 
         function getStartDate(period: Period): Date | null {
             const now = new Date()

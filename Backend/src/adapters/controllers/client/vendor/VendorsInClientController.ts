@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { IfindVendorForClientUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/vendor/IfindVendorForClientUseCase";
 import { HttpStatus } from "../../../../domain/enums/httpStatus";
-import { VendorEntity } from "../../../../domain/entities/vendorEntitty";
 import { IfindVendorProfileUseCase } from "../../../../domain/interfaces/useCaseInterfaces/client/vendor/IfindVendorProfileUseCase";
 import { Messages } from "../../../../domain/enums/messages";
 import { handleErrorResponse,logInfo,logError } from "../../../../framework/services/errorHandler";

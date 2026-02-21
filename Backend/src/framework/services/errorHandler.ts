@@ -73,21 +73,21 @@ export const asyncHandler = (
 };
 
 // Logger helper functions for different log levels
-export const logInfo = (message: string, meta?: any) => {
+export const logInfo = (message: string, meta?: unknown) => {
   logger.info(message, meta);
 };
 
-export const logError = (message: string, error?: any) => {
+export const logError = (message: string, error?: unknown) => {
   logger.error(message, {
     error: error instanceof Error ? error.message : error,
     stack: error instanceof Error ? error.stack : undefined,
   });
 };
 
-export const logWarn = (message: string, meta?: any) => {
+export const logWarn = (message: string, meta?: unknown) => {
   logger.warn(message, meta);
 };
 
-export const logDebug = (message: string, meta?: any) => {
+export const logDebug = (message: string, meta?: unknown) => {
   logger.debug(message, meta);
 };

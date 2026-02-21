@@ -1,5 +1,5 @@
-import { VendorEntity } from "../../../../entities/vendorEntitty";
+import { FindVendorDTO } from "../../../../dto/vendor/findVendorDTO";
 
 export interface IapproveVendorUseCase{
-    approveVendor(vendorId:string,newStatus:string):Promise<VendorEntity>
+    approveVendor(vendorId:string,newStatus:string):Promise<FindVendorDTO>
 }

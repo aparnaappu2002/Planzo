@@ -1,5 +1,5 @@
-import { clientEntity } from "../../../../entities/clientEntity";
+import { FindClientDTO } from "../../../../dto/findClientDTO";
 
 export interface ISearchClientsUseCase {
-    searchClients(search: string): Promise<clientEntity[]>;
+    searchClients(search: string): Promise<FindClientDTO[]>;
 }

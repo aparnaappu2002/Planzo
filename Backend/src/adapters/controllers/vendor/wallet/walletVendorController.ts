@@ -81,7 +81,7 @@ export class WalletVendorController {
         page,
         sortBy: sort,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logError('Error while finding transactions by payment status', error);
       handleErrorResponse(req, res, error, 'Failed to fetch transactions');
     }

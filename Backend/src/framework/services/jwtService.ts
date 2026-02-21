@@ -22,7 +22,7 @@ export class JwtService implements IjwtInterface {
         userId: string;
         role: string;
       };
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -32,7 +32,7 @@ export class JwtService implements IjwtInterface {
   ): { userId: string } | null {
     try {
       return jwt.verify(refreshToken, refreshSecretKey) as { userId: string };
-    } catch (error) {
+    } catch  {
       return null;
     }
   }
@@ -60,7 +60,7 @@ export class JwtService implements IjwtInterface {
       };
       if (decoded.purpose !== "password_reset") return null;
       return decoded;
-    } catch (error) {
+    } catch  {
       return null;
     }
   }
